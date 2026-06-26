@@ -1,6 +1,7 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 
-export interface IVehicle extends Document {
+export interface IVehicle {
+  _id?: any;
   vehicleNumber: string;
   type: string; // e.g., 'Open', 'Container', 'Trailer', 'LCV'
   capacity: string; // e.g., '10 Ton'
