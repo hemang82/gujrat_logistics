@@ -1,4 +1,13 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+// Force Node's DNS resolver to use Google DNS so that MongoDB Atlas SRV lookups resolve successfully
+// even if the user's local network/ISP DNS is blocking or failing SRV records.
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (e) {
+  console.warn('Failed to set Google DNS, falling back to system DNS', e);
+}
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
