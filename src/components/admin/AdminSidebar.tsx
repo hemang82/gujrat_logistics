@@ -15,7 +15,9 @@ import {
   Wallet,
   BriefcaseBusiness,
   ChevronDown,
-  X
+  X,
+  MapPin,
+  FileText
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -34,8 +36,10 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
 
   // Fleet routes include /admin/fleet and /admin/expenses
   const isFleetActive = pathname.startsWith('/admin/fleet') || pathname.startsWith('/admin/expenses');
+  const isBookingActive = pathname.startsWith('/admin/bookings') || pathname.startsWith('/admin/challans');
 
   const [isFleetOpen, setIsFleetOpen] = React.useState(isFleetActive);
+  const [isBookingOpen, setIsBookingOpen] = React.useState(isBookingActive);
 
   // Auto expand when matching route is loaded/reloaded
   React.useEffect(() => {
@@ -44,15 +48,38 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
   }, [pathname, isFleetActive]);
 
+  React.useEffect(() => {
+    if (isBookingActive) {
+      setIsBookingOpen(true);
+    }
+  }, [pathname, isBookingActive]);
+
   const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, isDropdown: false },
-    { name: 'Bookings & LR', href: '/admin/bookings', icon: <PackageSearch className="w-5 h-5" />, isDropdown: false },
+    { 
+      name: 'Booking', 
+      icon: <PackageSearch className="w-5 h-5" />, 
+      isDropdown: true,
+      isOpen: isBookingOpen,
+      setIsOpen: setIsBookingOpen,
+      isActive: isBookingActive,
+      children: [
+        { name: 'Lorry Receipt (LR)', href: '/admin/bookings', exact: false },
+        { name: 'Lorry Challan', href: '/admin/challans', exact: true },
+        { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false },
+      ]
+    },
+    { name: 'Branches', href: '/admin/branches', icon: <MapPin className="w-5 h-5" />, isDropdown: false },
     { name: 'Clients', href: '/admin/clients', icon: <BriefcaseBusiness className="w-5 h-5" />, isDropdown: false },
+    { name: 'Agents', href: '/admin/agents', icon: <Contact className="w-5 h-5" />, isDropdown: false },
     { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },
     { 
       name: 'Fleet Management', 
       icon: <Truck className="w-5 h-5" />, 
       isDropdown: true,
+      isOpen: isFleetOpen,
+      setIsOpen: setIsFleetOpen,
+      isActive: isFleetActive,
       children: [
         { name: 'Overview', href: '/admin/fleet', exact: true },
         { name: 'Vehicles', href: '/admin/fleet/vehicles', exact: false },
@@ -90,9 +117,9 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
             return (
               <div key={idx} className="flex flex-col gap-1">
                 <button
-                  onClick={() => setIsFleetOpen(!isFleetOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${
-                    isFleetActive 
+                  onClick={() => item.setIsOpen?.(!item.isOpen)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium cursor-pointer ${
+                    item.isActive 
                       ? 'bg-brand-primary/10 text-brand-primary' 
                       : 'text-gray-500 hover:bg-gray-50 hover:text-brand-text-primary'
                   }`}
@@ -102,12 +129,12 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
                     {item.name}
                   </div>
                   <ChevronDown 
-                    className={`w-4 h-4 transition-transform duration-200 ${isFleetOpen ? 'rotate-180' : ''}`} 
+                    className={`w-4 h-4 transition-transform duration-200 ${item.isOpen ? 'rotate-180' : ''}`} 
                   />
                 </button>
                 
                 <AnimatePresence initial={false}>
-                  {isFleetOpen && (
+                  {item.isOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}

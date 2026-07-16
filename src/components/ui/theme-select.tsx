@@ -32,6 +32,8 @@ export function ThemeSelect({
   className,
   disabled = false,
 }: ThemeSelectProps) {
+  const selectedLabel = options.find((opt) => opt.value === value)?.label;
+
   return (
     <Select
       value={value}
@@ -39,7 +41,9 @@ export function ThemeSelect({
       disabled={disabled}
     >
       <SelectTrigger size="none" className={className}>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={placeholder}>
+          {selectedLabel || placeholder}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>

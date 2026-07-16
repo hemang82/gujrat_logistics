@@ -12,10 +12,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   await getServerSession(authOptions);
   await connectToDatabase();
   Client.init();
-  
+
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
-  
+
   // 1. Fetch Pending Bookings (Delivered but not Invoiced yet)
   // To know if a booking is invoiced, we check if it exists in any Invoice.bookings array.
   // A simpler way: we can fetch ALL Invoices, gather their booking IDs, and exclude them.
@@ -30,11 +30,11 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   // Query for Bookings that are NOT invoiced yet
   // Usually you only bill "delivered" bookings, or "in_transit".
   // Let's allow billing any active booking that hasn't been billed.
-  const bookingQuery: any = { 
+  const bookingQuery: any = {
     isDeleted: { $ne: true },
     _id: { $nin: invoicedBookingIds }
   };
-  
+
   if (search) {
     bookingQuery.$or = [
       { lrNumber: { $regex: search, $options: 'i' } },
@@ -58,10 +58,10 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <BillingManager 
-        initialPendingBookings={JSON.parse(JSON.stringify(pendingBookings))} 
+      <BillingManager
+        initialPendingBookings={JSON.parse(JSON.stringify(pendingBookings))}
         initialInvoices={JSON.parse(JSON.stringify(invoices))}
-        clients={JSON.parse(JSON.stringify(clients))} 
+        clients={JSON.parse(JSON.stringify(clients))}
       />
     </div>
   );

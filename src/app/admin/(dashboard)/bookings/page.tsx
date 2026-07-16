@@ -18,16 +18,16 @@ export const dynamic = 'force-dynamic';
 export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string }> }) {
   await getServerSession(authOptions);
   await connectToDatabase();
-  
+
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
   const dateStr = resolvedParams?.date || '';
   const page = parseInt(resolvedParams?.page || '1', 10);
   const limit = 15;
-  
+
   // Build query
   const query: any = { isDeleted: { $ne: true } };
-  
+
   if (search) {
     query.$or = [
       { lrNumber: { $regex: search, $options: 'i' } },
@@ -49,7 +49,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   // Fetch paginated bookings
   const bookings = await Booking.find(query)
-    .sort({ bookingDate: -1 })
+    .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
     .lean();
@@ -59,6 +59,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="space-y-6">
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">Bookings & LR Management</h1>
@@ -72,9 +73,15 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             </Button>
           </a>
           <Link href="/admin/bookings/new" className="w-full sm:w-auto">
-            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
               <Plus className="w-5 h-5" />
-              Create New LR
+              CREATE
+            </Button>
+          </Link>
+          <Link href="/admin/bookings/new?type=manual" className="w-full sm:w-auto">
+            <Button className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary border border-brand-primary/20 h-12 w-full px-6 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
+              <Plus className="w-5 h-5" />
+              Manual
             </Button>
           </Link>
         </div>
@@ -83,7 +90,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       <Card className="border-none shadow-sm rounded-2xl bg-white overflow-hidden">
         <CardHeader className="border-b border-gray-100 pb-4">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <CardTitle className="text-xl font-bold text-brand-text-primary">Recent Shipments</CardTitle>
+            <CardTitle className="text-xl font-bold text-brand-text-primary">Recent Bookings</CardTitle>
             <BookingsFilter />
           </div>
         </CardHeader>
@@ -136,11 +143,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         ₹{booking.charges?.totalAmount || 0}
                       </td>
                       <td className="p-4 text-right">
-                        <ListActions 
-                          id={booking._id.toString()} 
-                          moduleName="bookings" 
-                          viewUrl={`/admin/bookings/${booking._id}`} 
-                          editUrl={`/admin/bookings/${booking._id}/edit`} 
+                        <ListActions
+                          id={booking._id.toString()}
+                          moduleName="bookings"
+                          viewUrl={`/admin/bookings/${booking._id}`}
+                          editUrl={`/admin/bookings/${booking._id}/edit`}
                         />
                       </td>
                     </tr>
@@ -162,17 +169,17 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                 <div key={booking._id.toString()} className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-primary/20 transition-all flex flex-col">
                   {/* Left accented border indicating status */}
                   <div className={`absolute left-0 top-0 bottom-0 w-1 
-                    ${booking.status === 'delivered' ? 'bg-brand-success' : 
+                    ${booking.status === 'delivered' ? 'bg-brand-success' :
                       booking.status === 'cancelled' ? 'bg-red-500' :
-                      booking.status === 'in_transit' ? 'bg-brand-info' : 'bg-yellow-400'
-                    }`} 
+                        booking.status === 'in_transit' ? 'bg-brand-info' : 'bg-yellow-400'
+                    }`}
                   />
 
                   {/* Header: LR No, Date, Amount */}
                   <div className="flex justify-between items-center mb-3 pl-2">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                       <span className="font-extrabold text-brand-text-primary text-sm tracking-tight">{booking.lrNumber}</span>
-                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <span className="text-xs text-gray-400 flex items-center gap-1">
                         <CalendarIcon className="w-3.5 h-3.5" />
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
@@ -196,22 +203,22 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       <div>
                         <p className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">To (Consignee)</p>
                         <p className="font-semibold text-gray-800 text-sm mt-0.5">{booking.consignee?.name || 'N/A'}</p>
-                        <p className="text-gray-500 mt-0.5 text-[11px]">{booking.deliveryLocation}</p>
+                        <p className="text-gray-500 mt-0.5 text-xs">{booking.deliveryLocation}</p>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Footer: Dropdown & Actions side by side */}
                   <div className="flex justify-between items-center pt-2.5 border-t border-gray-100 pl-2">
                     <div className="w-[140px] shrink-0">
                       <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
                     </div>
                     <div className="shrink-0">
-                      <ListActions 
-                        id={booking._id.toString()} 
-                        moduleName="bookings" 
-                        viewUrl={`/admin/bookings/${booking._id}`} 
-                        editUrl={`/admin/bookings/${booking._id}/edit`} 
+                      <ListActions
+                        id={booking._id.toString()}
+                        moduleName="bookings"
+                        viewUrl={`/admin/bookings/${booking._id}`}
+                        editUrl={`/admin/bookings/${booking._id}/edit`}
                       />
                     </div>
                   </div>
@@ -223,6 +230,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <Pagination totalPages={totalPages} currentPage={page} />
         </CardContent>
       </Card>
+
     </div>
   );
 }

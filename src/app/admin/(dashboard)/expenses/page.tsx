@@ -253,14 +253,14 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
               expenses.map((expense: any) => (
                 <div key={expense._id.toString()} className="bg-white border border-gray-100 rounded-xl p-3 shadow-sm">
                   <div className="flex justify-between items-center mb-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${getExpenseColor(expense.expenseType)}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider border ${getExpenseColor(expense.expenseType)}`}>
                       {expense.expenseType.replace('_', ' ')}
                     </span>
                     <span className="font-bold text-gray-800 text-sm">₹{expense.amount.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-brand-text-primary text-sm">{expense.vehicle?.vehicleNumber || 'N/A'}</span>
-                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
                       <CalendarIcon className="w-3 h-3" />
                       {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                     </span>

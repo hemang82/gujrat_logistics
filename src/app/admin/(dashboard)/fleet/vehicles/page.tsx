@@ -174,7 +174,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                           {getStatusBadge(v.status)}
                         </div>
                         {isInsuranceExpiring && (
-                          <div className="flex items-center gap-1 text-red-600 text-[10px] font-bold bg-red-50 px-1.5 py-1 rounded border border-red-100">
+                          <div className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-1.5 py-1 rounded border border-red-100">
                             <ShieldAlert className="w-3 h-3" /> Docs Alert
                           </div>
                         )}
@@ -196,7 +196,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50/50 rounded-lg p-2.5 border border-gray-50 mb-2">
                           <div>
-                            <p className="text-gray-400 text-[10px] uppercase font-bold mb-0.5">Driver</p>
+                            <p className="text-gray-400 text-xs uppercase font-bold mb-0.5">Driver</p>
                             {v.assignedDriver ? (
                               <div className="flex items-center gap-1 text-gray-800 font-medium">
                                 <CircleUserRound className="w-3.5 h-3.5 text-gray-400" />
@@ -208,7 +208,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                           </div>
                           
                           <div>
-                            <p className="text-gray-400 text-[10px] uppercase font-bold mb-0.5">Insurance Till</p>
+                            <p className="text-gray-400 text-xs uppercase font-bold mb-0.5">Insurance Till</p>
                             <p className={`font-medium flex items-center gap-1 ${isInsuranceExpiring ? 'text-red-600' : 'text-gray-700'}`}>
                               <CalendarClock className={`w-3.5 h-3.5 ${isInsuranceExpiring ? 'text-red-500' : 'text-gray-400'}`} />
                               {v.insuranceExpiry ? new Date(v.insuranceExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit'}) : 'N/A'}

@@ -60,7 +60,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">GUJARAT LOGISTIC</h1>
               <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
-              <p className="text-[10px] sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
+              <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               <p className="text-xs font-bold text-gray-700 mt-1">GSTIN: 24AAAAA1234A1Z5</p>
             </div>
           </div>
@@ -194,7 +194,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
           <div className="text-center w-64">
             <div className="w-full mx-auto border-b border-gray-400 mb-2"></div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For Gujarat Logistic</p>
-            <p className="text-[10px] text-gray-400 mt-1">Authorized Signatory</p>
+            <p className="text-xs text-gray-400 mt-1">Authorized Signatory</p>
           </div>
         </div>
 

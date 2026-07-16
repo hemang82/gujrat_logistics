@@ -38,6 +38,8 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          branch: user.branch ? user.branch.toString() : '',
+          bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
         };
       }
     })
@@ -47,6 +49,21 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.branch = (user as any).branch;
+        token.bookingBranch = (user as any).bookingBranch;
+      } else if (token.id) {
+        // Fetch fresh branch/bookingBranch details from the database on refresh
+        try {
+          await connectToDatabase();
+          const dbUser = await User.findById(token.id).select('branch bookingBranch role');
+          if (dbUser) {
+            token.branch = dbUser.branch ? dbUser.branch.toString() : '';
+            token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
+            token.role = dbUser.role;
+          }
+        } catch (err) {
+          console.error("Error updating token in jwt callback:", err);
+        }
       }
       return token;
     },
@@ -54,6 +71,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).branch = token.branch;
+        (session.user as any).bookingBranch = token.bookingBranch;
       }
       return session;
     }

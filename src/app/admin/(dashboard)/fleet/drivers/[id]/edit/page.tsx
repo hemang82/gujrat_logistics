@@ -211,27 +211,7 @@ export default function EditDriverPage() {
                   <Input name="name" placeholder="Driver's Full Name" value={formData.name} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.name ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary'}`} />
                   <ErrorText field="name" />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">Blood Group</Label>
-                  <ThemeSelect 
-                    name="bloodGroup" 
-                    value={formData.bloodGroup} 
-                    onChange={handleChange as any} 
-                    options={[
-                      { value: 'A+', label: 'A+' },
-                      { value: 'A-', label: 'A-' },
-                      { value: 'B+', label: 'B+' },
-                      { value: 'B-', label: 'B-' },
-                      { value: 'AB+', label: 'AB+' },
-                      { value: 'AB-', label: 'AB-' },
-                      { value: 'O+', label: 'O+' },
-                      { value: 'O-', label: 'O-' }
-                    ]}
-                    placeholder="Select Blood Group"
-                    className="flex w-full h-12 rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary transition-all shadow-sm"
-                  />
-                </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-2">
                   <Label className="text-gray-600 font-medium">Status <span className="text-red-500">*</span></Label>
                   <ThemeSelect 
                     name="status" 
@@ -246,18 +226,6 @@ export default function EditDriverPage() {
                     className={`flex w-full h-12 rounded-xl bg-white border px-3 text-sm focus-visible:outline-none focus-visible:ring-1 transition-all shadow-sm ${errors.status ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary'}`}
                   />
                   <ErrorText field="status" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">Assign Vehicle</Label>
-                  <ThemeSelect 
-                    name="assignedVehicle" 
-                    value={formData.assignedVehicle} 
-                    onChange={handleChange as any} 
-                    options={vehicles.map(v => ({ value: v._id, label: `${v.vehicleNumber} (${v.type})` }))}
-                    placeholder="-- No Vehicle Assigned --"
-                    className="flex w-full h-12 rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary transition-all shadow-sm"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Assigning a new vehicle will automatically detach the driver from any previously assigned vehicle.</p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-gray-600 font-medium">Residential Address</Label>

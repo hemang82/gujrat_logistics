@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     }
 
     // Fetch all matching records (No limit for export)
-    const bookings = await Booking.find(query).sort({ bookingDate: -1 }).lean();
+    const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
 
     // Generate CSV
     const header = [

@@ -2,11 +2,28 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IBooking extends Document {
   lrNumber: string;
-  consignor: { name: string; phone: string; address: string; gstNumber?: string };
-  consignee: { name: string; phone: string; address: string; gstNumber?: string };
+  branch?: mongoose.Types.ObjectId | any;
+  bookingBranch?: mongoose.Types.ObjectId | any;
+  destinationBranch?: mongoose.Types.ObjectId | any;
+  rateType?: string;
+  deliveryType?: string;
+  pvtMarka?: string;
+  invoiceNo?: string;
+  ewayBillNo?: string;
+  consignor: { name: string; phone: string; address?: string; gstNumber?: string };
+  consignee: { name: string; phone: string; address?: string; gstNumber?: string };
   material: { itemName: string; weight: number; chargedWeight: number; quantity: number; packagingType: string };
-  pickupLocation: string;
-  deliveryLocation: string;
+  items?: {
+    packages: number;
+    packaging: string;
+    description: string;
+    weight: number;
+    nw: string;
+    rate: number;
+    amount: number;
+  }[];
+  pickupLocation?: string;
+  deliveryLocation?: string;
   vehicle?: mongoose.Types.ObjectId;
   driver?: mongoose.Types.ObjectId;
   status: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'cancelled';
@@ -15,10 +32,14 @@ export interface IBooking extends Document {
     freightAmount: number;
     hamali: number;
     surCharge: number;
-    gstRate: number; // e.g., 5, 12, or custom
+    pf?: number;
+    ddCharge?: number;
+    biltyCharge?: number;
+    gstRate: number;
     gstAmount: number;
     totalAmount: number;
   };
+  bookingType?: 'auto' | 'manual';
   paymentCondition: 'to_pay' | 'paid' | 'tbb';
   bookingDate: Date;
   deliveryDate?: Date;
@@ -28,28 +49,52 @@ export interface IBooking extends Document {
 
 const BookingSchema = new Schema<IBooking>(
   {
+    bookingType: {
+      type: String,
+      enum: ['auto', 'manual'],
+      default: 'auto',
+    },
     lrNumber: { type: String, required: true, unique: true },
+    branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    bookingBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    destinationBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    rateType: { type: String },
+    deliveryType: { type: String },
+    pvtMarka: { type: String },
+    invoiceNo: { type: String },
+    ewayBillNo: { type: String },
     consignor: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
-      address: { type: String, required: true },
+      address: { type: String },
       gstNumber: { type: String },
     },
     consignee: {
       name: { type: String, required: true },
       phone: { type: String, required: true },
-      address: { type: String, required: true },
+      address: { type: String },
       gstNumber: { type: String },
     },
     material: {
-      itemName: { type: String, required: true },
-      weight: { type: Number, required: true },
-      chargedWeight: { type: Number, required: true },
-      quantity: { type: Number, required: true },
-      packagingType: { type: String, required: true }, // Box, Bag, Bundle, etc.
+      itemName: { type: String },
+      weight: { type: Number },
+      chargedWeight: { type: Number },
+      quantity: { type: Number },
+      packagingType: { type: String },
     },
-    pickupLocation: { type: String, required: true },
-    deliveryLocation: { type: String, required: true },
+    items: [
+      {
+        packages: { type: Number, default: 0 },
+        packaging: { type: String, default: '' },
+        description: { type: String, default: '' },
+        weight: { type: Number, default: 0 },
+        nw: { type: String, default: 'N' },
+        rate: { type: Number, default: 0 },
+        amount: { type: Number, default: 0 },
+      }
+    ],
+    pickupLocation: { type: String },
+    deliveryLocation: { type: String },
     vehicle: { type: Schema.Types.ObjectId, ref: 'Vehicle' },
     driver: { type: Schema.Types.ObjectId, ref: 'Driver' },
     status: {
@@ -66,12 +111,15 @@ const BookingSchema = new Schema<IBooking>(
       }
     ],
     charges: {
-      freightAmount: { type: Number, required: true },
+      freightAmount: { type: Number, default: 0 },
       hamali: { type: Number, default: 0 },
       surCharge: { type: Number, default: 0 },
+      pf: { type: Number, default: 0 },
+      ddCharge: { type: Number, default: 0 },
+      biltyCharge: { type: Number, default: 10 },
       gstRate: { type: Number, default: 0 },
       gstAmount: { type: Number, default: 0 },
-      totalAmount: { type: Number, required: true },
+      totalAmount: { type: Number, default: 0 },
     },
     paymentCondition: {
       type: String,

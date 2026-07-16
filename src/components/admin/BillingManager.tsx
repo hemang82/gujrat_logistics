@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Printer, CheckSquare, Square, IndianRupee, CreditCard, Filter } from 'lucide-react';
+import { FileText, Printer, CheckSquare, Square, IndianRupee, CreditCard, Filter, Search } from 'lucide-react';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,6 +22,7 @@ export default function BillingManager({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'pending' | 'invoices'>('pending');
   const [selectedBookings, setSelectedBookings] = useState<string[]>([]);
+  const [invoiceSearch, setInvoiceSearch] = useState('');
   
   // Invoice Generation State
   const [isGenerating, setIsGenerating] = useState(false);
@@ -34,6 +35,7 @@ export default function BillingManager({
   // Handle client selection
   const handleClientSelect = (id: string) => {
     setClientId(id);
+    setSelectedBookings([]); // Clear checked bookings when client changes
     if (id === 'new') {
       setClientName('');
       setClientAddress('');
@@ -127,7 +129,14 @@ export default function BillingManager({
     }
   };
 
-  const selectedTotal = initialPendingBookings
+  const filteredPendingBookings = initialPendingBookings.filter(b => {
+    if (!clientId || clientId === 'new') return true;
+    const client = clients.find(c => c._id === clientId);
+    if (!client) return true;
+    return b.consignor?.name?.toLowerCase() === client.name.toLowerCase();
+  });
+
+  const selectedTotal = filteredPendingBookings
     .filter(b => selectedBookings.includes(b._id))
     .reduce((acc, curr) => acc + (curr.charges?.totalAmount || 0), 0);
 
@@ -168,10 +177,10 @@ export default function BillingManager({
                       <tr className="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
                         <th className="p-4 w-10">
                           <button onClick={() => {
-                            if (selectedBookings.length === initialPendingBookings.length) setSelectedBookings([]);
-                            else setSelectedBookings(initialPendingBookings.map(b => b._id));
+                            if (selectedBookings.length === filteredPendingBookings.length) setSelectedBookings([]);
+                            else setSelectedBookings(filteredPendingBookings.map(b => b._id));
                           }}>
-                            {selectedBookings.length === initialPendingBookings.length && initialPendingBookings.length > 0 ? 
+                            {selectedBookings.length === filteredPendingBookings.length && filteredPendingBookings.length > 0 ? 
                               <CheckSquare className="w-5 h-5 text-brand-primary" /> : 
                               <Square className="w-5 h-5" />
                             }
@@ -185,11 +194,11 @@ export default function BillingManager({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {initialPendingBookings.length === 0 ? (
+                      {filteredPendingBookings.length === 0 ? (
                          <tr>
                           <td colSpan={6} className="p-8 text-center text-gray-500">No pending bookings to invoice.</td>
                         </tr>
-                      ) : initialPendingBookings.map((b) => (
+                      ) : filteredPendingBookings.map((b) => (
                         <tr key={b._id} className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedBookings.includes(b._id) ? 'bg-brand-primary/5' : ''}`} onClick={() => toggleSelection(b._id)}>
                           <td className="p-4">
                             {selectedBookings.includes(b._id) ? 
@@ -284,8 +293,17 @@ export default function BillingManager({
 
       {activeTab === 'invoices' && (
         <Card className="border-none shadow-sm rounded-2xl bg-white">
-          <CardHeader className="flex flex-row justify-between items-center border-b border-gray-100 pb-4">
-            <CardTitle className="text-xl font-bold">Generated Invoices</CardTitle>
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 gap-4">
+            <CardTitle className="text-xl font-bold text-brand-text-primary">Generated Invoices</CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                value={invoiceSearch}
+                onChange={(e) => setInvoiceSearch(e.target.value)}
+                placeholder="Search Invoice No or Client..."
+                className="pl-9 h-10 bg-white rounded-xl border-gray-200 shadow-sm focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
+              />
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -301,46 +319,57 @@ export default function BillingManager({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {initialInvoices.length === 0 ? (
-                    <tr><td colSpan={6} className="p-8 text-center text-gray-500">No invoices generated yet.</td></tr>
-                  ) : initialInvoices.map((inv) => (
-                    <tr key={inv._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="p-4 font-bold text-brand-primary">{inv.invoiceNumber}</td>
-                      <td className="p-4 text-sm text-gray-600">{new Date(inv.invoiceDate).toLocaleDateString('en-IN')}</td>
-                      <td className="p-4 font-medium">
-                        {inv.clientName}
-                        <span className="block text-xs text-gray-500">{inv.bookings.length} Trips</span>
-                      </td>
-                      <td className="p-4">
-                        <div className="font-bold">₹{inv.grandTotal.toLocaleString('en-IN')}</div>
-                        {inv.amountPaid > 0 && <div className="text-xs text-brand-success font-medium">Paid: ₹{inv.amountPaid.toLocaleString('en-IN')}</div>}
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border inline-block
-                          ${inv.status === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                          ${inv.status === 'partial' ? 'bg-orange-50 text-orange-700 border-orange-200' : ''}
-                          ${inv.status === 'unpaid' ? 'bg-red-50 text-red-700 border-red-200' : ''}
-                        `}>
-                          {inv.status}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right flex items-center justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => { setUpdatingInvoice(inv); setAmountToUpdate(inv.amountPaid); }}
-                          className="h-9 border-gray-200 hover:border-brand-primary hover:text-brand-primary"
-                        >
-                          <IndianRupee className="w-4 h-4 mr-1" /> Update Pay
-                        </Button>
-                        <Link href={`/admin/billing/${inv._id}/print`} target="_blank">
-                          <Button variant="default" size="sm" className="h-9 bg-gray-800 hover:bg-black text-white">
-                            <Printer className="w-4 h-4 mr-1" /> Print
+                  {(() => {
+                    const filtered = initialInvoices.filter(inv => {
+                      if (!invoiceSearch) return true;
+                      const term = invoiceSearch.toLowerCase();
+                      return (
+                        inv.invoiceNumber.toLowerCase().includes(term) ||
+                        inv.clientName.toLowerCase().includes(term)
+                      );
+                    });
+                    if (filtered.length === 0) {
+                      return <tr><td colSpan={6} className="p-8 text-center text-gray-500">No matching invoices found.</td></tr>;
+                    }
+                    return filtered.map((inv) => (
+                      <tr key={inv._id} className="hover:bg-gray-50 transition-colors">
+                        <td className="p-4 font-bold text-brand-primary">{inv.invoiceNumber}</td>
+                        <td className="p-4 text-sm text-gray-600">{new Date(inv.invoiceDate).toLocaleDateString('en-IN')}</td>
+                        <td className="p-4 font-medium">
+                          {inv.clientName}
+                          <span className="block text-xs text-gray-500">{inv.bookings.length} Trips</span>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-bold">₹{inv.grandTotal.toLocaleString('en-IN')}</div>
+                          {inv.amountPaid > 0 && <div className="text-xs text-brand-success font-medium">Paid: ₹{inv.amountPaid.toLocaleString('en-IN')}</div>}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border inline-block
+                            ${inv.status === 'paid' ? 'bg-green-50 text-green-700 border-green-200' : ''}
+                            ${inv.status === 'partial' ? 'bg-orange-50 text-orange-700 border-orange-200' : ''}
+                            ${inv.status === 'unpaid' ? 'bg-red-50 text-red-700 border-red-200' : ''}
+                          `}>
+                            {inv.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right flex items-center justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => { setUpdatingInvoice(inv); setAmountToUpdate(inv.amountPaid); }}
+                            className="h-9 border-gray-200 hover:border-brand-primary hover:text-brand-primary"
+                          >
+                            <IndianRupee className="w-4 h-4 mr-1" /> Update Pay
                           </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
+                          <Link href={`/admin/billing/${inv._id}/print`} target="_blank">
+                            <Button variant="default" size="sm" className="h-9 bg-gray-800 hover:bg-black text-white">
+                              <Printer className="w-4 h-4 mr-1" /> Print
+                            </Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
             </div>

@@ -104,7 +104,7 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
                       <Phone className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400">Primary Phone</p>
+                      <p className="text-xs uppercase font-bold text-gray-400">Primary Phone</p>
                       <p className="font-semibold text-sm">{driver.phone}</p>
                     </div>
                   </div>
@@ -115,7 +115,7 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
                         <Phone className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Alternate Phone</p>
+                        <p className="text-xs uppercase font-bold text-gray-400">Alternate Phone</p>
                         <p className="font-semibold text-sm">{driver.alternatePhone}</p>
                       </div>
                     </div>
@@ -127,7 +127,7 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
                         <Activity className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Blood Group</p>
+                        <p className="text-xs uppercase font-bold text-gray-400">Blood Group</p>
                         <p className="font-semibold text-sm text-red-600">{driver.bloodGroup}</p>
                       </div>
                     </div>

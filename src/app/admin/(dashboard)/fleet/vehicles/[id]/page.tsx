@@ -105,7 +105,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                       <Settings className="w-4 h-4" />
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase font-bold text-gray-400">Type & Capacity</p>
+                      <p className="text-xs uppercase font-bold text-gray-400">Type & Capacity</p>
                       <p className="font-semibold text-sm">{vehicle.type} • {vehicle.capacity}</p>
                     </div>
                   </div>
@@ -116,7 +116,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                         <MapPin className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Current Location</p>
+                        <p className="text-xs uppercase font-bold text-gray-400">Current Location</p>
                         <p className="font-semibold text-sm text-gray-800">{vehicle.currentLocation}</p>
                       </div>
                     </div>
@@ -128,7 +128,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                         <UserCircle className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400">Owner Details</p>
+                        <p className="text-xs uppercase font-bold text-gray-400">Owner Details</p>
                         <p className="font-semibold text-sm">{vehicle.ownerName}</p>
                         {vehicle.ownerPhone && <p className="text-xs text-gray-500">{vehicle.ownerPhone}</p>}
                       </div>
@@ -177,7 +177,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                       }`}
                     >
                       <div>
-                        <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">{doc.label}</p>
+                        <p className="text-xs uppercase font-bold text-gray-400 mb-1">{doc.label}</p>
                         <div className="flex items-center gap-1.5">
                           <CalendarClock className={`w-4 h-4 ${expired ? 'text-red-500' : expiring ? 'text-orange-500' : 'text-gray-400'}`} />
                           <p className={`font-bold ${expired ? 'text-red-700' : expiring ? 'text-orange-700' : 'text-gray-800'}`}>
@@ -187,11 +187,11 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                       </div>
                       
                       {expired ? (
-                        <span className="text-[10px] font-bold text-red-600 uppercase bg-red-100 px-2 py-0.5 rounded">Expired</span>
+                        <span className="text-xs font-bold text-red-600 uppercase bg-red-100 px-2 py-0.5 rounded">Expired</span>
                       ) : expiring ? (
-                        <span className="text-[10px] font-bold text-orange-600 uppercase bg-orange-100 px-2 py-0.5 rounded">Expiring</span>
+                        <span className="text-xs font-bold text-orange-600 uppercase bg-orange-100 px-2 py-0.5 rounded">Expiring</span>
                       ) : (
-                        doc.date && <span className="text-[10px] font-bold text-green-600 uppercase bg-green-100 px-2 py-0.5 rounded">Valid</span>
+                        doc.date && <span className="text-xs font-bold text-green-600 uppercase bg-green-100 px-2 py-0.5 rounded">Valid</span>
                       )}
                     </div>
                   );

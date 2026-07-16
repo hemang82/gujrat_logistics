@@ -250,19 +250,6 @@ export default function EditVehiclePage() {
                   ]}
                   className={`flex w-full h-12 rounded-xl bg-white border px-3 text-sm focus-visible:outline-none focus-visible:ring-1 transition-all shadow-sm ${errors.status ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`}
                 />
-                <ErrorText field="status" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Assign Driver (Optional)</Label>
-                <ThemeSelect 
-                  name="assignedDriver" 
-                  value={formData.assignedDriver} 
-                  onChange={handleChange as any} 
-                  options={drivers.map(d => ({ value: d._id, label: `${d.name} (${d.phone}) ${d.assignedVehicle && d.assignedVehicle !== id ? '- Already Assigned' : ''}` }))}
-                  placeholder="-- No Driver Assigned --"
-                  className="flex w-full h-12 rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-primary focus-visible:ring-brand-primary transition-all shadow-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">Assigning a new driver will automatically detach the vehicle from any previously assigned driver.</p>
               </div>
             </div>
           </CardContent>

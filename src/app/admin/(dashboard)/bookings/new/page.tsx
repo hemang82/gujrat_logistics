@@ -1,58 +1,447 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Plus, Trash2, ArrowLeft, Printer } from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
+import { SearchSelect } from '@/components/ui/search-select';
 
-export default function NewBookingPage() {
+function NewBookingForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isManual = searchParams.get('type') === 'manual';
+
   const [isLoading, setIsLoading] = useState(false);
+  const [submitAction, setSubmitAction] = useState<'save' | 'print'>('save');
+  const [isFetchingEway, setIsFetchingEway] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
+  const [grNo, setGrNo] = useState('');
+  const user = useUserStore((state) => state.user);
+
+  // Autocomplete suggestion states
+  const [consignorSuggestions, setConsignorSuggestions] = useState<any[]>([]);
+  const [consigneeSuggestions, setConsigneeSuggestions] = useState<any[]>([]);
+  const [showConsignorDropdown, setShowConsignorDropdown] = useState(false);
+  const [showConsigneeDropdown, setShowConsigneeDropdown] = useState(false);
+  const [consignorHighlightIndex, setConsignorHighlightIndex] = useState(-1);
+  const [consigneeHighlightIndex, setConsigneeHighlightIndex] = useState(-1);
+
+  // Branch autocomplete states
+  const [destinationBranchSearch, setDestinationBranchSearch] = useState('');
+  const [branchSuggestions, setBranchSuggestions] = useState<any[]>([]);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  const handleFetchEwayBill = async () => {
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.ewayBillNo;
+      return copy;
+    });
+
+    if (!formData.ewayBillNo || formData.ewayBillNo.length !== 12) {
+      setErrors(prev => ({
+        ...prev,
+        ewayBillNo: "Please enter a valid 12-digit E-Way Bill Number"
+      }));
+      return;
+    }
+
+    setIsFetchingEway(true);
+    try {
+      const res = await fetch(`/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Auto-fill values in form
+      setFormData(prev => ({
+        ...prev,
+        consignorName: data.consignor.name,
+        consignorGst: data.consignor.gst,
+        consignorPhone: data.consignor.phone,
+        consigneeName: data.consignee.name,
+        consigneeGst: data.consignee.gst,
+        consigneePhone: data.consignee.phone,
+        destinationBranch: data.destinationBranch,
+        invoiceNo: data.invoiceNumber,
+        value: data.totalValue.toString(),
+        freightAmount: data.items.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0).toString()
+      }));
+
+      // Map loaded items
+      if (data.items && data.items.length > 0) {
+        setItems(data.items.map((item: any) => ({
+          packages: item.packages.toString(),
+          packaging: item.packaging,
+          description: item.description,
+          weight: item.weight.toString(),
+          nw: item.nw,
+          rate: item.rate.toString(),
+          amount: item.amount.toString()
+        })));
+      }
+
+      toast.success("E-Way Bill details fetched and auto-filled!");
+    } catch (err: any) {
+      setErrors(prev => ({
+        ...prev,
+        ewayBillNo: `Fetch failed: ${err.message || 'Could not reach server'}`
+      }));
+    } finally {
+      setIsFetchingEway(false);
+    }
+  };
+
+  const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin/vehicles').then(res => res.json()).then(data => setVehicles(data || [])).catch(console.error);
-    fetch('/api/admin/drivers').then(res => res.json()).then(data => setDrivers(data || [])).catch(console.error);
+    fetch('/api/admin/branches?limit=100')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.branches && data.branches.length > 0) {
+          const list = data.branches.map((b: any) => ({
+            value: b._id,
+            label: `${b.name} (${b.code})`
+          }));
+          setBranchesList(list);
+        }
+      })
+      .catch(err => console.error('Error fetching branches:', err));
   }, []);
+
+  useEffect(() => {
+    if (!isManual) {
+      // Fetch bookings to determine next GR No for Auto GR Mode
+      fetch('/api/admin/bookings')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            let maxNum = 10000;
+            let foundValid = false;
+            data.forEach((b: any) => {
+              if (b.lrNumber) {
+                const num = parseInt(b.lrNumber.replace(/\D/g, ''), 10);
+                if (!isNaN(num)) {
+                  foundValid = true;
+                  if (num > maxNum) {
+                    maxNum = num;
+                  }
+                }
+              }
+            });
+            setGrNo(foundValid ? (maxNum + 1).toString() : '10001');
+          } else {
+            setGrNo('10001');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setGrNo('10001');
+        });
+    }
+  }, [isManual]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        branch: user.branch || '',
+        bookingBranch: user.bookingBranch || ''
+      }));
+    }
+  }, [user]);
 
   // Form State
   const [formData, setFormData] = useState({
-    consignorName: '', consignorPhone: '', consignorAddress: '', consignorGst: '',
-    consigneeName: '', consigneePhone: '', consigneeAddress: '', consigneeGst: '',
-    pickupLocation: '', deliveryLocation: '',
-    itemName: '', packagingType: '', quantity: '', weight: '', chargedWeight: '',
-    freightAmount: '', hamali: '', surCharge: '', gstRate: '0', paymentCondition: 'to_pay',
-    vehicle: '', driver: ''
+    branch: '',
+    grNo: '',
+    bookingDate: new Date().toISOString().split('T')[0],
+    bookingBranch: '',
+    destinationBranch: '',
+    rateType: 'to_pay', // "to_pay" | "paid" | "tbb"
+
+    consignorName: '',
+    consignorGst: '',
+    consignorPhone: '',
+    consigneeName: '',
+    consigneeGst: '',
+    consigneePhone: '',
+
+    value: '',
+    deliveryType: 'Godown Delivery',
+    pvtMarka: '',
+    invoiceNo: '',
+    ewayBillNo: '',
+
+    freightAmount: '0.00',
+    pf: '0.00',
+    labour: '0.00',
+    ddCharge: '0.00',
+    biltyCharge: '10.00',
+    gstRate: '0',
   });
+
+  const [items, setItems] = useState([
+    { packages: '', packaging: '', description: '', weight: '', nw: 'N', rate: '', amount: '' }
+  ]);
+
+  // Consignor suggestions autocomplete
+  useEffect(() => {
+    if (!formData.consignorName || formData.consignorName.length < 2) {
+      setConsignorSuggestions([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consignorName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setConsignorSuggestions(data);
+        }
+      } catch (err) {
+        console.error('Error fetching consignor suggestions', err);
+      }
+    }, 200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [formData.consignorName]);
+
+  // Consignee suggestions autocomplete
+  useEffect(() => {
+    if (!formData.consigneeName || formData.consigneeName.length < 2) {
+      setConsigneeSuggestions([]);
+      return;
+    }
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consigneeName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setConsigneeSuggestions(data);
+        }
+      } catch (err) {
+        console.error('Error fetching consignee suggestions', err);
+      }
+    }, 200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [formData.consigneeName]);
+
+  // Reset highlight index when suggestions list changes
+  useEffect(() => {
+    setConsignorHighlightIndex(-1);
+  }, [consignorSuggestions]);
+
+  useEffect(() => {
+    setConsigneeHighlightIndex(-1);
+  }, [consigneeSuggestions]);
+
+  const handleConsignorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tab key autocomplete selection
+    if (e.key === 'Tab') {
+      const firstMatch = consignorSuggestions[0];
+      if (firstMatch && formData.consignorName) {
+        const hasMatch = firstMatch.name.toLowerCase().startsWith(formData.consignorName.toLowerCase());
+        if (hasMatch) {
+          setFormData(prev => ({
+            ...prev,
+            consignorName: firstMatch.name,
+            consignorGst: firstMatch.gst,
+            consignorPhone: firstMatch.phone
+          }));
+          setShowConsignorDropdown(false);
+          setConsignorHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showConsignorDropdown || consignorSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setConsignorHighlightIndex(prev =>
+        prev < consignorSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setConsignorHighlightIndex(prev =>
+        prev > 0 ? prev - 1 : consignorSuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (consignorHighlightIndex >= 0 && consignorHighlightIndex < consignorSuggestions.length) {
+        e.preventDefault();
+        const selected = consignorSuggestions[consignorHighlightIndex];
+        setFormData(prev => ({
+          ...prev,
+          consignorName: selected.name,
+          consignorGst: selected.gst,
+          consignorPhone: selected.phone
+        }));
+        setShowConsignorDropdown(false);
+        setConsignorHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowConsignorDropdown(false);
+      setConsignorHighlightIndex(-1);
+    }
+  };
+
+  const handleConsigneeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tab key autocomplete selection
+    if (e.key === 'Tab') {
+      const firstMatch = consigneeSuggestions[0];
+      if (firstMatch && formData.consigneeName) {
+        const hasMatch = firstMatch.name.toLowerCase().startsWith(formData.consigneeName.toLowerCase());
+        if (hasMatch) {
+          setFormData(prev => ({
+            ...prev,
+            consigneeName: firstMatch.name,
+            consigneeGst: firstMatch.gst,
+            consigneePhone: firstMatch.phone
+          }));
+          setShowConsigneeDropdown(false);
+          setConsigneeHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showConsigneeDropdown || consigneeSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setConsigneeHighlightIndex(prev =>
+        prev < consigneeSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setConsigneeHighlightIndex(prev =>
+        prev > 0 ? prev - 1 : consigneeSuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (consigneeHighlightIndex >= 0 && consigneeHighlightIndex < consigneeSuggestions.length) {
+        e.preventDefault();
+        const selected = consigneeSuggestions[consigneeHighlightIndex];
+        setFormData(prev => ({
+          ...prev,
+          consigneeName: selected.name,
+          consigneeGst: selected.gst,
+          consigneePhone: selected.phone
+        }));
+        setShowConsigneeDropdown(false);
+        setConsigneeHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowConsigneeDropdown(false);
+      setConsigneeHighlightIndex(-1);
+    }
+  };
+
+  // Filter branch suggestions locally from branchesList
+  useEffect(() => {
+    if (!destinationBranchSearch || destinationBranchSearch.trim().length < 1) {
+      setBranchSuggestions([]);
+      return;
+    }
+    const query = destinationBranchSearch.trim().toLowerCase();
+    const filtered = branchesList.filter(b =>
+      b.label.toLowerCase().includes(query) ||
+      b.value.toLowerCase().includes(query)
+    );
+    setBranchSuggestions(filtered);
+  }, [destinationBranchSearch, branchesList]);
+
+  // Reset highlight index when suggestions change
+  useEffect(() => {
+    setBranchHighlightIndex(-1);
+  }, [branchSuggestions]);
+
+  const handleBranchSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDestinationBranchSearch(val);
+    if (!val) {
+      setFormData(prev => ({ ...prev, destinationBranch: '' }));
+    }
+  };
+
+  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Tab key autocomplete selection
+    if (e.key === 'Tab') {
+      const firstMatch = branchSuggestions[0];
+      if (firstMatch && destinationBranchSearch) {
+        const hasMatch = firstMatch.label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase());
+        if (hasMatch) {
+          setFormData(prev => ({ ...prev, destinationBranch: firstMatch.value }));
+          setDestinationBranchSearch(firstMatch.label);
+          setShowBranchDropdown(false);
+          setBranchHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showBranchDropdown || branchSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev =>
+        prev < branchSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev =>
+        prev > 0 ? prev - 1 : branchSuggestions.length - 1
+      );
+    } else if (e.key === 'Enter') {
+      if (branchHighlightIndex >= 0 && branchHighlightIndex < branchSuggestions.length) {
+        e.preventDefault();
+        const selected = branchSuggestions[branchHighlightIndex];
+        setFormData(prev => ({ ...prev, destinationBranch: selected.value }));
+        setDestinationBranchSearch(selected.label);
+        setShowBranchDropdown(false);
+        setBranchHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowBranchDropdown(false);
+      setBranchHighlightIndex(-1);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let { name, value } = e.target;
 
-    // Apply regex masking
+    // Apply validation mask
     if (name === 'consignorName' || name === 'consigneeName') {
       value = value.replace(/[^a-zA-Z\s.]/g, ''); // letters, spaces, dots
     } else if (name === 'consignorPhone' || name === 'consigneePhone') {
-      value = value.replace(/\D/g, '').slice(0, 10); // only digits, max 10
+      value = value.replace(/\D/g, '').slice(0, 10); // only 10 digits
     } else if (name === 'consignorGst' || name === 'consigneeGst') {
-      value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase(); // uppercase alphanumeric
-    } else if (['quantity', 'weight', 'chargedWeight', 'freightAmount', 'hamali', 'surCharge', 'gstRate'].includes(name)) {
-      // allow numbers and decimal point
-      value = value.replace(/[^0-9.]/g, '');
-      // prevent multiple decimal points
-      if ((value.match(/\./g) || []).length > 1) {
-        value = value.slice(0, -1);
+      value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    } else if (['value', 'freightAmount', 'pf', 'labour', 'ddCharge', 'biltyCharge', 'gstRate', 'ewayBillNo', 'grNo'].includes(name)) {
+      if (name === 'grNo') {
+        value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase(); // alphanumerics and dashes for manual GR
+      } else if (name === 'ewayBillNo') {
+        value = value.replace(/\D/g, '');
+      } else {
+        value = value.replace(/[^0-9.]/g, '');
+        if ((value.match(/\./g) || []).length > 1) {
+          value = value.slice(0, -1);
+        }
       }
     }
 
-    setFormData({ ...formData, [name]: value });
-    // Clear error for this field as the user types
+    setFormData(prev => ({ ...prev, [name]: value }));
+
     if (errors[name]) {
       const newErrors = { ...errors };
       delete newErrors[name];
@@ -60,58 +449,109 @@ export default function NewBookingPage() {
     }
   };
 
+  const handleItemChange = (index: number, field: string, value: string) => {
+    const newItems = [...items];
+
+    if (field === 'packages') {
+      value = value.replace(/\D/g, '');
+    } else if (['weight', 'rate', 'amount'].includes(field)) {
+      value = value.replace(/[^0-9.]/g, '');
+      if ((value.match(/\./g) || []).length > 1) {
+        value = value.slice(0, -1);
+      }
+    }
+
+    newItems[index] = { ...newItems[index], [field]: value };
+
+    // Automatically calculate amount:
+    // If NW basis is 'W' / 'w', calculate based on Weight. Otherwise calculate based on Packages.
+    if (['packages', 'weight', 'rate', 'nw'].includes(field)) {
+      const pkgs = parseInt(newItems[index].packages) || 0;
+      const wt = parseFloat(newItems[index].weight) || 0;
+      const rt = parseFloat(newItems[index].rate) || 0;
+      const basis = (newItems[index].nw || 'N').toUpperCase();
+
+      if (basis === 'W') {
+        newItems[index].amount = (wt * rt).toFixed(2);
+      } else {
+        newItems[index].amount = (pkgs * rt).toFixed(2);
+      }
+    }
+
+    setItems(newItems);
+
+    // Recalculate freight total
+    const totalFreight = newItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    setFormData(prev => ({ ...prev, freightAmount: totalFreight.toFixed(2) }));
+
+    const errKey = `item_${index}_${field}`;
+    if (errors[errKey]) {
+      const newErrors = { ...errors };
+      delete newErrors[errKey];
+      setErrors(newErrors);
+    }
+  };
+
+  const addItem = () => {
+    setItems([...items, { packages: '', packaging: '', description: '', weight: '', nw: 'N', rate: '', amount: '' }]);
+  };
+
+  const deleteItem = (index: number) => {
+    if (items.length === 1) return;
+    const newItems = items.filter((_, idx) => idx !== index);
+    setItems(newItems);
+
+    const totalFreight = newItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    setFormData(prev => ({ ...prev, freightAmount: totalFreight.toFixed(2) }));
+  };
+
   const calculateTotal = () => {
     const freight = parseFloat(formData.freightAmount) || 0;
-    const hamali = parseFloat(formData.hamali) || 0;
-    const surCharge = parseFloat(formData.surCharge) || 0;
+    const pf = parseFloat(formData.pf) || 0;
+    const labour = parseFloat(formData.labour) || 0;
+    const ddCharge = parseFloat(formData.ddCharge) || 0;
+    const biltyCharge = parseFloat(formData.biltyCharge) || 0;
     const gstRate = parseFloat(formData.gstRate) || 0;
-    
-    const subTotal = freight + hamali + surCharge;
+
+    const subTotal = freight + pf + labour + ddCharge + biltyCharge;
     const gstAmount = (subTotal * gstRate) / 100;
-    return { subTotal, gstAmount, total: subTotal + gstAmount };
+    const total = subTotal + gstAmount;
+
+    return { subTotal, gstAmount, total };
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    
-    const requiredFields = {
-      consignorName: 'Consignor Name', 
-      consignorAddress: 'Consignor Address', 
-      consigneeName: 'Consignee Name', 
-      consigneeAddress: 'Consignee Address', 
-      pickupLocation: 'Pickup Location', 
-      deliveryLocation: 'Delivery Location', 
-      itemName: 'Item Name', 
-      packagingType: 'Packaging Type', 
-      quantity: 'Quantity', 
-      weight: 'Actual Weight', 
-      chargedWeight: 'Charged Weight', 
-      freightAmount: 'Freight Amount', 
-      paymentCondition: 'Payment Condition'
-    };
-    
-    Object.entries(requiredFields).forEach(([field, label]) => {
-      if (!formData[field as keyof typeof formData]) newErrors[field] = `Please enter ${label}`;
-    });
+
+    if (!formData.bookingBranch) newErrors.bookingBranch = "Please enter Booking Branch";
+    if (!formData.destinationBranch) newErrors.destinationBranch = "Please select Destination Branch";
+    if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
+    if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
+    if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
+
+    if (isManual) {
+      if (!formData.grNo) newErrors.grNo = "Please enter GR No";
+    } else {
+      if (!formData.grNo && !grNo) newErrors.grNo = "Please enter GR No";
+    }
 
     const phoneRegex = /^[6-9]\d{9}$/;
-    if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit number";
-    else if (!formData.consignorPhone) newErrors.consignorPhone = "Please enter Phone Number";
-    
-    if (formData.consigneePhone && !phoneRegex.test(formData.consigneePhone)) newErrors.consigneePhone = "Invalid 10-digit number";
-    else if (!formData.consigneePhone) newErrors.consigneePhone = "Please enter Phone Number";
+    if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit phone number";
+    if (formData.consigneePhone && !phoneRegex.test(formData.consigneePhone)) newErrors.consigneePhone = "Invalid 10-digit phone number";
 
     const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     if (formData.consignorGst && !gstRegex.test(formData.consignorGst)) newErrors.consignorGst = "Invalid GST format";
     if (formData.consigneeGst && !gstRegex.test(formData.consigneeGst)) newErrors.consigneeGst = "Invalid GST format";
 
-    if (formData.quantity && Number(formData.quantity) <= 0) newErrors.quantity = "Must be > 0";
-    if (formData.weight && Number(formData.weight) <= 0) newErrors.weight = "Must be > 0";
-    if (formData.chargedWeight && Number(formData.chargedWeight) <= 0) newErrors.chargedWeight = "Must be > 0";
-    if (formData.freightAmount && Number(formData.freightAmount) <= 0) newErrors.freightAmount = "Must be > 0";
-    if (formData.hamali && Number(formData.hamali) < 0) newErrors.hamali = "Cannot be negative";
-    if (formData.surCharge && Number(formData.surCharge) < 0) newErrors.surCharge = "Cannot be negative";
-    
+    const ewayRegex = /^\d{12}$/;
+    if (formData.ewayBillNo && !ewayRegex.test(formData.ewayBillNo)) newErrors.ewayBillNo = "E-Way Bill must be exactly 12 digits";
+
+    // Validate items
+    items.forEach((item, index) => {
+      if (!item.packages) newErrors[`item_${index}_packages`] = "Please enter Pkgs";
+      if (!item.description) newErrors[`item_${index}_description`] = "Please enter Description";
+    });
+
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       toast.error('Please fix validation errors');
@@ -123,33 +563,60 @@ export default function NewBookingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
-    
     const { gstAmount, total } = calculateTotal();
 
     const payload = {
-      consignor: { name: formData.consignorName, phone: formData.consignorPhone, address: formData.consignorAddress, gstNumber: formData.consignorGst },
-      consignee: { name: formData.consigneeName, phone: formData.consigneePhone, address: formData.consigneeAddress, gstNumber: formData.consigneeGst },
-      pickupLocation: formData.pickupLocation,
-      deliveryLocation: formData.deliveryLocation,
-      vehicle: formData.vehicle || undefined,
-      driver: formData.driver || undefined,
-      material: { 
-        itemName: formData.itemName, packagingType: formData.packagingType, 
-        quantity: parseInt(formData.quantity) || 1, 
-        weight: parseFloat(formData.weight) || 0, 
-        chargedWeight: parseFloat(formData.chargedWeight) || 0 
+      bookingType: isManual ? 'manual' : 'auto',
+      branch: formData.branch,
+      lrNumber: isManual ? formData.grNo : (formData.grNo || grNo),
+      bookingDate: new Date(formData.bookingDate),
+      bookingBranch: formData.bookingBranch,
+      destinationBranch: formData.destinationBranch,
+      rateType: formData.rateType,
+      paymentCondition: formData.rateType,
+
+      consignor: {
+        name: formData.consignorName,
+        phone: formData.consignorPhone || '0000000000',
+        address: formData.bookingBranch,
+        gstNumber: formData.consignorGst
       },
+      consignee: {
+        name: formData.consigneeName,
+        phone: formData.consigneePhone || '0000000000',
+        address: formData.destinationBranch,
+        gstNumber: formData.consigneeGst
+      },
+
+      items: items.map(item => ({
+        packages: parseInt(item.packages) || 1,
+        packaging: item.packaging || 'Bora',
+        description: item.description || 'Goods',
+        weight: parseFloat(item.weight) || 0,
+        nw: item.nw || 'N',
+        rate: parseFloat(item.rate) || 0,
+        amount: parseFloat(item.amount) || 0
+      })),
+
+      value: parseFloat(formData.value) || 0,
+      deliveryType: formData.deliveryType,
+      pvtMarka: formData.pvtMarka,
+      invoiceNo: formData.invoiceNo,
+      ewayBillNo: formData.ewayBillNo,
+
       charges: {
         freightAmount: parseFloat(formData.freightAmount) || 0,
-        hamali: parseFloat(formData.hamali) || 0,
-        surCharge: parseFloat(formData.surCharge) || 0,
+        hamali: parseFloat(formData.labour) || 0,
+        surCharge: 0,
+        pf: parseFloat(formData.pf) || 0,
+        ddCharge: parseFloat(formData.ddCharge) || 0,
+        biltyCharge: parseFloat(formData.biltyCharge) || 0,
         gstRate: parseFloat(formData.gstRate) || 0,
         gstAmount: gstAmount,
         totalAmount: total,
-      },
-      paymentCondition: formData.paymentCondition,
+      }
     };
 
     try {
@@ -161,11 +628,18 @@ export default function NewBookingPage() {
 
       if (response.ok) {
         toast.success('LR Generated Successfully!');
-        router.push('/admin/bookings');
+        const createdBooking = await response.json();
+        const bookingId = createdBooking._id;
+
         router.refresh();
+        if (submitAction === 'print') {
+          router.push(`/admin/bookings/${bookingId}?print=true`);
+        } else {
+          router.push('/admin/bookings');
+        }
       } else {
         const errorData = await response.json();
-        toast.error(`Failed to create LR: ${errorData.error}`);
+        toast.error(`Failed to create LR: ${errorData.error || errorData.details}`);
       }
     } catch (error) {
       toast.error('An error occurred while generating LR.');
@@ -176,250 +650,623 @@ export default function NewBookingPage() {
 
   const totals = calculateTotal();
 
-  const ErrorText = ({ field }: { field: string }) => errors[field] ? <p className="text-red-500 text-xs mt-1 font-medium">{errors[field]}</p> : null;
+  const renderError = (field: string) => {
+    if (errors[field]) {
+      return <p className="text-red-500 text-xs mt-1 font-semibold">{errors[field]}</p>;
+    }
+    return null;
+  };
+
+  const renderCellError = (field: string) => {
+    if (errors[field]) {
+      return <p className="text-red-500 text-xs font-semibold absolute left-0 bottom-0 leading-none">{errors[field]}</p>;
+    }
+    return null;
+  };
+
 
   return (
-    <div className="w-full pb-10">
-      <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="w-full pb-8">
+      <div className="mb-4 flex justify-between items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-brand-text-primary">Create New LR (Bilty)</h1>
-          <p className="text-brand-text-secondary mt-1">Fill all the details to generate a new Lorry Receipt.</p>
+          <h1 className="text-lg md:text-xl font-bold text-gray-800">
+            {isManual ? 'Add Manual Booking' : 'Add New Booking'}
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {isManual ? 'Create handwritten Lorry Receipt (Bilty)' : 'Generate auto Lorry Receipt (Bilty)'}
+          </p>
         </div>
-        <Button variant="outline" onClick={() => router.back()} className="h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50 font-medium">
-          Cancel
+        <Button
+          type="button"
+          onClick={() => router.back()}
+          className="h-9 px-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5 transition-colors"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" /> Back
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-6">
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Consignor Details */}
-          <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
-              <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary text-sm">1</span>
-                Consignor (Sender) Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 p-6">
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Company / Name <span className="text-red-500">*</span></Label>
-                <Input name="consignorName" placeholder="e.g. ABC Traders Pvt Ltd" value={formData.consignorName} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consignorName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="consignorName" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">Phone Number <span className="text-red-500">*</span></Label>
-                  <Input name="consignorPhone" placeholder="Enter 10-digit mobile number" value={formData.consignorPhone} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consignorPhone ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                  <ErrorText field="consignorPhone" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">GST Number <span className="text-gray-400 font-normal">(Optional)</span></Label>
-                  <Input name="consignorGst" placeholder="e.g. 24XXXXX1234X1ZX" value={formData.consignorGst} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm uppercase ${errors.consignorGst ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                  <ErrorText field="consignorGst" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Address / City <span className="text-red-500">*</span></Label>
-                <Input name="consignorAddress" placeholder="e.g. Ring Road, Surat" value={formData.consignorAddress} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consignorAddress ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="consignorAddress" />
-              </div>
-            </CardContent>
-          </Card>
+      <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-          {/* Consignee Details */}
-          <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
-              <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary text-sm">2</span>
-                Consignee (Receiver) Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5 p-6">
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Company / Name <span className="text-red-500">*</span></Label>
-                <Input name="consigneeName" placeholder="e.g. XYZ Enterprises" value={formData.consigneeName} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consigneeName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="consigneeName" />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">Phone Number <span className="text-red-500">*</span></Label>
-                  <Input name="consigneePhone" placeholder="Enter 10-digit mobile number" value={formData.consigneePhone} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consigneePhone ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                  <ErrorText field="consigneePhone" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-gray-600 font-medium">GST Number <span className="text-gray-400 font-normal">(Optional)</span></Label>
-                  <Input name="consigneeGst" placeholder="e.g. 27XXXXX1234X1ZX" value={formData.consigneeGst} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm uppercase ${errors.consigneeGst ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                  <ErrorText field="consigneeGst" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Address / City <span className="text-red-500">*</span></Label>
-                <Input name="consigneeAddress" placeholder="e.g. Andheri East, Mumbai" value={formData.consigneeAddress} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.consigneeAddress ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="consigneeAddress" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Journey & Material */}
-        <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
-            <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary text-sm">3</span>
-              Journey & Parcel Details
+        {/* Section 1: Booking & Route Details */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-20 !overflow-visible">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              1. Booking & Route Details
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Pickup Location (From) <span className="text-red-500">*</span></Label>
-              <Input name="pickupLocation" placeholder="e.g. Surat, Gujarat" value={formData.pickupLocation} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.pickupLocation ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="pickupLocation" />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Delivery Location (To) <span className="text-red-500">*</span></Label>
-              <Input name="deliveryLocation" placeholder="e.g. Mumbai, Maharashtra" value={formData.deliveryLocation} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.deliveryLocation ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="deliveryLocation" />
+          <CardContent className="p-4 space-y-3">
+            {isManual ? (
+              /* Manual Mode Row 1 (6 columns) */
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
+                  <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                </div>
+                <div className="space-y-1 relative pb-4">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">GR No <span className="text-red-500">*</span></Label>
+                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter GR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
+                  {renderError('grNo')}
+                </div>
+                <div className="space-y-1 flex flex-col justify-start">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date</Label>
+                  <DatePicker
+                    value={formData.bookingDate}
+                    onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
+                    className="h-10 rounded-lg border-gray-200 text-sm"
+                  />
+                  {renderError('bookingDate')}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
+                  <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                </div>
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {/* Backdrop autocomplete suggestion */}
+                    {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
+                        <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      name="destinationBranchSearch"
+                      value={destinationBranchSearch}
+                      onChange={handleBranchSearchChange}
+                      onFocus={() => setShowBranchDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                      onKeyDown={handleBranchKeyDown}
+                      placeholder="Search or type Branch..."
+                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {renderError('destinationBranch')}
+
+                  {showBranchDropdown && branchSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {branchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.value}
+                          onMouseDown={() => {
+                            setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
+                            setDestinationBranchSearch(suggestion.label);
+                            setShowBranchDropdown(false);
+                            setBranchHighlightIndex(-1);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                              ? 'bg-brand-primary/10 text-brand-primary'
+                              : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          <span>{suggestion.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
+                  <ThemeSelect
+                    name="rateType"
+                    value={formData.rateType}
+                    onChange={handleChange as any}
+                    options={[
+                      { value: 'to_pay', label: 'To Pay' },
+                      { value: 'paid', label: 'Paid' },
+                      { value: 'tbb', label: 'T.B.B. (Account)' }
+                    ]}
+                    className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Auto Mode (Row 1 & Row 2) */
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
+                    <div className="flex gap-2">
+                      <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg font-semibold text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-emerald-500 focus-visible:ring-emerald-500'}`} />
+                      <Button
+                        type="button"
+                        onClick={handleFetchEwayBill}
+                        disabled={isFetchingEway}
+                        className="h-10 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                      >
+                        {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                      </Button>
+                    </div>
+                    {renderError('ewayBillNo')}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">GR No</Label>
+                    <Input name="grNo" value={formData.grNo || grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
+                    <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
+                    <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
+                  <div className="space-y-1 flex flex-col justify-start">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date</Label>
+                    <DatePicker
+                      value={formData.bookingDate}
+                      onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
+                      className="h-10 rounded-lg border-gray-200 text-sm"
+                    />
+                    {renderError('bookingDate')}
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
+                    <ThemeSelect
+                      name="rateType"
+                      value={formData.rateType}
+                      onChange={handleChange as any}
+                      options={[
+                        { value: 'to_pay', label: 'To Pay' },
+                        { value: 'paid', label: 'Paid' },
+                        { value: 'tbb', label: 'T.B.B. (Account)' }
+                      ]}
+                      className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1 relative">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      {/* Backdrop autocomplete suggestion */}
+                      {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                          <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
+                          <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
+                        </div>
+                      )}
+                      <Input
+                        name="destinationBranchSearch"
+                        value={destinationBranchSearch}
+                        onChange={handleBranchSearchChange}
+                        onFocus={() => setShowBranchDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                        onKeyDown={handleBranchKeyDown}
+                        placeholder="Search or type Branch..."
+                        className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`}
+                      />
+                    </div>
+                    {renderError('destinationBranch')}
+
+                    {showBranchDropdown && branchSuggestions.length > 0 && (
+                      <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                        {branchSuggestions.map((suggestion, index) => (
+                          <div
+                            key={suggestion.value}
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
+                              setDestinationBranchSearch(suggestion.label);
+                              setShowBranchDropdown(false);
+                              setBranchHighlightIndex(-1);
+                            }}
+                            className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                                ? 'bg-brand-primary/10 text-brand-primary'
+                                : 'hover:bg-gray-50 text-gray-800'
+                              }`}
+                          >
+                            <span>{suggestion.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Section 2: Consignor & Consignee Details */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              2. Consignor & Consignee Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            {/* Left side: Consignor */}
+            <div className="space-y-3.5 pr-0 md:pr-6">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Consignor (Sender)</h3>
+              <div className="space-y-3.5">
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignor Name <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {/* Backdrop autocomplete suggestion */}
+                    {formData.consignorName && consignorSuggestions.length > 0 && consignorSuggestions[0].name.toLowerCase().startsWith(formData.consignorName.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{consignorSuggestions[0].name.slice(0, formData.consignorName.length)}</span>
+                        <span>{consignorSuggestions[0].name.slice(formData.consignorName.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      name="consignorName"
+                      value={formData.consignorName}
+                      onChange={handleChange}
+                      onFocus={() => setShowConsignorDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowConsignorDropdown(false), 250)}
+                      onKeyDown={handleConsignorKeyDown}
+                      placeholder="e.g. ABC Corporation"
+                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.consignorName ? 'border-red-500' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {renderError('consignorName')}
+
+                  {showConsignorDropdown && consignorSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {consignorSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.name}
+                          onMouseDown={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              consignorName: suggestion.name,
+                              consignorGst: suggestion.gst,
+                              consignorPhone: suggestion.phone
+                            }));
+                            setShowConsignorDropdown(false);
+                            setConsignorHighlightIndex(-1);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === consignorHighlightIndex
+                              ? 'bg-brand-primary/10 text-brand-primary'
+                              : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          <span className="font-bold">{suggestion.name}</span>
+                          <div className="flex gap-2 text-gray-400 font-semibold mt-0.5 text-[10px]">
+                            {suggestion.gst && <span>GST: {suggestion.gst}</span>}
+                            {suggestion.phone && <span>Phone: {suggestion.phone}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignor GST</Label>
+                  <Input name="consignorGst" value={formData.consignorGst} onChange={handleChange} placeholder="e.g. 24ABCDE1234F1Z1" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                  {renderError('consignorGst')}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Contact Phone</Label>
+                  <Input name="consignorPhone" value={formData.consignorPhone} onChange={handleChange} placeholder="e.g. 9876543210" className="h-10 text-sm rounded-lg border-gray-200" />
+                  {renderError('consignorPhone')}
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Assign Vehicle (Optional)</Label>
-              <ThemeSelect 
-                name="vehicle" 
-                value={formData.vehicle} 
-                onChange={handleChange as any} 
-                options={vehicles.map(v => ({ value: v._id, label: `${v.vehicleNumber} - ${v.type}` }))} 
-                placeholder="-- No Vehicle Assigned --"
-                className="flex w-full h-12 rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-primary focus-visible:ring-brand-primary shadow-sm transition-all"
-              />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Assign Driver (Optional)</Label>
-              <ThemeSelect 
-                name="driver" 
-                value={formData.driver} 
-                onChange={handleChange as any} 
-                options={drivers.map(d => ({ value: d._id, label: `${d.name} (${d.phone})` }))} 
-                placeholder="-- No Driver Assigned --"
-                className="flex w-full h-12 rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-primary focus-visible:ring-brand-primary shadow-sm transition-all"
-              />
-            </div>
-            
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Item Name (Description) <span className="text-red-500">*</span></Label>
-              <Input name="itemName" placeholder="e.g. Hardware Items, Textiles" value={formData.itemName} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.itemName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="itemName" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-gray-600 font-medium">Packaging Type <span className="text-red-500">*</span></Label>
-              <ThemeSelect 
-                name="packagingType" 
-                value={formData.packagingType} 
-                onChange={handleChange as any} 
-                options={[
-                  { value: 'Box', label: 'Box / Carton' },
-                  { value: 'Bag', label: 'Bag / Sack' },
-                  { value: 'Bundle', label: 'Bundle' },
-                  { value: 'Drum', label: 'Drum / Barrel' },
-                  { value: 'Loose', label: 'Loose' }
-                ]}
-                className={`flex w-full h-12 rounded-xl bg-white border px-3 text-sm focus-visible:outline-none focus-visible:ring-1 transition-all shadow-sm ${errors.packagingType ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`}
-              />
-              <ErrorText field="packagingType" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-gray-600 font-medium">Total Quantity (Pieces) <span className="text-red-500">*</span></Label>
-              <Input name="quantity" type="number" placeholder="e.g. 50" value={formData.quantity} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.quantity ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="quantity" />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Actual Weight (KG) <span className="text-red-500">*</span></Label>
-              <Input name="weight" type="number" placeholder="e.g. 500" value={formData.weight} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.weight ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="weight" />
-            </div>
-            <div className="space-y-2 col-span-1 md:col-span-2">
-              <Label className="text-gray-600 font-medium">Charged Weight (KG) <span className="text-red-500">*</span></Label>
-              <Input name="chargedWeight" type="number" placeholder="e.g. 550" value={formData.chargedWeight} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.chargedWeight ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-              <ErrorText field="chargedWeight" />
+            {/* Right side: Consignee */}
+            <div className="space-y-3.5 pt-4 md:pt-0 pl-0 md:pl-6">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Consignee (Receiver)</h3>
+              <div className="space-y-3.5">
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignee Name <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {/* Backdrop autocomplete suggestion */}
+                    {formData.consigneeName && consigneeSuggestions.length > 0 && consigneeSuggestions[0].name.toLowerCase().startsWith(formData.consigneeName.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{consigneeSuggestions[0].name.slice(0, formData.consigneeName.length)}</span>
+                        <span>{consigneeSuggestions[0].name.slice(formData.consigneeName.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      name="consigneeName"
+                      value={formData.consigneeName}
+                      onChange={handleChange}
+                      onFocus={() => setShowConsigneeDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowConsigneeDropdown(false), 250)}
+                      onKeyDown={handleConsigneeKeyDown}
+                      placeholder="e.g. XYZ Enterprises"
+                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.consigneeName ? 'border-red-500' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {renderError('consigneeName')}
+
+                  {showConsigneeDropdown && consigneeSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {consigneeSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.name}
+                          onMouseDown={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              consigneeName: suggestion.name,
+                              consigneeGst: suggestion.gst,
+                              consigneePhone: suggestion.phone
+                            }));
+                            setShowConsigneeDropdown(false);
+                            setConsigneeHighlightIndex(-1);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === consigneeHighlightIndex
+                              ? 'bg-brand-primary/10 text-brand-primary'
+                              : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          <span className="font-bold">{suggestion.name}</span>
+                          <div className="flex gap-2 text-gray-400 font-semibold mt-0.5 text-[10px]">
+                            {suggestion.gst && <span>GST: {suggestion.gst}</span>}
+                            {suggestion.phone && <span>Phone: {suggestion.phone}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignee GST</Label>
+                  <Input name="consigneeGst" value={formData.consigneeGst} onChange={handleChange} placeholder="e.g. 24ABCDE1234F1Z1" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                  {renderError('consigneeGst')}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Contact Phone</Label>
+                  <Input name="consigneePhone" value={formData.consigneePhone} onChange={handleChange} placeholder="e.g. 9876543210" className="h-10 text-sm rounded-lg border-gray-200" />
+                  {renderError('consigneePhone')}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Financials */}
-        <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
-            <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary/10 text-brand-primary text-sm">4</span>
-              Financials & Billing
+        {/* Section 3: Material & Parcel Details */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              3. Material & Packages Details
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Freight Amount (₹) <span className="text-red-500">*</span></Label>
-                <Input name="freightAmount" placeholder="e.g. 5000" type="number" value={formData.freightAmount} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.freightAmount ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="freightAmount" />
+          <CardContent className="p-4 space-y-3">
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider">
+                <div className="col-span-1 text-center">Pkgs</div>
+                <div className="col-span-2">Packaging</div>
+                <div className="col-span-3">Description</div>
+                <div className="col-span-2">Weight</div>
+                <div className="col-span-1 text-center">N / W</div>
+                <div className="col-span-1">Rate</div>
+                <div className="col-span-2">Amount</div>
               </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Hamali / Labour (₹)</Label>
-                <Input name="hamali" placeholder="e.g. 300" type="number" value={formData.hamali} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.hamali ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="hamali" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Other Surcharge (₹)</Label>
-                <Input name="surCharge" placeholder="e.g. 100" type="number" value={formData.surCharge} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.surCharge ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary'}`} />
-                <ErrorText field="surCharge" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-600 font-medium">Payment Condition <span className="text-red-500">*</span></Label>
-                <ThemeSelect 
-                  name="paymentCondition" 
-                  value={formData.paymentCondition} 
-                  onChange={handleChange as any} 
-                  options={[
-                    { value: 'to_pay', label: 'To Pay' },
-                    { value: 'paid', label: 'Paid' },
-                    { value: 'tbb', label: 'T.B.B. (Account)' }
-                  ]}
-                  className={`flex w-full h-12 rounded-xl bg-brand-primary/5 text-brand-primary font-semibold border px-3 focus-visible:outline-none focus-visible:ring-1 shadow-sm transition-all ${errors.paymentCondition ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-brand-primary/20 focus-visible:ring-brand-primary'}`}
-                />
-                <ErrorText field="paymentCondition" />
+              <div className="p-2.5 space-y-2 bg-white">
+                {items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
+                    <div className="col-span-1 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs</Label>
+                      <Input
+                        value={item.packages}
+                        onChange={(e) => handleItemChange(index, 'packages', e.target.value)}
+                        placeholder="Qty"
+                        className={`h-10 text-sm rounded-lg text-center ${errors[`item_${index}_packages`] ? 'border-red-500' : 'border-gray-200'}`}
+                      />
+                      {renderCellError(`item_${index}_packages`)}
+                    </div>
+                    <div className="col-span-2 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Packaging</Label>
+                      <Input
+                        value={item.packaging}
+                        onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
+                        placeholder="Bora / Bag / Roll"
+                        className="h-10 text-sm rounded-lg border-gray-200"
+                      />
+                    </div>
+                    <div className="col-span-3 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description</Label>
+                      <Input
+                        value={item.description}
+                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        placeholder="Hardware / Cycle / Kirana"
+                        className={`h-10 text-sm rounded-lg ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
+                      />
+                      {renderCellError(`item_${index}_description`)}
+                    </div>
+                    <div className="col-span-2 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Weight</Label>
+                      <Input
+                        value={item.weight}
+                        onChange={(e) => handleItemChange(index, 'weight', e.target.value)}
+                        placeholder="0.00"
+                        className="h-10 text-sm rounded-lg border-gray-200"
+                      />
+                    </div>
+                    <div className="col-span-1 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">N / W</Label>
+                      <Input
+                        value={item.nw}
+                        onChange={(e) => handleItemChange(index, 'nw', e.target.value)}
+                        placeholder="N"
+                        className="h-10 text-sm rounded-lg border-gray-200 text-center"
+                      />
+                    </div>
+                    <div className="col-span-1 relative pb-4">
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Rate</Label>
+                      <Input
+                        value={item.rate}
+                        onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
+                        placeholder="Rate"
+                        className="h-10 text-sm rounded-lg border-gray-200"
+                      />
+                    </div>
+                    <div className="col-span-2 relative pb-4 flex items-start gap-2">
+                      <div className="w-full">
+                        <Label className="text-xs font-semibold text-gray-500 lg:hidden">Amount</Label>
+                        <Input
+                          value={item.amount}
+                          onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
+                          placeholder="Amount"
+                          className="h-10 text-sm rounded-lg border-gray-200"
+                        />
+                      </div>
+                      {items.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => deleteItem(index)}
+                          className="h-10 w-10 rounded-lg text-red-500 hover:text-red-700 shrink-0 mt-0 lg:mt-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 flex flex-col lg:flex-row justify-between items-center gap-8">
-              <div className="w-full lg:w-1/3">
-                <Label className="text-gray-600 font-medium mb-3 block">GST Calculation</Label>
-                <div className="flex gap-4 items-center">
-                  <div className="w-[180px]">
-                    <ThemeSelect 
-                      name="gstRate" 
-                      value={formData.gstRate} 
-                      onChange={handleChange as any} 
-                      options={[
-                        { value: '0', label: '0% (No GST)' },
-                        { value: '5', label: '5% GST' },
-                        { value: '12', label: '12% GST' },
-                        { value: '18', label: '18% GST' }
-                      ]}
-                      className="flex h-12 w-full rounded-xl bg-white border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary shadow-sm transition-all"
-                    />
+            <div className="flex justify-end pr-1">
+              <Button
+                type="button"
+                onClick={addItem}
+                className="h-9 px-3.5 rounded-lg bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary text-xs font-semibold flex items-center gap-1.5 border border-brand-primary/20 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add New Row
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section 4: Additional Details */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              4. Additional Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${isManual ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3.5`}>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Value</Label>
+                <Input name="value" value={formData.value} onChange={handleChange} placeholder="Goods Value" className="h-10 text-sm rounded-lg border-gray-200" />
+                {renderError('value')}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Del. Type</Label>
+                <ThemeSelect
+                  name="deliveryType"
+                  value={formData.deliveryType}
+                  onChange={handleChange as any}
+                  options={[
+                    { value: 'Godown Delivery', label: 'Godown Delivery' },
+                    { value: 'Door Delivery', label: 'Door Delivery' }
+                  ]}
+                  className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Pvt. Marka</Label>
+                <Input name="pvtMarka" value={formData.pvtMarka} onChange={handleChange} placeholder="e.g. 50" className="h-10 text-sm rounded-lg border-gray-200" />
+                {renderError('pvtMarka')}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Invoice No</Label>
+                <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-10 text-sm rounded-lg border-gray-200" />
+                {renderError('invoiceNo')}
+              </div>
+              {isManual && (
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
+                  <div className="flex gap-2">
+                    <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`} />
+                    <Button
+                      type="button"
+                      onClick={handleFetchEwayBill}
+                      disabled={isFetchingEway}
+                      className="h-10 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                    >
+                      {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                    </Button>
                   </div>
-                  <Input type="number" name="gstRate" value={formData.gstRate} onChange={handleChange} placeholder="Custom %" className="h-12 bg-white rounded-xl border-gray-200 focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary shadow-sm transition-all w-full" />
+                  {renderError('ewayBillNo')}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section 5: Financial Charges */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              5. Charges & Financials
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Freight</Label>
+                <Input name="freightAmount" value={formData.freightAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">PF</Label>
+                <Input name="pf" value={formData.pf} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Labour</Label>
+                <Input name="labour" value={formData.labour} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">
+                  {isManual ? 'Tempo Chg.' : 'DD Chg.'}
+                </Label>
+                <Input name="ddCharge" value={formData.ddCharge} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Bilty Chg.</Label>
+                <Input name="biltyCharge" value={formData.biltyCharge} onChange={handleChange} placeholder="10.00" className="h-10 text-sm rounded-lg border-gray-200" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Rate (%)</Label>
+                <div className="flex gap-2">
+                  <ThemeSelect
+                    name="gstRate"
+                    value={formData.gstRate}
+                    onChange={handleChange as any}
+                    options={[
+                      { value: '0', label: '0% GST' },
+                      { value: '5', label: '5% GST' },
+                      { value: '12', label: '12% GST' },
+                      { value: '18', label: '18% GST' }
+                    ]}
+                    className="flex h-10 w-28 rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                  />
+                  <Input name="gstRate" value={formData.gstRate} onChange={handleChange} placeholder="Custom %" className="h-10 text-sm rounded-lg border-gray-200 w-full" />
                 </div>
               </div>
-              
-              <div className="text-right flex flex-col gap-2 w-full lg:w-auto bg-white p-5 rounded-xl border border-gray-100 shadow-sm min-w-[300px]">
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>Sub Total:</span>
-                  <span className="font-semibold text-gray-800">₹ {totals.subTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>GST ({formData.gstRate}%):</span>
-                  <span className="font-semibold text-gray-800">+ ₹ {totals.gstAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xl font-bold text-brand-primary mt-3 pt-3 border-t border-gray-100">
-                  <span>Grand Total:</span>
-                  <span>₹ {totals.total.toFixed(2)}</span>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
+                <div className="h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-3 font-bold text-gray-700 text-sm">
+                  ₹ {totals.total.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -427,15 +1274,46 @@ export default function NewBookingPage() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
-          <Button variant="outline" type="button" onClick={() => router.back()} className="h-14 px-8 rounded-xl border-gray-200 hover:bg-gray-50 text-base font-medium">
+        <div className="flex justify-end gap-2.5 pt-2">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => router.back()}
+            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading} className="h-14 px-10 rounded-xl bg-brand-primary hover:bg-brand-primary-dark text-white shadow-lg shadow-brand-primary/20 text-base font-bold transition-all">
-            {isLoading ? 'Generating LR...' : 'Generate LR (Bilty)'}
+          <Button
+            type="submit"
+            onClick={() => setSubmitAction('save')}
+            disabled={isLoading}
+            className="h-10 px-5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold transition-all shadow-sm"
+          >
+            {isLoading && submitAction === 'save' ? 'Submitting...' : 'Submit & Exit'}
+          </Button>
+          <Button
+            type="submit"
+            onClick={() => setSubmitAction('print')}
+            disabled={isLoading}
+            className="h-10 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
+          >
+            {isLoading && submitAction === 'print' ? 'Printing...' : (
+              <>
+                <Printer className="w-4 h-4" /> Save & Print
+              </>
+            )}
           </Button>
         </div>
+
       </form>
     </div>
+  );
+}
+
+export default function NewBookingPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading new booking form...</div>}>
+      <NewBookingForm />
+    </Suspense>
   );
 }

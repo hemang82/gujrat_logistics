@@ -6,6 +6,7 @@ import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import { resolveBranchId } from '@/lib/resolveBranch';
 
 export async function PATCH(
   request: Request,
@@ -100,7 +101,56 @@ export async function PUT(
     // Do not allow status to be updated via PUT, use PATCH for that.
     // Ensure we don't accidentally wipe it out if it's not in the payload
     if (payload.status) delete payload.status;
-    if (payload.lrNumber) delete payload.lrNumber; // Protect LR Number from changing
+    if (payload.vehicle === "") delete payload.vehicle;
+    if (payload.driver === "") delete payload.driver;
+    if (payload.branch === "") delete payload.branch;
+    if (payload.bookingBranch === "") delete payload.bookingBranch;
+    if (payload.destinationBranch === "") delete payload.destinationBranch;
+
+    if (payload.branch) payload.branch = await resolveBranchId(payload.branch);
+    if (payload.bookingBranch) payload.bookingBranch = await resolveBranchId(payload.bookingBranch);
+    if (payload.destinationBranch) payload.destinationBranch = await resolveBranchId(payload.destinationBranch);
+
+    const existingBooking = await Booking.findById(id);
+    if (!existingBooking) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    if (payload.lrNumber && payload.lrNumber !== existingBooking.lrNumber) {
+      if (existingBooking.bookingType === 'manual' || payload.bookingType === 'manual') {
+        // Validate manual GR No uniqueness
+        const duplicate = await Booking.findOne({ lrNumber: payload.lrNumber, _id: { $ne: id } });
+        if (duplicate) {
+          return NextResponse.json({ error: `GR Number "${payload.lrNumber}" already exists` }, { status: 400 });
+        }
+      } else {
+        // Protect auto-generated LR Number from being changed
+        delete payload.lrNumber;
+      }
+    }
+
+    // Map aggregated items to material field for backwards compatibility
+    if (payload.items && payload.items.length > 0) {
+      const firstItem = payload.items[0];
+      const totalQuantity = payload.items.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0);
+      const totalWeight = payload.items.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0);
+      const allItemDescriptions = payload.items.map((item: any) => item.description).filter(Boolean).join(', ');
+      
+      payload.material = {
+        itemName: allItemDescriptions || firstItem.description || 'Goods',
+        quantity: totalQuantity || 1,
+        weight: totalWeight || 0,
+        chargedWeight: totalWeight || 0,
+        packagingType: firstItem.packaging || 'Pkg'
+      };
+    }
+
+    if (!payload.pickupLocation && payload.bookingBranch) {
+      payload.pickupLocation = payload.bookingBranch;
+    }
+    if (!payload.deliveryLocation && payload.destinationBranch) {
+      payload.deliveryLocation = payload.destinationBranch;
+    }
 
     const oldBooking = await Booking.findById(id);
     if (!oldBooking) {

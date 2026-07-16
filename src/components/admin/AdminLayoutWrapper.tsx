@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopbar } from './AdminTopbar';
+import { useUserStore } from '@/store/useUserStore';
 
 export function AdminLayoutWrapper({ 
   children, 
@@ -12,6 +13,43 @@ export function AdminLayoutWrapper({
   user: any;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const setUser = useUserStore((state) => state.setUser);
+
+  useEffect(() => {
+    // 1. Set initial values from NextAuth session
+    if (user) {
+      setUser({
+        id: user.id || '',
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role || '',
+        branch: user.branch || 'ASL',
+        bookingBranch: user.bookingBranch || 'ASLALI',
+      });
+    } else {
+      setUser(null);
+    }
+
+    // 2. Fetch live data from /api/admin/profile to bypass caching
+    fetch('/api/admin/profile')
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Failed to fetch live profile');
+      })
+      .then((liveUser) => {
+        if (liveUser) {
+          setUser({
+            id: liveUser._id || liveUser.id || user?.id || '',
+            name: liveUser.name || user?.name || '',
+            email: liveUser.email || user?.email || '',
+            role: liveUser.role || user?.role || '',
+            branch: liveUser.branch || 'ASL',
+            bookingBranch: liveUser.bookingBranch || 'ASLALI',
+          });
+        }
+      })
+      .catch((err) => console.error('Error syncing live profile:', err));
+  }, [user, setUser]);
 
   return (
     <div className="min-h-screen bg-brand-bg print:bg-white relative">

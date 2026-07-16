@@ -134,11 +134,11 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                             <p className="font-bold tracking-wide text-brand-secondary">{d.licenseNumber || 'N/A'}</p>
                             <div className="flex items-center gap-2 mt-1">
                               {isLicenseExpiring ? (
-                                <div className="flex items-center gap-1 text-red-600 text-[10px] font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100 uppercase">
+                                <div className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100 uppercase">
                                   <AlertTriangle className="w-3 h-3" /> Expiring Soon
                                 </div>
                               ) : (
-                                d.licenseExpiry && <p className="text-[10px] text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100 uppercase">Valid</p>
+                                d.licenseExpiry && <p className="text-xs text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100 uppercase">Valid</p>
                               )}
                             </div>
                           </td>
@@ -184,7 +184,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                           {getStatusBadge(d.status)}
                         </div>
                         {isLicenseExpiring && (
-                          <div className="flex items-center gap-1 text-red-600 text-[10px] font-bold bg-red-50 px-1.5 py-1 rounded border border-red-100 uppercase">
+                          <div className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-1.5 py-1 rounded border border-red-100 uppercase">
                             <AlertTriangle className="w-3 h-3" /> Alert
                           </div>
                         )}
@@ -210,21 +210,21 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50/50 rounded-lg p-2.5 border border-gray-50 mb-2">
                           <div>
-                            <p className="text-gray-400 text-[10px] uppercase font-bold mb-0.5">Vehicle</p>
+                            <p className="text-gray-400 text-xs uppercase font-bold mb-0.5">Vehicle</p>
                             {d.assignedVehicle ? (
-                              <div className="flex items-center gap-1 text-gray-800 font-bold text-[10px] uppercase tracking-wide">
+                              <div className="flex items-center gap-1 text-gray-800 font-bold text-xs uppercase tracking-wide">
                                 <CarFront className="w-3 h-3 text-gray-400" />
                                 <span className="truncate">{d.assignedVehicle.vehicleNumber}</span>
                               </div>
                             ) : (
-                              <p className="text-[10px] text-gray-400 font-medium">Unassigned</p>
+                              <p className="text-xs text-gray-400 font-medium">Unassigned</p>
                             )}
                           </div>
                           
                           <div>
-                            <p className="text-gray-400 text-[10px] uppercase font-bold mb-0.5">License</p>
+                            <p className="text-gray-400 text-xs uppercase font-bold mb-0.5">License</p>
                             <div className="space-y-0.5">
-                              <p className="font-bold text-brand-secondary tracking-wider text-[10px] flex items-center gap-1">
+                              <p className="font-bold text-brand-secondary tracking-wider text-xs flex items-center gap-1">
                                 <IdCard className="w-3 h-3" />
                                 {d.licenseNumber || 'N/A'}
                               </p>

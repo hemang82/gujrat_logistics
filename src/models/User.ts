@@ -6,6 +6,8 @@ export interface IUser extends Document {
   password?: string;
   role: 'admin' | 'manager' | 'accountant' | 'driver';
   phone?: string;
+  branch?: mongoose.Types.ObjectId | any;
+  bookingBranch?: mongoose.Types.ObjectId | any;
   createdAt: Date;
 }
 
@@ -20,6 +22,8 @@ const UserSchema = new Schema<IUser>(
       default: 'manager',
     },
     phone: { type: String },
+    branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    bookingBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
