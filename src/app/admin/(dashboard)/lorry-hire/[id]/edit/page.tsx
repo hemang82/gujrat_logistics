@@ -345,8 +345,11 @@ export default function LorryHireEditForm() {
   const handleScanChallan = () => {
     if (!scanChallanNo.trim()) return;
     
-    const searchVal = scanChallanNo.trim().toLowerCase();
-    const challan = challans.find(c => String(c.challanNumber).toLowerCase() === searchVal);
+    const searchVal = scanChallanNo.trim().toLowerCase().replace(/^ch-/i, '');
+    const challan = challans.find(c => {
+      const num = String(c.challanNumber).toLowerCase().replace(/^ch-/i, '');
+      return num === searchVal || String(c.challanNumber).toLowerCase() === scanChallanNo.trim().toLowerCase();
+    });
     
     if (!challan) {
       toast.error('Challan not found or already assigned');
