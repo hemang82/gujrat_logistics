@@ -1,6 +1,17 @@
 import mongoose from 'mongoose';
 import dns from 'dns';
 
+// Import all models so they are registered globally
+import '@/models/User';
+import '@/models/Branch';
+import '@/models/Client';
+import '@/models/Agent';
+import '@/models/Vehicle';
+import '@/models/Driver';
+import '@/models/Booking';
+import '@/models/Challan';
+import '@/models/LorryHire';
+
 // Force Node's DNS resolver to use Google DNS so that MongoDB Atlas SRV lookups resolve successfully
 // even if the user's local network/ISP DNS is blocking or failing SRV records.
 try {
