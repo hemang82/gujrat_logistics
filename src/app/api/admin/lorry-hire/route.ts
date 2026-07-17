@@ -90,6 +90,14 @@ export async function POST(request: Request) {
 
     await newDoc.save();
 
+    // Mark the selected challans as in_transit
+    if (body.challans && body.challans.length > 0) {
+      await Challan.updateMany(
+        { _id: { $in: body.challans } },
+        { $set: { status: 'in_transit' } }
+      );
+    }
+
     return NextResponse.json({ success: true, message: 'Lorry Hire created successfully', data: newDoc }, { status: 201 });
   } catch (error: any) {
     console.error('LorryHire POST Error:', error);
