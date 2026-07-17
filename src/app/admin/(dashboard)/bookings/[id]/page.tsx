@@ -44,7 +44,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
       }];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-10 print:p-0 print:m-0 print:max-w-none">
+    <div className="w-full mx-auto space-y-6 pb-10 print:p-0 print:m-0 print:max-w-none">
       
       {/* Top Actions - Hidden in Print */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden mb-6">
@@ -107,12 +107,12 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
           {/* New branch details meta bar */}
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 w-full text-left grid grid-cols-2 sm:grid-cols-6 gap-4 mt-6">
             <div>
-              <p className="text-xs text-gray-400 font-bold uppercase">Branch</p>
-              <p className="font-bold text-sm text-gray-700">{booking.branch?.code || booking.branch?.name || 'ASL'}</p>
+              <p className="text-xs text-gray-400 font-bold uppercase">Branch Code</p>
+              <p className="font-bold text-sm text-gray-700 uppercase">{booking.branch?.code || 'ASL'}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 font-bold uppercase">GR No</p>
-              <p className="font-extrabold text-base text-brand-primary">{booking.lrNumber}</p>
+              <p className="text-xs text-gray-400 font-bold uppercase">LR No</p>
+              <p className="font-extrabold text-base text-brand-primary">LR-{booking.lrNumber}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Booking Date</p>
@@ -120,11 +120,11 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Booking Branch</p>
-              <p className="font-bold text-sm text-gray-700">{booking.bookingBranch?.code || booking.bookingBranch?.name || 'ASLALI'}</p>
+              <p className="font-bold text-sm text-gray-700 uppercase">{booking.bookingBranch?.name || booking.bookingBranch?.code || 'ASLALI'}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Destination Branch</p>
-              <p className="font-bold text-sm text-gray-700">{booking.destinationBranch?.code || booking.destinationBranch?.name || 'N/A'}</p>
+              <p className="font-bold text-sm text-gray-700 uppercase">{booking.destinationBranch?.name || booking.destinationBranch?.code || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Rate Type</p>

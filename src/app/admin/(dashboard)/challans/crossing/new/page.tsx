@@ -306,7 +306,8 @@ export default function AddCrossingPage() {
       const data = await res.json();
       const bookingsList = Array.isArray(data) ? data : (data.bookings || []);
 
-      const booking = bookingsList.find((b: any) => b.lrNumber.toLowerCase() === scanGrNo.trim().toLowerCase());
+      const searchVal = scanGrNo.trim().replace(/^lr-/i, '').toLowerCase();
+      const booking = bookingsList.find((b: any) => String(b.lrNumber || '').toLowerCase() === searchVal);
 
       if (!booking) {
         toast.error(`LR Number: ${scanGrNo} not found in database.`);
@@ -613,7 +614,7 @@ export default function AddCrossingPage() {
                           setScanGrNo(val);
                           if (val.trim().length > 0) {
                             const filtered = allPendingBookings.filter((b: any) =>
-                              b.lrNumber?.toLowerCase().includes(val.trim().toLowerCase()) &&
+                              String(b.lrNumber || '').toLowerCase().includes(val.trim().toLowerCase()) &&
                               b.status === 'pending'
                             ).slice(0, 10);
                             setLrSuggestions(filtered);

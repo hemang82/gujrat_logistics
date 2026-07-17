@@ -19,6 +19,7 @@ export default function ChallansListPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +27,7 @@ export default function ChallansListPage() {
   const fetchChallans = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&page=${page}&limit=10&bookingCrossing=Booking`);
+      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&page=${page}&limit=${limit}&bookingCrossing=Booking`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setChallans(data.challans || []);
@@ -41,7 +42,7 @@ export default function ChallansListPage() {
 
   useEffect(() => {
     fetchChallans();
-  }, [search, status, page]);
+  }, [search, status, page, limit]);
 
   const handleDelete = async (id: string, challanNumber: string) => {
     if (!confirm(`Are you sure you want to delete Challan No: ${challanNumber}? This will reset all loaded LRs back to pending.`)) {
@@ -129,8 +130,8 @@ export default function ChallansListPage() {
                   challans.map((ch) => (
                     <tr key={ch._id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 font-extrabold text-brand-primary uppercase">
-                        #{ch.challanNumber}
-                        <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch}</span>
+                        {ch.branch?.code || 'GL'}-{ch.challanNumber}
+                        <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch?.name || ch.branch || 'N/A'}</span>
                       </td>
                       <td className="p-4 text-gray-600 font-medium">
                         {new Date(ch.challanDate).toLocaleDateString('en-IN')}
@@ -139,9 +140,8 @@ export default function ChallansListPage() {
                         {ch.truckNo?.vehicleNumber || ch.truckNo || 'N/A'}
                         <span className="block text-xs text-gray-500 font-medium mt-0.5">Driver: {ch.driverName?.name || ch.driverName || 'N/A'}</span>
                       </td>
-                      <td className="p-4 text-gray-700 font-bold">
-                        {ch.memoDestinationBranch || 'N/A'}
-                        <span className="block text-xs text-gray-400 font-normal mt-0.5">To Branch: {ch.lrToBranch || 'All'}</span>
+                      <td className="p-4 text-gray-700 font-bold uppercase">
+                        {ch.memoDestinationBranch?.name || ch.memoDestinationBranch || 'N/A'}
                       </td>
                       <td className="p-4">
                         <span className="inline-flex items-center justify-center bg-gray-100 text-gray-800 text-xs font-extrabold px-2.5 py-1 rounded-full">
@@ -191,11 +191,26 @@ export default function ChallansListPage() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="flex justify-between items-center p-4 border-t border-gray-100 bg-white">
-              <span className="text-xs text-gray-500 font-medium">
-                Showing page {page} of {totalPages} ({totalCount} total challans)
-              </span>
+          {totalPages > 1 || totalCount > 10 ? (
+            <div className="flex flex-col sm:flex-row justify-between items-center p-4 border-t border-gray-100 bg-white gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-500 font-medium">
+                  Showing page {page} of {totalPages} ({totalCount} total)
+                </span>
+                <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3">
+                  <span className="text-xs text-gray-500 font-medium">Rows:</span>
+                  <select 
+                    value={limit}
+                    onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                    className="h-8 rounded-md border-gray-200 text-xs px-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
               <div className="flex gap-1.5">
                 <Button 
                   onClick={() => setPage(p => Math.max(1, p - 1))} 
@@ -207,7 +222,7 @@ export default function ChallansListPage() {
                 </Button>
                 <Button 
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                  disabled={page === totalPages}
+                  disabled={page === totalPages || totalPages === 0}
                   variant="outline" 
                   className="h-9 px-3 rounded-lg border-gray-200"
                 >
@@ -215,7 +230,7 @@ export default function ChallansListPage() {
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
         </CardContent>
       </Card>
     </div>

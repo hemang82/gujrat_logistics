@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Challan from '@/models/Challan';
 import Booking from '@/models/Booking';
+import Vehicle from '@/models/Vehicle';
+import Driver from '@/models/Driver';
+import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
 // GET: Paginated list of challans with search
@@ -54,6 +57,9 @@ export async function GET(request: Request) {
       .populate('bookings', 'lrNumber consignor consignee charges')
       .populate('truckNo', 'vehicleNumber')
       .populate('driverName', 'name')
+      .populate('branch', 'name code')
+      .populate('memoDestinationBranch', 'name code')
+      .populate('lrToBranch', 'name code')
       .lean();
 
     return NextResponse.json({
@@ -82,7 +88,21 @@ export async function POST(request: Request) {
     if (data.truckNo === "") delete data.truckNo;
     if (data.driverName === "") delete data.driverName;
 
-    if (data.branch) data.branch = await resolveBranchId(data.branch);
+    let resolvedBranch = await resolveBranchId(data.branch);
+    if (!resolvedBranch) resolvedBranch = await resolveBranchId('ASL');
+    if (!resolvedBranch) {
+      await connectToDatabase();
+      const fallbackBranch = await Branch.findOne({ isDeleted: { $ne: true } });
+      if (fallbackBranch) {
+        resolvedBranch = fallbackBranch._id;
+      }
+    }
+    
+    if (!resolvedBranch) {
+      return NextResponse.json({ error: 'No branch available in the database. Please create a branch first.' }, { status: 400 });
+    }
+    data.branch = resolvedBranch;
+
     if (data.lrToBranch) data.lrToBranch = await resolveBranchId(data.lrToBranch);
     if (data.memoDestinationBranch) data.memoDestinationBranch = await resolveBranchId(data.memoDestinationBranch);
 
@@ -105,9 +125,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Challan number ${challanNumber} already exists.` }, { status: 400 });
     }
 
+    // Check if any of the bookings are already assigned to another active Challan
+    if (data.bookings && data.bookings.length > 0) {
+      const alreadyAssigned = await Challan.findOne({
+        isDeleted: false,
+        bookings: { $in: data.bookings }
+      });
+      if (alreadyAssigned) {
+        return NextResponse.json({ 
+          error: `One or more selected LRs are already assigned to Challan ${alreadyAssigned.challanNumber}. Please refresh the page and try again.` 
+        }, { status: 400 });
+      }
+    }
+
     const newChallan = new Challan({
       challanNumber,
-      branch: data.branch || 'ASL',
+      branch: data.branch,
       challanDate: data.challanDate ? new Date(data.challanDate) : new Date(),
       allBranchwise: data.allBranchwise || 'All',
       bookingCrossing: data.bookingCrossing || 'Booking',
@@ -143,6 +176,14 @@ export async function POST(request: Request) {
           }
         }
       );
+    }
+
+    // Update Truck and Driver status to 'on-trip'
+    if (data.truckNo) {
+      await Vehicle.findByIdAndUpdate(data.truckNo, { status: 'on-trip' });
+    }
+    if (data.driverName) {
+      await Driver.findByIdAndUpdate(data.driverName, { status: 'on-trip' });
     }
 
     return NextResponse.json(newChallan, { status: 201 });

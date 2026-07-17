@@ -75,7 +75,11 @@ export async function GET(
     const { id } = resolvedParams;
 
     await connectToDatabase();
-    const booking = await Booking.findById(id).lean();
+    const booking = await Booking.findById(id)
+      .populate('branch', 'code name')
+      .populate('bookingBranch', 'code name')
+      .populate('destinationBranch', 'code name')
+      .lean();
     if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
 
     return NextResponse.json(booking);

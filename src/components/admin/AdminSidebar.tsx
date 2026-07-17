@@ -17,7 +17,9 @@ import {
   ChevronDown,
   X,
   MapPin,
-  FileText
+  FileText,
+  Database,
+  Box
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -27,19 +29,30 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
   const pathname = usePathname();
 
   // Helper to determine if a route is active
-  const isRouteActive = (href: string, exact = false) => {
+  const isRouteActive = (href: string, exact = false, excludePaths: string[] = []) => {
     if (exact) {
       return pathname === href;
     }
-    return pathname.startsWith(href);
+    const isActive = pathname.startsWith(href);
+    if (isActive && excludePaths.length > 0) {
+      for (const exclude of excludePaths) {
+        if (pathname.startsWith(exclude)) {
+          return false;
+        }
+      }
+    }
+    return isActive;
   };
 
-  // Fleet routes include /admin/fleet and /admin/expenses
   const isFleetActive = pathname.startsWith('/admin/fleet') || pathname.startsWith('/admin/expenses');
-  const isBookingActive = pathname.startsWith('/admin/bookings') || pathname.startsWith('/admin/challans');
+  const isBookingActive = pathname.startsWith('/admin/bookings') || pathname.startsWith('/admin/challans') || pathname.startsWith('/admin/lorry-hire');
+  const isMasterActive = pathname.startsWith('/admin/branches') || pathname.startsWith('/admin/clients') || pathname.startsWith('/admin/agents');
+  const isDeliveryActive = pathname.startsWith('/admin/delivery');
 
   const [isFleetOpen, setIsFleetOpen] = React.useState(isFleetActive);
   const [isBookingOpen, setIsBookingOpen] = React.useState(isBookingActive);
+  const [isMasterOpen, setIsMasterOpen] = React.useState(isMasterActive);
+  const [isDeliveryOpen, setIsDeliveryOpen] = React.useState(isDeliveryActive);
 
   // Auto expand when matching route is loaded/reloaded
   React.useEffect(() => {
@@ -54,6 +67,18 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
   }, [pathname, isBookingActive]);
 
+  React.useEffect(() => {
+    if (isMasterActive) {
+      setIsMasterOpen(true);
+    }
+  }, [pathname, isMasterActive]);
+
+  React.useEffect(() => {
+    if (isDeliveryActive) {
+      setIsDeliveryOpen(true);
+    }
+  }, [pathname, isDeliveryActive]);
+
   const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, isDropdown: false },
     { 
@@ -65,28 +90,52 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       isActive: isBookingActive,
       children: [
         { name: 'Lorry Receipt (LR)', href: '/admin/bookings', exact: false },
-        { name: 'Lorry Challan', href: '/admin/challans', exact: true },
+        { name: 'Lorry Challan', href: '/admin/challans', exact: false, excludePaths: ['/admin/challans/crossing'] },
         { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false },
+        { name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false },
       ]
     },
-    { name: 'Branches', href: '/admin/branches', icon: <MapPin className="w-5 h-5" />, isDropdown: false },
-    { name: 'Clients', href: '/admin/clients', icon: <BriefcaseBusiness className="w-5 h-5" />, isDropdown: false },
-    { name: 'Agents', href: '/admin/agents', icon: <Contact className="w-5 h-5" />, isDropdown: false },
-    { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },
     { 
-      name: 'Fleet Management', 
+      name: 'Delivery', 
+      icon: <Box className="w-5 h-5" />, 
+      isDropdown: true,
+      isOpen: isDeliveryOpen,
+      setIsOpen: setIsDeliveryOpen,
+      isActive: isDeliveryActive,
+      children: [
+        { name: 'Receive Memo', href: '/admin/delivery/receive-memo', exact: false },
+        { name: 'Delivery Entry', href: '/admin/delivery/delivery-entry', exact: false },
+        { name: 'Cash Collection', href: '/admin/delivery/cash-collection', exact: false },
+      ]
+    },
+    { 
+      name: 'Master', 
+      icon: <Database className="w-5 h-5" />, 
+      isDropdown: true,
+      isOpen: isMasterOpen,
+      setIsOpen: setIsMasterOpen,
+      isActive: isMasterActive,
+      children: [
+        { name: 'Branches', href: '/admin/branches', exact: false },
+        { name: 'Clients', href: '/admin/clients', exact: false },
+        { name: 'Agents', href: '/admin/agents', exact: false },
+      ]
+    },
+    { 
+      name: 'Trucks', 
       icon: <Truck className="w-5 h-5" />, 
       isDropdown: true,
       isOpen: isFleetOpen,
       setIsOpen: setIsFleetOpen,
       isActive: isFleetActive,
       children: [
-        { name: 'Overview', href: '/admin/fleet', exact: true },
-        { name: 'Vehicles', href: '/admin/fleet/vehicles', exact: false },
-        { name: 'Drivers', href: '/admin/fleet/drivers', exact: false },
-        { name: 'Expenses', href: '/admin/expenses', exact: false },
+        { name: 'Dashboard', href: '/admin/fleet', exact: true },
+        { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
+        { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
+        { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
       ]
     },
+    { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },
     { name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false },
   ];
 
@@ -142,8 +191,8 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
                       transition={{ duration: 0.2, ease: 'easeInOut' }}
                       className="overflow-hidden flex flex-col gap-1 pl-9 mt-1"
                     >
-                      {item.children?.map((child) => {
-                        const isChildActive = isRouteActive(child.href, child.exact);
+                      {item.children?.map((child: any) => {
+                        const isChildActive = isRouteActive(child.href, child.exact, child.excludePaths);
                         return (
                           <Link
                             key={child.href}

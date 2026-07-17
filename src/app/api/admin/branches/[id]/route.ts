@@ -62,6 +62,8 @@ export async function PUT(
       body.code = body.code.toUpperCase();
     }
 
+    if (body.agent === "") body.agent = null;
+
     const updatedBranch = await Branch.findByIdAndUpdate(
       id,
       { $set: body },

@@ -32,6 +32,7 @@ export default function EditChallanPage() {
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
   const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string }[]>([]);
   const [driversList, setDriversList] = useState<{ value: string; label: string }[]>([]);
+  const [agentsList, setAgentsList] = useState<{ value: string; label: string }[]>([]);
 
   // Challan Form State
   const [formData, setFormData] = useState({
@@ -64,6 +65,21 @@ export default function EditChallanPage() {
   const [lrSuggestions, setLrSuggestions] = useState<any[]>([]);
   const [showLrDropdown, setShowLrDropdown] = useState(false);
   const [lrHighlightIndex, setLrHighlightIndex] = useState(-1);
+
+  const [showAgentDropdown, setShowAgentDropdown] = useState(false);
+  const agentSuggestions = agentsList.filter(a => a.value.toLowerCase().includes(formData.agent.toLowerCase()));
+
+  const [truckNoSearch, setTruckNoSearch] = useState('');
+  const [showTruckDropdown, setShowTruckDropdown] = useState(false);
+  const truckSuggestions = vehiclesList.filter(v => v.label.toLowerCase().includes(truckNoSearch.toLowerCase()));
+
+  const [memoSearch, setMemoSearch] = useState('');
+  const [showMemoDropdown, setShowMemoDropdown] = useState(false);
+  const memoSuggestions = branchesList.filter(b => b.label.toLowerCase().includes(memoSearch.toLowerCase()));
+
+  const [driverSearch, setDriverSearch] = useState('');
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+  const driverSuggestions = driversList.filter(d => d.label.toLowerCase().includes(driverSearch.toLowerCase()));
 
   // Derived state for checked LRs
   const loadedLrs = pendingLrs.filter(item => selectedLrIds[item._id]);
@@ -102,7 +118,17 @@ export default function EditChallanPage() {
           })));
         }
 
-        // 4. Fetch Challan Details
+        // 4. Fetch Agents
+        const agentsRes = await fetch('/api/admin/agents?limit=100');
+        const agentsData = await agentsRes.json();
+        if (agentsData && Array.isArray(agentsData)) {
+          setAgentsList(agentsData.map((a: any) => ({
+            value: a.name,
+            label: a.name
+          })));
+        }
+
+        // 5. Fetch Challan Details
         const res = await fetch(`/api/admin/challans/${id}`);
         if (!res.ok) throw new Error('Challan not found');
         const data = await res.json();
@@ -126,7 +152,26 @@ export default function EditChallanPage() {
           status: data.status || 'pending'
         });
 
-        // Map populated bookings
+        // Initialize Search inputs from populated or ID values
+        const truckId = data.truckNo?._id || data.truckNo;
+        if (truckId && Array.isArray(vehiclesData)) {
+          const matchedTruck = vehiclesData.find((v: any) => v._id === truckId);
+          if (matchedTruck) setTruckNoSearch(matchedTruck.vehicleNumber);
+        }
+
+        const memoBranchId = data.memoDestinationBranch?._id || data.memoDestinationBranch;
+        if (memoBranchId && branchesData?.branches) {
+          const matchedBranch = branchesData.branches.find((b: any) => b._id === memoBranchId);
+          if (matchedBranch) setMemoSearch(`${matchedBranch.name} (${matchedBranch.code})`);
+        }
+
+        const driverId = data.driverName?._id || data.driverName;
+        if (driverId && Array.isArray(driversData)) {
+          const matchedDriver = driversData.find((d: any) => d._id === driverId);
+          if (matchedDriver) setDriverSearch(matchedDriver.name);
+        }
+
+        // Initialize loaded LRs from populated challan details
         if (data.bookings) {
           const lrs = data.bookings.map((booking: any) => {
             const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
@@ -318,7 +363,8 @@ export default function EditChallanPage() {
       const data = await res.json();
       const bookingsList = Array.isArray(data) ? data : (data.bookings || []);
 
-      const booking = bookingsList.find((b: any) => b.lrNumber.toLowerCase() === scanGrNo.trim().toLowerCase());
+      const searchVal = scanGrNo.trim().replace(/^lr-/i, '').toLowerCase();
+      const booking = bookingsList.find((b: any) => String(b.lrNumber || '').toLowerCase() === searchVal);
 
       if (!booking) {
         toast.error(`LR Number: ${scanGrNo} not found in database.`);
@@ -430,8 +476,18 @@ export default function EditChallanPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.challanNumber) newErrors.challanNumber = 'Please enter Challan Number';
     if (!formData.challanDate) newErrors.challanDate = 'Please enter Challan Date';
-    if (!formData.truckNo) newErrors.truckNo = 'Please enter Truck No.';
+    if (!formData.truckNo) newErrors.truckNo = 'Please select a valid Truck No.';
     if (loadedLrs.length === 0) newErrors.loadedLrs = 'Please load at least one LR No';
+    
+    if (formData.agent && !agentsList.some(a => a.value === formData.agent)) {
+      newErrors.agent = 'Please select a valid agent from the list';
+    }
+    if (memoSearch && !formData.memoDestinationBranch) {
+      newErrors.memoDestinationBranch = 'Please select a valid Memo Destination Branch';
+    }
+    if (driverSearch && !formData.driverName) {
+      newErrors.driverName = 'Please select a valid Driver';
+    }
 
     setErrors(newErrors);
 
@@ -488,7 +544,7 @@ export default function EditChallanPage() {
       {/* Header Bar */}
       <div className="mb-4 flex justify-between items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100">
         <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">Edit Challan #{formData.challanNumber}</h1>
+          <h1 className="text-lg md:text-xl font-bold text-gray-800">Edit Challan #{getBranchLabel(formData.branch).match(/\(([^)]+)\)/)?.[1] || 'GL'}-{formData.challanNumber}</h1>
           <p className="text-xs text-gray-500 mt-0.5">Modify truck dispatch manifest and load contents</p>
         </div>
         <Button 
@@ -609,7 +665,7 @@ export default function EditChallanPage() {
                           setScanGrNo(val);
                           if (val.trim().length > 0) {
                             const filtered = allPendingBookings.filter((b: any) =>
-                              b.lrNumber?.toLowerCase().includes(val.trim().toLowerCase()) &&
+                              String(b.lrNumber || '').toLowerCase().includes(val.trim().toLowerCase()) &&
                               b.status === 'pending'
                             ).slice(0, 10);
                             setLrSuggestions(filtered);
@@ -685,7 +741,7 @@ export default function EditChallanPage() {
                               {suggestion.consignor?.name || 'N/A'} → {suggestion.consignee?.name || 'N/A'}
                             </span>
                             <span className="text-gray-400 ml-2 text-xs">
-                              ({suggestion.destinationBranch || 'N/A'})
+                              ({getBranchLabel(suggestion.destinationBranch) || 'N/A'})
                             </span>
                           </div>
                         ))}
@@ -810,54 +866,219 @@ export default function EditChallanPage() {
             )}
 
             {/* Row 3 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2">
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Truck No. <span className="text-red-500">*</span></Label>
-                <SearchSelect
-                  name="truckNo"
-                  value={formData.truckNo}
-                  onChange={handleChange as any}
-                  options={vehiclesList}
-                  placeholder="Search Truck..."
-                  className={errors.truckNo ? 'border-red-500 border-2' : 'border-gray-200'}
-                />
-                {renderError('truckNo')}
+                <div className="relative">
+                  {truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase()) && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                      <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckNoSearch.length)}</span>
+                      <span>{truckSuggestions[0].label.slice(truckNoSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={truckNoSearch}
+                    onChange={(e) => {
+                      setTruckNoSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, truckNo: '' })); // clear ID when typing
+                      if (errors.truckNo) {
+                        const newErrors = { ...errors };
+                        delete newErrors.truckNo;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase())) {
+                        e.preventDefault();
+                        setTruckNoSearch(truckSuggestions[0].label);
+                        setFormData(prev => ({ ...prev, truckNo: truckSuggestions[0].value }));
+                        setShowTruckDropdown(false);
+                      }
+                    }}
+                    onFocus={() => setShowTruckDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowTruckDropdown(false), 200)}
+                    placeholder="Search Truck..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('truckNo')}
+                  
+                  {showTruckDropdown && truckSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                      {truckSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setTruckNoSearch(suggestion.label);
+                            setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
+                            setShowTruckDropdown(false);
+                          }}
+                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                        >
+                          <span className="font-bold">{suggestion.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
-                <ThemeSelect
-                  name="agent"
-                  value={formData.agent}
-                  onChange={handleChange as any}
-                  options={[
-                    { value: '', label: 'Select Agent' },
-                    { value: 'Direct Trip', label: 'Direct Trip (Self)' },
-                    { value: 'Surat Cargo Link', label: 'Surat Cargo Link' },
-                    { value: 'Adani Logistics', label: 'Adani Logistics' }
-                  ]}
-                  className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
-                />
+                <div className="relative">
+                  {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                      <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
+                      <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    name="agent"
+                    value={formData.agent}
+                    onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
+                        e.preventDefault();
+                        setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
+                        setShowAgentDropdown(false);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (formData.agent.length >= 0) setShowAgentDropdown(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
+                    placeholder="Search Agent..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('agent')}
+                  
+                  {showAgentDropdown && agentSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                      {agentSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setFormData(prev => ({ ...prev, agent: suggestion.value }));
+                            setShowAgentDropdown(false);
+                          }}
+                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50`}
+                        >
+                          <span className="font-bold">{suggestion.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
-                <ThemeSelect
-                  name="memoDestinationBranch"
-                  value={formData.memoDestinationBranch}
-                  onChange={handleChange as any}
-                  options={[{ value: '', label: 'Select Memo Destination' }, ...branchesList]}
-                  className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
-                />
+                <div className="relative">
+                  {memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase()) && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                      <span className="opacity-0">{memoSuggestions[0].label.slice(0, memoSearch.length)}</span>
+                      <span>{memoSuggestions[0].label.slice(memoSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={memoSearch}
+                    onChange={(e) => {
+                      setMemoSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, memoDestinationBranch: '' }));
+                      if (errors.memoDestinationBranch) {
+                        const newErrors = { ...errors };
+                        delete newErrors.memoDestinationBranch;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase())) {
+                        e.preventDefault();
+                        setMemoSearch(memoSuggestions[0].label);
+                        setFormData(prev => ({ ...prev, memoDestinationBranch: memoSuggestions[0].value }));
+                        setShowMemoDropdown(false);
+                      }
+                    }}
+                    onFocus={() => setShowMemoDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowMemoDropdown(false), 200)}
+                    placeholder="Search Memo Destination..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.memoDestinationBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('memoDestinationBranch')}
+                  
+                  {showMemoDropdown && memoSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                      {memoSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setMemoSearch(suggestion.label);
+                            setFormData(prev => ({ ...prev, memoDestinationBranch: suggestion.value }));
+                            setShowMemoDropdown(false);
+                          }}
+                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                        >
+                          <span className="font-bold">{suggestion.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
-                <SearchSelect
-                  name="driverName"
-                  value={formData.driverName}
-                  onChange={handleChange as any}
-                  options={driversList}
-                  placeholder="Search Driver..."
-                  className="border-gray-200"
-                />
+                <div className="relative">
+                  {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                      <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
+                      <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={driverSearch}
+                    onChange={(e) => {
+                      setDriverSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, driverName: '' }));
+                      if (errors.driverName) {
+                        const newErrors = { ...errors };
+                        delete newErrors.driverName;
+                        setErrors(newErrors);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase())) {
+                        e.preventDefault();
+                        setDriverSearch(driverSuggestions[0].label);
+                        setFormData(prev => ({ ...prev, driverName: driverSuggestions[0].value }));
+                        setShowDriverDropdown(false);
+                      }
+                    }}
+                    onFocus={() => setShowDriverDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDriverDropdown(false), 200)}
+                    placeholder="Search Driver..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.driverName ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('driverName')}
+                  
+                  {showDriverDropdown && driverSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                      {driverSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setDriverSearch(suggestion.label);
+                            setFormData(prev => ({ ...prev, driverName: suggestion.value }));
+                            setShowDriverDropdown(false);
+                          }}
+                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                        >
+                          <span className="font-bold">{suggestion.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Challan Status</Label>

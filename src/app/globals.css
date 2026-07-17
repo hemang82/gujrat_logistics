@@ -156,3 +156,32 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+body { scrollbar-gutter: stable; }
+
+/* Custom Scrollbar Styles for WebKit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Specific styling for the sidebar scrollbar if needed */
+aside ::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+}
+aside:hover ::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+}

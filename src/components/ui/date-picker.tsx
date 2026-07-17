@@ -27,6 +27,7 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
       <PopoverTrigger
         render={
           <button
+            type="button"
             className={cn(
               "flex w-full h-10 items-center justify-start text-left font-semibold bg-white rounded-lg border border-gray-200 hover:bg-gray-50/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary px-3 text-sm",
               !date && "text-muted-foreground",

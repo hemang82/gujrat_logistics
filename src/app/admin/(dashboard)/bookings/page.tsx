@@ -15,7 +15,7 @@ import BookingStatusDropdown from '@/components/admin/BookingStatusDropdown';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string }> }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string, limit?: string }> }) {
   await getServerSession(authOptions);
   await connectToDatabase();
 
@@ -23,7 +23,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const search = resolvedParams?.search || '';
   const dateStr = resolvedParams?.date || '';
   const page = parseInt(resolvedParams?.page || '1', 10);
-  const limit = 15;
+  const limit = parseInt(resolvedParams?.limit || '15', 10);
 
   // Build query
   const query: any = { isDeleted: { $ne: true } };
@@ -52,6 +52,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
+    .populate('destinationBranch', 'name')
+    .populate('bookingBranch', 'name')
     .lean();
 
   const totalBookings = await Booking.countDocuments(query);
@@ -123,7 +125,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                 ) : (
                   bookings.map((booking: any) => (
                     <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4 font-semibold text-brand-primary">{booking.lrNumber}</td>
+                      <td className="p-4 font-semibold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-4 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
@@ -134,7 +136,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         {booking.consignee?.name || 'N/A'}
                       </td>
                       <td className="p-4 text-sm text-gray-600">
-                        {booking.deliveryLocation}
+                        {booking.destinationBranch?.name || booking.deliveryLocation || 'N/A'}
                       </td>
                       <td className="p-4">
                         <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
@@ -178,7 +180,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                   {/* Header: LR No, Date, Amount */}
                   <div className="flex justify-between items-center mb-3 pl-2">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                      <span className="font-extrabold text-brand-text-primary text-sm tracking-tight">{booking.lrNumber}</span>
+                      <span className="font-extrabold text-brand-text-primary text-sm tracking-tight">LR-{booking.lrNumber}</span>
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <CalendarIcon className="w-3.5 h-3.5" />
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

@@ -41,6 +41,7 @@ export interface IBooking extends Document {
   };
   bookingType?: 'auto' | 'manual';
   paymentCondition: 'to_pay' | 'paid' | 'tbb';
+  isPaid?: boolean;
   bookingDate: Date;
   deliveryDate?: Date;
   createdBy?: mongoose.Types.ObjectId;
@@ -126,6 +127,7 @@ const BookingSchema = new Schema<IBooking>(
       enum: ['to_pay', 'paid', 'tbb'],
       default: 'to_pay',
     },
+    isPaid: { type: Boolean, default: false },
     bookingDate: { type: Date, default: Date.now },
     deliveryDate: { type: Date },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },

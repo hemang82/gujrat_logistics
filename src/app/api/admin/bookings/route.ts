@@ -6,6 +6,7 @@ import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
 export async function GET(req: Request) {
@@ -19,9 +20,34 @@ export async function GET(req: Request) {
     Booking.init();
     Vehicle.init();
     Driver.init();
+    Branch.init();
     
+    const { searchParams } = new URL(req.url);
+    const search = searchParams.get('search');
+
+    let query: any = { isDeleted: { $ne: true } };
+
+    if (search) {
+      const cleanSearch = search.trim().replace(/^lr-/i, '');
+      
+      const searchConditions: any[] = [
+        { lrNumber: { $regex: cleanSearch, $options: 'i' } },
+        { lrNumber: cleanSearch } // exact string match
+      ];
+      
+      if (!isNaN(Number(cleanSearch))) {
+        searchConditions.push({ lrNumber: Number(cleanSearch) });
+      }
+      
+      query.$or = searchConditions;
+    }
+
     // Sort by creation time descending (newest created first)
-    const bookings = await Booking.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+    const bookings = await Booking.find(query)
+      .populate('branch', 'name code')
+      .populate('bookingBranch', 'name code')
+      .populate('destinationBranch', 'name code')
+      .sort({ createdAt: -1 });
     
     return NextResponse.json(bookings);
   } catch (error: any) {
@@ -41,6 +67,7 @@ export async function POST(req: Request) {
     Booking.init();
     Vehicle.init();
     Driver.init();
+    Branch.init();
     
     const data = await req.json();
 

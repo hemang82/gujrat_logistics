@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Challan from '@/models/Challan';
 import Booking from '@/models/Booking';
+import Vehicle from '@/models/Vehicle';
+import Driver from '@/models/Driver';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
 // GET: Single Challan by ID
@@ -20,10 +22,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const challan = await Challan.findOne({ _id: id, isDeleted: false })
       .populate({
         path: 'bookings',
-        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType deliveryLocation'
+        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch',
+        populate: { path: 'destinationBranch', select: 'name code' }
       })
       .populate('truckNo', 'vehicleNumber')
       .populate('driverName', 'name')
+      .populate('branch', 'name code')
+      .populate('lrToBranch', 'name code')
+      .populate('memoDestinationBranch', 'name code')
       .lean();
 
     if (!challan) {
@@ -69,6 +75,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Identify added and removed bookings
     const addedBookings = newBookings.filter((b: string) => !oldBookings.includes(b));
     const removedBookings = oldBookings.filter((b: string) => !newBookings.includes(b));
+
+    const oldTruck = oldChallan.truckNo?.toString();
+    const oldDriver = oldChallan.driverName?.toString();
+
+    // Check if any of the added bookings are already assigned to another active Challan
+    if (addedBookings.length > 0) {
+      const alreadyAssigned = await Challan.findOne({
+        _id: { $ne: id }, // Exclude current challan
+        isDeleted: false,
+        bookings: { $in: addedBookings }
+      });
+      if (alreadyAssigned) {
+        return NextResponse.json({ 
+          error: `One or more selected LRs are already assigned to Challan ${alreadyAssigned.challanNumber}. Please refresh the page and try again.` 
+        }, { status: 400 });
+      }
+    }
 
     // Update fields
     oldChallan.branch = data.branch || oldChallan.branch;
@@ -124,6 +147,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       );
     }
 
+    // Handle Vehicle and Driver status updates
+    const newTruck = oldChallan.truckNo?.toString();
+    const newDriver = oldChallan.driverName?.toString();
+    const newStatus = oldChallan.status;
+
+    if (newStatus === 'delivered') {
+      if (oldTruck) await Vehicle.findByIdAndUpdate(oldTruck, { status: 'available' });
+      if (oldDriver) await Driver.findByIdAndUpdate(oldDriver, { status: 'available' });
+    } else {
+      // Free old truck if changed
+      if (oldTruck && oldTruck !== newTruck) {
+        await Vehicle.findByIdAndUpdate(oldTruck, { status: 'available' });
+      }
+      // Set new truck to on-trip
+      if (newTruck && oldTruck !== newTruck) {
+        await Vehicle.findByIdAndUpdate(newTruck, { status: 'on-trip' });
+      }
+
+      // Free old driver if changed
+      if (oldDriver && oldDriver !== newDriver) {
+        await Driver.findByIdAndUpdate(oldDriver, { status: 'available' });
+      }
+      // Set new driver to on-trip
+      if (newDriver && oldDriver !== newDriver) {
+        await Driver.findByIdAndUpdate(newDriver, { status: 'on-trip' });
+      }
+    }
+
     return NextResponse.json(oldChallan);
   } catch (error: any) {
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
@@ -149,7 +200,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     challan.isDeleted = true;
     await challan.save();
 
-    // Reset all associated bookings status back to 'pending'
+    // Reset truck and driver to available if challan is deleted before delivery
+    if (challan.status !== 'delivered') {
+      if (challan.truckNo) {
+        await Vehicle.findByIdAndUpdate(challan.truckNo, { status: 'available' });
+      }
+      if (challan.driverName) {
+        await Driver.findByIdAndUpdate(challan.driverName, { status: 'available' });
+      }
+    }
+
+    // Unmark bookings in this challan associated bookings status back to 'pending'
     if (challan.bookings && challan.bookings.length > 0) {
       await Booking.updateMany(
         { _id: { $in: challan.bookings } },

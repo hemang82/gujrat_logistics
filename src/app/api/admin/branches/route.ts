@@ -82,6 +82,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Branch Code "${body.code.toUpperCase()}" already exists` }, { status: 400 });
     }
 
+    if (body.agent === "") delete body.agent;
+
     const newBranch = new Branch({
       ...body,
       code: body.code.toUpperCase()

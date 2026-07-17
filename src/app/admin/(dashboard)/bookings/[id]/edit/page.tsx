@@ -37,7 +37,7 @@ export default function EditBookingPage() {
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
 
-  const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
+  const [branchesList, setBranchesList] = useState<{ value: string; label: string; code: string }[]>([]);
 
   useEffect(() => {
     fetch('/api/admin/branches?limit=100')
@@ -46,7 +46,8 @@ export default function EditBookingPage() {
         if (data && data.branches && data.branches.length > 0) {
           const list = data.branches.map((b: any) => ({
             value: b._id,
-            label: `${b.name} (${b.code})`
+            label: `${b.name} (${b.code})`,
+            code: b.code
           }));
           setBranchesList(list);
         }
@@ -357,11 +358,11 @@ export default function EditBookingPage() {
 
         setFormData({
           bookingType: booking.bookingType || 'auto',
-          branch: booking.branch || '',
+          branch: booking.branch?.code || booking.branch || booking.bookingBranch?.code || booking.bookingBranch || '',
           grNo: booking.lrNumber || '',
           bookingDate: booking.bookingDate ? new Date(booking.bookingDate).toISOString().split('T')[0] : '',
-          bookingBranch: booking.bookingBranch || '',
-          destinationBranch: booking.destinationBranch || '',
+          bookingBranch: booking.bookingBranch?.code || booking.bookingBranch || '',
+          destinationBranch: booking.destinationBranch?._id || booking.destinationBranch || '',
           rateType: booking.rateType || booking.paymentCondition || 'to_pay',
 
           consignorName: booking.consignor?.name || '',
@@ -386,7 +387,8 @@ export default function EditBookingPage() {
         });
 
         const matchingBranch = branchesList.find(b => b.value === (booking.destinationBranch?._id || booking.destinationBranch));
-        setDestinationBranchSearch(matchingBranch ? matchingBranch.label : (booking.destinationBranch?.code || booking.destinationBranch || ''));
+        const fallbackLabel = booking.destinationBranch?.name ? `${booking.destinationBranch.name} (${booking.destinationBranch.code})` : (booking.destinationBranch?.code || booking.destinationBranch || '');
+        setDestinationBranchSearch(matchingBranch ? matchingBranch.label : fallbackLabel);
         setItems(loadedItems);
       } catch (error) {
         toast.error('Could not load booking details');
@@ -671,8 +673,8 @@ export default function EditBookingPage() {
               /* Manual Mode Row 1 (6 columns) */
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
-                  <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                  <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                 </div>
                 <div className="space-y-1 relative pb-4">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">GR No <span className="text-red-500">*</span></Label>
@@ -690,7 +692,7 @@ export default function EditBookingPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                  <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  <Input name="bookingBranch" value={branchesList.find(b => b.code === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                 </div>
                 <div className="space-y-1 relative">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
@@ -767,12 +769,12 @@ export default function EditBookingPage() {
                     <Input name="grNo" value={formData.grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
-                    <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                    <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                    <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                    <Input name="bookingBranch" value={branchesList.find(b => b.code === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                   </div>
                 </div>
 

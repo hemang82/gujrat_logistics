@@ -36,11 +36,11 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'available': return <span className="bg-green-50 text-brand-success border border-green-200 px-2 py-0.5 rounded text-xs font-bold uppercase">Available</span>;
-      case 'on-trip': return <span className="bg-blue-50 text-brand-info border border-blue-200 px-2 py-0.5 rounded text-xs font-bold uppercase">On Trip</span>;
-      case 'on-leave': return <span className="bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded text-xs font-bold uppercase">On Leave</span>;
-      case 'inactive': return <span className="bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded text-xs font-bold uppercase">Inactive</span>;
-      default: return <span className="bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded text-xs font-bold uppercase">{status}</span>;
+      case 'available': return <span className="bg-green-50 text-brand-success border border-green-200 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Available</span>;
+      case 'on-trip': return <span className="bg-blue-50 text-brand-info border border-blue-200 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">On Trip</span>;
+      case 'on-leave': return <span className="bg-yellow-50 text-yellow-700 border border-yellow-200 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">On Leave</span>;
+      case 'inactive': return <span className="bg-gray-50 text-gray-600 border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">Inactive</span>;
+      default: return <span className="bg-gray-50 text-gray-600 border border-gray-200 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">{status}</span>;
     }
   };
 
@@ -104,12 +104,12 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
-                    <tr className="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-100">
-                      <th className="font-semibold p-4">Driver Details</th>
-                      <th className="font-semibold p-4">License & KYC</th>
-                      <th className="font-semibold p-4">Current Status</th>
-                      <th className="font-semibold p-4">Assigned Vehicle</th>
-                      <th className="font-semibold p-4 text-right">Actions</th>
+                    <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
+                      <th className="font-bold px-4 py-3 w-[30%]">Driver Details</th>
+                      <th className="font-bold px-4 py-3 w-[25%]">License & KYC</th>
+                      <th className="font-bold px-4 py-3 w-[15%]">Current Status</th>
+                      <th className="font-bold px-4 py-3 w-[20%]">Assigned Vehicle</th>
+                      <th className="font-bold px-4 py-3 w-[10%] text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
@@ -117,45 +117,45 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                       const isLicenseExpiring = d.licenseExpiry && new Date(d.licenseExpiry) < new Date(Date.now() + 30*24*60*60*1000);
                       return (
                         <tr key={d._id.toString()} className="hover:bg-brand-secondary/5 transition-colors">
-                          <td className="p-4">
+                          <td className="px-4 py-3.5 align-middle">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary font-bold shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary font-bold shrink-0">
                                 {d.name.charAt(0).toUpperCase()}
                               </div>
                               <div>
-                                <p className="font-bold text-gray-800 text-base">{d.name}</p>
-                                <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-0.5">
-                                  <Phone className="w-3 h-3 text-brand-secondary/70" /> {d.phone}
+                                <p className="font-bold text-gray-900 text-sm">{d.name}</p>
+                                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium mt-0.5">
+                                  <Phone className="w-3 h-3 text-gray-400" /> {d.phone}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
-                            <p className="font-bold tracking-wide text-brand-secondary">{d.licenseNumber || 'N/A'}</p>
+                          <td className="px-4 py-3.5 align-middle">
+                            <p className="font-bold tracking-wide text-gray-800 text-sm">{d.licenseNumber || 'N/A'}</p>
                             <div className="flex items-center gap-2 mt-1">
                               {isLicenseExpiring ? (
-                                <div className="flex items-center gap-1 text-red-600 text-xs font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100 uppercase">
+                                <div className="flex items-center gap-1 text-red-600 text-[10px] font-bold bg-red-50 px-2 py-0.5 rounded border border-red-100 uppercase">
                                   <AlertTriangle className="w-3 h-3" /> Expiring Soon
                                 </div>
                               ) : (
-                                d.licenseExpiry && <p className="text-xs text-green-600 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100 uppercase">Valid</p>
+                                d.licenseExpiry && <p className="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100 uppercase tracking-wider">Valid</p>
                               )}
                             </div>
                           </td>
-                          <td className="p-4">
+                          <td className="px-4 py-3.5 align-middle">
                             {getStatusBadge(d.status)}
                           </td>
-                          <td className="p-4">
+                          <td className="px-4 py-3.5 align-middle">
                             {d.assignedVehicle ? (
                               <div>
                                 <p className="text-sm font-bold text-gray-800 uppercase tracking-wide">{d.assignedVehicle.vehicleNumber}</p>
-                                <p className="text-xs text-gray-500 font-medium">{d.assignedVehicle.type}</p>
+                                <p className="text-[11px] text-gray-500 font-medium">{d.assignedVehicle.type}</p>
                               </div>
                             ) : (
-                              <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-500 rounded border border-gray-200">Unassigned</span>
+                              <span className="text-[11px] font-semibold px-2 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-200">Unassigned</span>
                             )}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="px-4 py-3.5 align-middle text-right">
                             <ListActions 
                               id={d._id.toString()} 
                               moduleName="drivers" 

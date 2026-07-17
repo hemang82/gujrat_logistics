@@ -5,8 +5,10 @@ import Booking from '@/models/Booking';
 import Expense from '@/models/Expense';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import Branch from '@/models/Branch';
+import Client from '@/models/Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Truck, Users, IndianRupee, FileText } from 'lucide-react';
+import { Package, Truck, Users, IndianRupee, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { DashboardCharts } from '@/components/admin/DashboardCharts';
 import Link from 'next/link';
 
@@ -16,9 +18,12 @@ export default async function AdminDashboard() {
   await getServerSession(authOptions);
   await connectToDatabase();
 
-  // Prevent tree-shaking
+  Booking.init();
   Vehicle.init();
   Driver.init();
+  Expense.init();
+  Branch.init();
+  Client.init();
 
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -109,12 +114,53 @@ export default async function AdminDashboard() {
     });
   }
 
-  // Recent Bookings
   const recentBookings = await Booking.find({ isDeleted: { $ne: true } })
     .sort({ bookingDate: -1 })
     .limit(5)
     .populate('consignee', 'name')
+    .populate('bookingBranch', 'name')
+    .populate('destinationBranch', 'name')
     .lean();
+
+  // Fleet Expiry Alerts (Next 15 days or Expired)
+  const next15Days = new Date(now);
+  next15Days.setDate(now.getDate() + 15);
+  
+  const expiringVehicles = await Vehicle.find({
+    isDeleted: { $ne: true },
+    $or: [
+      { rcExpiry: { $lte: next15Days } },
+      { insuranceExpiry: { $lte: next15Days } },
+      { fitnessExpiry: { $lte: next15Days } },
+      { nationalPermitExpiry: { $lte: next15Days } }
+    ]
+  }).select('vehicleNumber rcExpiry insuranceExpiry fitnessExpiry nationalPermitExpiry').lean();
+
+  const alerts: any[] = [];
+  expiringVehicles.forEach((v: any) => {
+    const docs = [
+      { name: 'RC', date: v.rcExpiry },
+      { name: 'Insurance', date: v.insuranceExpiry },
+      { name: 'Fitness', date: v.fitnessExpiry },
+      { name: 'Permit', date: v.nationalPermitExpiry }
+    ];
+
+    docs.forEach(doc => {
+      if (doc.date && new Date(doc.date) <= next15Days) {
+        const diffDays = Math.ceil((new Date(doc.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        alerts.push({
+          vehicle: v.vehicleNumber,
+          document: doc.name,
+          daysLeft: diffDays,
+          isExpired: diffDays < 0,
+          date: doc.date
+        });
+      }
+    });
+  });
+
+  // Sort alerts: Expired first, then closest to expiry
+  alerts.sort((a, b) => a.daysLeft - b.daysLeft);
 
   const stats = [
     { title: 'Total Bookings', value: totalBookings.toLocaleString('en-IN'), icon: <Package className="w-6 h-6 text-brand-primary" />, trend: bookingTrend },
@@ -197,6 +243,44 @@ export default async function AdminDashboard() {
               </p>
             </CardContent>
           </Card>
+
+          {/* Fleet Alerts */}
+          <Card className="border border-gray-100 shadow-sm rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="bg-red-50/50 pb-3 border-b border-gray-50">
+              <CardTitle className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                Action Required (Fleet)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {alerts.length === 0 ? (
+                <div className="p-6 text-center">
+                  <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-gray-700">All Vehicles Compliant</p>
+                  <p className="text-xs text-gray-500 mt-1">No documents expiring in the next 15 days.</p>
+                </div>
+              ) : (
+                <div className="max-h-[250px] overflow-y-auto divide-y divide-gray-50">
+                  {alerts.map((alert, idx) => (
+                    <div key={idx} className={`p-4 flex justify-between items-start hover:bg-gray-50 transition-colors ${alert.isExpired ? 'bg-red-50/30' : ''}`}>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{alert.vehicle}</p>
+                        <p className="text-xs font-medium text-gray-500 mt-0.5">{alert.document} Expiry</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${alert.isExpired ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                          {alert.isExpired ? 'Expired' : `${alert.daysLeft} Days`}
+                        </p>
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          {new Date(alert.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -234,13 +318,13 @@ export default async function AdminDashboard() {
                 ) : (
                   recentBookings.map((booking: any) => (
                     <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4 font-bold text-brand-primary">{booking.lrNumber}</td>
+                      <td className="p-4 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-4 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="p-4 text-sm font-medium">{booking.consignee?.name || 'N/A'}</td>
                       <td className="p-4 text-sm text-gray-600">
-                        {booking.pickupLocation} &rarr; {booking.deliveryLocation}
+                        {booking.bookingBranch?.name || booking.pickupLocation} &rarr; {booking.destinationBranch?.name || booking.deliveryLocation}
                       </td>
                       <td className="p-4 font-bold text-gray-800">
                         ₹{booking.charges?.totalAmount?.toLocaleString('en-IN') || 0}
