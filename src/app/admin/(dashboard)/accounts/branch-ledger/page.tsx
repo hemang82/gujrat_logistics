@@ -44,6 +44,12 @@ export default function BranchLedgerPage() {
   });
 
   useEffect(() => {
+    if (user?.branch && !selectedBranch) {
+      setSelectedBranch(user.branch);
+    }
+  }, [user, selectedBranch]);
+
+  useEffect(() => {
     if (isAdmin) {
       fetch('/api/admin/branches?limit=100')
         .then(res => res.json())
