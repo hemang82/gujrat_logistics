@@ -755,8 +755,8 @@ function NewBookingForm() {
                             setBranchHighlightIndex(-1);
                           }}
                           className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                              ? 'bg-brand-primary/10 text-brand-primary'
-                              : 'hover:bg-gray-50 text-gray-800'
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
                             }`}
                         >
                           <span>{suggestion.label}</span>
@@ -872,8 +872,8 @@ function NewBookingForm() {
                               setBranchHighlightIndex(-1);
                             }}
                             className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                                ? 'bg-brand-primary/10 text-brand-primary'
-                                : 'hover:bg-gray-50 text-gray-800'
+                              ? 'bg-brand-primary/10 text-brand-primary'
+                              : 'hover:bg-gray-50 text-gray-800'
                               }`}
                           >
                             <span>{suggestion.label}</span>
@@ -939,8 +939,8 @@ function NewBookingForm() {
                             setConsignorHighlightIndex(-1);
                           }}
                           className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === consignorHighlightIndex
-                              ? 'bg-brand-primary/10 text-brand-primary'
-                              : 'hover:bg-gray-50 text-gray-800'
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
                             }`}
                         >
                           <span className="font-bold">{suggestion.name}</span>
@@ -1009,8 +1009,8 @@ function NewBookingForm() {
                             setConsigneeHighlightIndex(-1);
                           }}
                           className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === consigneeHighlightIndex
-                              ? 'bg-brand-primary/10 text-brand-primary'
-                              : 'hover:bg-gray-50 text-gray-800'
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
                             }`}
                         >
                           <span className="font-bold">{suggestion.name}</span>

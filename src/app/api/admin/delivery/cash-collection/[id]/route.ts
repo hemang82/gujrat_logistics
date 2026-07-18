@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Branch from '@/models/Branch';
+import { addCashTransaction } from '@/lib/ledgerUtils';
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -42,6 +43,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     });
 
     await booking.save();
+
+    // Ledger: Credit Cash Collection amount to Destination Branch
+    if (booking.charges?.totalAmount && booking.charges.totalAmount > 0) {
+      const destBranch = booking.destinationBranch || session.user.branch;
+      if (destBranch) {
+        await addCashTransaction({
+          branchId: destBranch.toString(),
+          type: 'credit',
+          amount: booking.charges.totalAmount,
+          referenceType: 'CashCollection',
+          referenceId: booking._id.toString(),
+          description: `Cash Collected for LR: ${booking.lrNumber}`,
+          createdBy: session.user.id
+        });
+      }
+    }
 
     return NextResponse.json({ message: 'Cash collected successfully', booking });
   } catch (error: any) {

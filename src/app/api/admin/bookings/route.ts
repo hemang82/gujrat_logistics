@@ -8,6 +8,7 @@ import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
+import { addCashTransaction } from '@/lib/ledgerUtils';
 
 export async function GET(req: Request) {
   try {
@@ -167,6 +168,26 @@ export async function POST(req: Request) {
       await Driver.findByIdAndUpdate(data.driver, { status: 'on-trip' });
     }
     
+    // Ledger: If Booking is Paid, credit the origin branch
+    if (newBooking.paymentCondition === 'paid' && newBooking.charges?.totalAmount > 0) {
+      const originBranch = newBooking.bookingBranch || session?.user?.branch;
+      if (originBranch) {
+        await addCashTransaction({
+          branchId: originBranch.toString(),
+          type: 'credit',
+          amount: newBooking.charges.totalAmount,
+          referenceType: 'Booking',
+          referenceId: newBooking._id.toString(),
+          description: `Advance Paid LR booking: ${newBooking.lrNumber}`,
+          createdBy: session?.user?.id
+        });
+        
+        // Mark as paid since they paid in advance
+        newBooking.isPaid = true;
+        await newBooking.save();
+      }
+    }
+
     revalidatePath('/admin/bookings');
     return NextResponse.json(newBooking, { status: 201 });
   } catch (error: any) {

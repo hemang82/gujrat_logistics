@@ -48,11 +48,13 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
   const isBookingActive = pathname.startsWith('/admin/bookings') || pathname.startsWith('/admin/challans') || pathname.startsWith('/admin/lorry-hire');
   const isMasterActive = pathname.startsWith('/admin/branches') || pathname.startsWith('/admin/clients') || pathname.startsWith('/admin/agents');
   const isDeliveryActive = pathname.startsWith('/admin/delivery');
+  const isAccountsActive = pathname.startsWith('/admin/accounts');
 
   const [isFleetOpen, setIsFleetOpen] = React.useState(isFleetActive);
   const [isBookingOpen, setIsBookingOpen] = React.useState(isBookingActive);
   const [isMasterOpen, setIsMasterOpen] = React.useState(isMasterActive);
   const [isDeliveryOpen, setIsDeliveryOpen] = React.useState(isDeliveryActive);
+  const [isAccountsOpen, setIsAccountsOpen] = React.useState(isAccountsActive);
 
   // Auto expand when matching route is loaded/reloaded
   React.useEffect(() => {
@@ -78,6 +80,12 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       setIsDeliveryOpen(true);
     }
   }, [pathname, isDeliveryActive]);
+
+  React.useEffect(() => {
+    if (isAccountsActive) {
+      setIsAccountsOpen(true);
+    }
+  }, [pathname, isAccountsActive]);
 
   const navItems = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, isDropdown: false },
@@ -133,6 +141,17 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
         { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
         { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
+      ]
+    },
+    { 
+      name: 'Accounts', 
+      icon: <Wallet className="w-5 h-5" />, 
+      isDropdown: true,
+      isOpen: isAccountsOpen,
+      setIsOpen: setIsAccountsOpen,
+      isActive: isAccountsActive,
+      children: [
+        { name: 'Branch Ledger', href: '/admin/accounts/branch-ledger', exact: false },
       ]
     },
     { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },

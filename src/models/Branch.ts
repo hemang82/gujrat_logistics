@@ -21,6 +21,7 @@ export interface IBranch extends Document {
   brnRateBasis?: string;
   brnAmount?: number;
   directData?: string;
+  currentCashBalance?: number;
   isDeleted?: boolean;
 }
 
@@ -46,6 +47,7 @@ const BranchSchema = new Schema<IBranch>(
     brnRateBasis: { type: String },
     brnAmount: { type: Number, default: 0 },
     directData: { type: String },
+    currentCashBalance: { type: Number, default: 0 },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

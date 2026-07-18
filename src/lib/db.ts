@@ -11,6 +11,7 @@ import '@/models/Driver';
 import '@/models/Booking';
 import '@/models/Challan';
 import '@/models/LorryHire';
+import '@/models/BranchCashTransaction';
 
 // Force Node's DNS resolver to use Google DNS so that MongoDB Atlas SRV lookups resolve successfully
 // even if the user's local network/ISP DNS is blocking or failing SRV records.

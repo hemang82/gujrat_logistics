@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
 import LorryHire from '@/models/LorryHire';
 import Challan from '@/models/Challan';
+import { addCashTransaction } from '@/lib/ledgerUtils';
 import Booking from '@/models/Booking'; // Required to populate nested LRs in Challan
 import Branch from '@/models/Branch';
 import Vehicle from '@/models/Vehicle';
@@ -96,6 +97,19 @@ export async function POST(request: Request) {
         { _id: { $in: body.challans } },
         { $set: { status: 'in_transit' } }
       );
+    }
+
+    // Ledger: If advance is paid, debit from origin branch
+    if (newDoc.advanceAmount && newDoc.advanceAmount > 0) {
+      await addCashTransaction({
+        branchId: newDoc.fromBranch.toString(),
+        type: 'debit',
+        amount: newDoc.advanceAmount,
+        referenceType: 'LorryHire',
+        referenceId: newDoc._id.toString(),
+        description: `Advance paid for LH Memo: ${newDoc.voucherNo}`,
+        createdBy: session.user.id
+      });
     }
 
     return NextResponse.json({ success: true, message: 'Lorry Hire created successfully', data: newDoc }, { status: 201 });
