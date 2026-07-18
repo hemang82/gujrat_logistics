@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import BranchCashTransaction from '@/models/BranchCashTransaction';
 import Branch from '@/models/Branch';
+import { resolveBranchId } from '@/lib/resolveBranch';
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +23,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Branch ID is required' }, { status: 400 });
     }
 
-    const query: any = { branch: branchId, isDeleted: false };
+    const resolvedBranchId = await resolveBranchId(branchId);
+    if (!resolvedBranchId) {
+      return NextResponse.json({ error: 'Invalid Branch ID or Code' }, { status: 400 });
+    }
+
+    const query: any = { branch: resolvedBranchId, isDeleted: false };
 
     // Default to today if no date is provided
     const targetDate = dateStr ? new Date(dateStr) : new Date();
@@ -44,7 +50,7 @@ export async function GET(request: Request) {
       .lean();
 
     // Get Branch current balance
-    const branch = await Branch.findById(branchId).lean();
+    const branch = await Branch.findById(resolvedBranchId).lean();
     
     // Calculate totals for the day
     let totalIn = 0;
@@ -71,7 +77,7 @@ export async function GET(request: Request) {
     } else {
       // If no transactions today, look for the last transaction before today
       const lastTxnBeforeToday = await BranchCashTransaction.findOne({
-        branch: branchId,
+        branch: resolvedBranchId,
         date: { $lt: startOfDay },
         isDeleted: false
       }).sort({ date: -1 });

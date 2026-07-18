@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { addCashTransaction } from '@/lib/ledgerUtils';
 import connectToDatabase from '@/lib/db';
+import { resolveBranchId } from '@/lib/resolveBranch';
 
 export async function POST(request: Request) {
   try {
@@ -25,9 +26,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 });
     }
 
+    const resolvedBranchId = await resolveBranchId(branchId);
+    if (!resolvedBranchId) {
+      return NextResponse.json({ error: 'Invalid Branch ID' }, { status: 400 });
+    }
+
+    // Ledger: Add manual voucher
     // Ledger: Add manual voucher
     const txn = await addCashTransaction({
-      branchId: branchId,
+      branchId: resolvedBranchId.toString(),
       date: date ? new Date(date) : new Date(),
       type: type as 'credit' | 'debit',
       amount: numAmount,
