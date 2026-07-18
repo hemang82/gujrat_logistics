@@ -186,10 +186,10 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
               <div key={idx} className="flex flex-col gap-1">
                 <button
                   onClick={() => item.setIsOpen?.(!item.isOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium cursor-pointer ${
-                    item.isActive 
-                      ? 'bg-brand-primary/10 text-brand-primary' 
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-brand-text-primary'
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm group ${
+                    item.isActive
+                      ? 'bg-brand-primary text-white shadow-sm shadow-brand-primary/20'
+                      : 'text-gray-600 hover:bg-brand-primary/5 hover:text-brand-primary'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -214,13 +214,13 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
                         const isChildActive = isRouteActive(child.href, child.exact, child.excludePaths);
                         return (
                           <Link
-                            key={child.href}
+                            key={child.name}
                             href={child.href}
                             onClick={() => onClose && onClose()}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
-                              isChildActive
-                                ? 'text-brand-primary bg-brand-primary/5'
-                                : 'text-gray-500 hover:text-brand-text-primary hover:bg-gray-50'
+                            className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                              isChildActive 
+                                ? 'bg-brand-primary/10 text-brand-primary font-semibold' 
+                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                             }`}
                           >
                             {child.name}
@@ -239,10 +239,10 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
                 key={item.href} 
                 href={item.href || ''}
                 onClick={() => onClose && onClose()}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm group ${
                   isActive 
-                    ? 'bg-brand-primary/10 text-brand-primary' 
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-brand-text-primary'
+                    ? 'bg-brand-primary text-white shadow-sm shadow-brand-primary/20' 
+                    : 'text-gray-600 hover:bg-brand-primary/5 hover:text-brand-primary'
                 }`}
               >
                 {item.icon}
