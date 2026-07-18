@@ -170,7 +170,7 @@ export async function POST(req: Request) {
     
     // Ledger: If Booking is Paid, credit the origin branch
     if (newBooking.paymentCondition === 'paid' && newBooking.charges?.totalAmount > 0) {
-      const originBranch = newBooking.bookingBranch || session?.user?.branch;
+      const originBranch = newBooking.bookingBranch || (session?.user as any)?.branch;
       if (originBranch) {
         await addCashTransaction({
           branchId: originBranch.toString(),

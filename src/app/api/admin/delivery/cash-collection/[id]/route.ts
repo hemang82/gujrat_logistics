@@ -46,7 +46,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Ledger: Credit Cash Collection amount to Destination Branch
     if (booking.charges?.totalAmount && booking.charges.totalAmount > 0) {
-      const destBranch = booking.destinationBranch || session.user.branch;
+      const destBranch = booking.destinationBranch || (session.user as any).branch;
       if (destBranch) {
         await addCashTransaction({
           branchId: destBranch.toString(),

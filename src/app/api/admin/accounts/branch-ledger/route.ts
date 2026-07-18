@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     await connectToDatabase();
 
     const { searchParams } = new URL(request.url);
-    const branchId = searchParams.get('branchId') || session.user.branch;
+    const branchId = searchParams.get('branchId') || (session.user as any).branch;
     const dateStr = searchParams.get('date');
 
     if (!branchId) {
