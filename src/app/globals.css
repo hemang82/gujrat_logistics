@@ -5,9 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-brand-primary: #4F46E5;      /* Deep Indigo */
-  --color-brand-primary-dark: #3730A3;
-  --color-brand-primary-light: #EEF2FF;
+  --color-brand-primary: #0F766E;      /* Deep Teal */
+  --color-brand-primary-dark: #115E59;
+  --color-brand-primary-light: #F0FDF4;
   --color-brand-secondary: #0F172A;    /* Slate Black */
   --color-brand-secondary-dark: #020617;
   --color-brand-success: #10B981;      /* Emerald */
