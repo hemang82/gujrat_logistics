@@ -85,7 +85,7 @@
   --chart-3: var(--color-brand-success);
   --chart-4: var(--color-brand-warning);
   --chart-5: var(--color-brand-secondary);
-  --radius: 1rem;
+  --radius: 0.75rem;
   --sidebar: #ffffff;
   --sidebar-foreground: var(--color-brand-text-primary);
   --sidebar-primary: var(--color-brand-primary);
