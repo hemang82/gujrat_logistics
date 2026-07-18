@@ -20,7 +20,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { SearchSelect } from '@/components/ui/search-select';
 import { useUserStore } from '@/store/useUserStore';
 import { toast } from 'sonner';
 
@@ -137,17 +136,17 @@ export default function BranchLedgerPage() {
           {isAdmin && (
             <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50">
               <Filter className="w-4 h-4 text-gray-500" />
-              <div className="w-48">
-                <SearchSelect 
-                  name="branch"
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  options={[
-                    { value: '', label: 'Select Branch' },
-                    ...branches.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))
-                  ]}
-                />
-              </div>
+              <select 
+                value={selectedBranch}
+                onChange={(e) => setSelectedBranch(e.target.value)}
+                disabled
+                className="bg-transparent text-sm font-medium text-gray-700 outline-none w-32 md:w-40 cursor-not-allowed opacity-70"
+              >
+                <option value="">Select Branch</option>
+                {branches.map(b => (
+                  <option key={b._id} value={b._id}>{b.name} ({b.code})</option>
+                ))}
+              </select>
             </div>
           )}
           
@@ -294,16 +293,14 @@ export default function BranchLedgerPage() {
           <form onSubmit={handleVoucherSubmit} className="space-y-5 mt-4">
             <div className="space-y-1.5">
               <Label className="text-sm font-semibold text-gray-700">Type</Label>
-              <SearchSelect 
-                name="type"
+              <select 
                 value={voucherForm.type}
                 onChange={(e) => setVoucherForm(prev => ({ ...prev, type: e.target.value }))}
-                options={[
-                  { value: 'debit', label: 'Cash Out (-) Expense' },
-                  { value: 'credit', label: 'Cash In (+) Deposit' }
-                ]}
-                className="w-full"
-              />
+                className="w-full h-11 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+              >
+                <option value="debit">Cash Out (-) Expense</option>
+                <option value="credit">Cash In (+) Deposit</option>
+              </select>
             </div>
 
             <div className="space-y-1.5">
