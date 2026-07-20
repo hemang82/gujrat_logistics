@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, Edit, Trash2, AlertTriangle } from 'lucide-react';
+import { Eye, Edit, Trash2, Printer, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -20,9 +20,11 @@ interface ListActionsProps {
   viewUrl?: string;
   editUrl?: string;
   printUrl?: string;
+  deleteApiUrl?: string; // optional override for delete endpoint
+  onDeleted?: () => void; // optional callback after delete
 }
 
-export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl }: ListActionsProps) {
+export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted }: ListActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -30,16 +32,18 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const endpoint = moduleName === 'bookings' 
-        ? `/api/admin/bookings/${id}`
-        : `/api/admin/${moduleName}/${id}`; // e.g., /api/admin/vehicles/id
+      const endpoint = deleteApiUrl || `/api/admin/${moduleName}/${id}`;
 
       const res = await fetch(endpoint, { method: 'DELETE' });
       
       if (res.ok) {
         toast.success('Deleted successfully');
         setDeleteDialogOpen(false);
-        router.refresh();
+        if (onDeleted) {
+          onDeleted();
+        } else {
+          router.refresh();
+        }
       } else {
         const data = await res.json();
         toast.error(`Failed to delete: ${data.error}`);
@@ -53,10 +57,13 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
 
   return (
     <>
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex items-center justify-center gap-1.5">
         {viewUrl && (
           <Link href={viewUrl} onClick={(e) => e.stopPropagation()}>
-            <button className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer" title="View">
+            <button
+              className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+              title="View"
+            >
               <Eye className="w-4 h-4" />
             </button>
           </Link>
@@ -64,15 +71,21 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
         
         {printUrl && (
           <Link href={printUrl} onClick={(e) => e.stopPropagation()}>
-            <button className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer" title="Print">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            <button
+              className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
+              title="Print"
+            >
+              <Printer className="w-4 h-4" />
             </button>
           </Link>
         )}
         
         {editUrl && (
           <Link href={editUrl} onClick={(e) => e.stopPropagation()}>
-            <button className="p-2 text-brand-primary bg-brand-primary/10 rounded-lg hover:bg-brand-primary/20 transition-colors cursor-pointer" title="Edit">
+            <button
+              className="p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+              title="Edit"
+            >
               <Edit className="w-4 h-4" />
             </button>
           </Link>
@@ -84,7 +97,7 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
             e.stopPropagation();
             setDeleteDialogOpen(true);
           }}
-          className="p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer" 
+          className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer" 
           title="Delete"
         >
           <Trash2 className="w-4 h-4" />

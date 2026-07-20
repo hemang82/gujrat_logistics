@@ -8,9 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { 
-  Plus, Search, Eye, Edit, Trash2,
+  Plus, Search,
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, XCircle 
 } from 'lucide-react';
+import ListActions from '@/components/admin/ListActions';
 
 export default function CrossingListPage() {
   const router = useRouter();
@@ -160,27 +161,13 @@ export default function CrossingListPage() {
                         </span>
                       </td>
                       <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Link href={`/admin/challans/${ch._id}`}>
-                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-gray-200 text-gray-600 hover:text-brand-primary" title="Print/View details">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/challans/crossing/${ch._id}/edit`}>
-                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-gray-200 text-gray-600 hover:text-emerald-600" title="Edit memo">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
-                            onClick={() => handleDelete(ch._id, ch.challanNumber)}
-                            className="h-8 w-8 rounded-lg border-gray-200 text-gray-600 hover:text-red-600" 
-                            title="Delete memo"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
+                        <ListActions
+                          id={ch._id}
+                          moduleName="challans"
+                          viewUrl={`/admin/challans/${ch._id}`}
+                          editUrl={`/admin/challans/crossing/${ch._id}/edit`}
+                          onDeleted={fetchChallans}
+                        />
                       </td>
                     </tr>
                   ))

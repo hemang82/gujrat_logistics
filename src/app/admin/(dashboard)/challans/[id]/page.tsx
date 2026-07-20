@@ -61,7 +61,7 @@ export default function ViewChallanPage() {
   }, 0) || 0;
 
   return (
-    <div className="w-full h-full p-4 space-y-5 print:p-0 print:m-0">
+    <div className="w-full h-full space-y-6 print:p-0 print:m-0">
       
       {/* Top Header - Screen Only */}
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4 print:hidden">

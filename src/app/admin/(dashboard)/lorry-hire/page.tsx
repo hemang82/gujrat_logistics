@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText, Printer, Trash2, Eye, Edit, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, FileText, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import ListActions from '@/components/admin/ListActions';
 import { toast } from 'sonner';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -169,39 +170,23 @@ export default function LorryHireList() {
                         {v.status || 'pending'}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-end gap-1 transition-opacity">
-                        {v.status !== 'completed' && (
-                          <Button onClick={() => handleMarkAsCompleted(v._id)} variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" title="Mark as Completed">
-                            <CheckCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Link href={`/admin/lorry-hire/${v._id}`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" title="View">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/lorry-hire/${v._id}/edit`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/10" title="Edit">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/lorry-hire/${v._id}/print`}>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50" title="Print">
-                            <Printer className="w-4 h-4" />
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleDelete(v._id, v.voucherNo)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {v.status !== 'completed' && (
+                            <Button onClick={() => handleMarkAsCompleted(v._id)} variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" title="Mark as Completed">
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <ListActions
+                            id={v._id}
+                            moduleName="lorry-hire"
+                            viewUrl={`/admin/lorry-hire/${v._id}`}
+                            editUrl={`/admin/lorry-hire/${v._id}/edit`}
+                            printUrl={`/admin/lorry-hire/${v._id}/print`}
+                            onDeleted={fetchVouchers}
+                          />
+                        </div>
+                      </td>
                   </tr>
                 ))
               )}
