@@ -46,7 +46,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
 
   const isFleetActive = pathname.startsWith('/admin/fleet') || pathname.startsWith('/admin/expenses');
   const isBookingActive = pathname.startsWith('/admin/bookings') || pathname.startsWith('/admin/challans') || pathname.startsWith('/admin/lorry-hire');
-  const isMasterActive = pathname.startsWith('/admin/branches') || pathname.startsWith('/admin/clients') || pathname.startsWith('/admin/agents');
+  const isMasterActive = pathname.startsWith('/admin/branches') || pathname.startsWith('/admin/clients') || pathname.startsWith('/admin/agents') || pathname.startsWith('/admin/masters');
   const isDeliveryActive = pathname.startsWith('/admin/delivery');
   const isAccountsActive = pathname.startsWith('/admin/accounts');
 
@@ -127,6 +127,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'Branches', href: '/admin/branches', exact: false },
         { name: 'Clients', href: '/admin/clients', exact: false },
         { name: 'Agents', href: '/admin/agents', exact: false },
+        { name: 'Masters (PKG & Items)', href: '/admin/masters', exact: false },
       ]
     },
     { 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,14 @@ function NewBookingForm() {
   const [branchSuggestions, setBranchSuggestions] = useState<any[]>([]);
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  // Packaging & Description autocomplete states
+  const [packagingSuggestions, setPackagingSuggestions] = useState<string[]>([]);
+  const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
+  const [activePackagingIndex, setActivePackagingIndex] = useState<number | null>(null);
+  const [activeDescriptionIndex, setActiveDescriptionIndex] = useState<number | null>(null);
+  const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const handleFetchEwayBill = async () => {
     setErrors(prev => {
@@ -449,6 +457,48 @@ function NewBookingForm() {
     }
   };
 
+  // Fetch suggestions from masters API
+  const fetchMasterSuggestions = useCallback(async (type: 'packaging' | 'description', query: string) => {
+    if (!query || query.length < 1) {
+      if (type === 'packaging') setPackagingSuggestions([]);
+      else setDescriptionSuggestions([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/masters?type=${type}&q=${encodeURIComponent(query)}&suggest=true`);
+      if (res.ok) {
+        const data = await res.json();
+        const names = data.map((d: any) => d.name);
+        if (type === 'packaging') setPackagingSuggestions(names);
+        else setDescriptionSuggestions(names);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Auto-save new masters entries after successful booking
+  const autoSaveMasters = useCallback(async (bookingItems: typeof items) => {
+    for (const item of bookingItems) {
+      if (item.packaging && item.packaging.trim()) {
+        try {
+          await fetch('/api/admin/masters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'packaging', name: item.packaging.trim() })
+          });
+        } catch { /* ignore */ }
+      }
+      if (item.description && item.description.trim()) {
+        try {
+          await fetch('/api/admin/masters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'description', name: item.description.trim() })
+          });
+        } catch { /* ignore */ }
+      }
+    }
+  }, []);
+
   const handleItemChange = (index: number, field: string, value: string) => {
     const newItems = [...items];
 
@@ -462,6 +512,17 @@ function NewBookingForm() {
     }
 
     newItems[index] = { ...newItems[index], [field]: value };
+
+    // Fetch autocomplete suggestions for packaging / description
+    if (field === 'packaging') {
+      setActivePackagingIndex(index);
+      setActiveDescriptionIndex(null);
+      fetchMasterSuggestions('packaging', value);
+    } else if (field === 'description') {
+      setActiveDescriptionIndex(index);
+      setActivePackagingIndex(null);
+      fetchMasterSuggestions('description', value);
+    }
 
     // Automatically calculate amount:
     // If NW basis is 'W' / 'w', calculate based on Weight. Otherwise calculate based on Packages.
@@ -490,6 +551,22 @@ function NewBookingForm() {
       delete newErrors[errKey];
       setErrors(newErrors);
     }
+  };
+
+  const selectPackagingSuggestion = (index: number, name: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], packaging: name };
+    setItems(newItems);
+    setActivePackagingIndex(null);
+    setPackagingSuggestions([]);
+  };
+
+  const selectDescriptionSuggestion = (index: number, name: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], description: name };
+    setItems(newItems);
+    setActiveDescriptionIndex(null);
+    setDescriptionSuggestions([]);
   };
 
   const addItem = () => {
@@ -635,6 +712,9 @@ function NewBookingForm() {
         toast.success('LR Generated Successfully!');
         const createdBooking = await response.json();
         const bookingId = createdBooking._id;
+
+        // Auto-save packaging & description to masters for future suggestions
+        await autoSaveMasters(items);
 
         router.refresh();
         if (submitAction === 'print') {
@@ -1078,23 +1158,55 @@ function NewBookingForm() {
                       />
                       {renderCellError(`item_${index}_packages`)}
                     </div>
-                    <div className="col-span-2 relative pb-4">
+                    <div className="col-span-2 relative pb-4" ref={el => { packagingDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-semibold text-gray-500 lg:hidden">Packaging</Label>
                       <Input
                         value={item.packaging}
                         onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
+                        onFocus={() => { setActivePackagingIndex(index); fetchMasterSuggestions('packaging', item.packaging); }}
+                        onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
                         placeholder="Bora / Bag / Roll"
                         className="h-10 text-sm rounded-lg border-gray-200"
+                        autoComplete="off"
                       />
+                      {activePackagingIndex === index && packagingSuggestions.length > 0 && (
+                        <div className="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
+                          {packagingSuggestions.map((s, si) => (
+                            <div
+                              key={si}
+                              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                              onMouseDown={() => selectPackagingSuggestion(index, s)}
+                            >
+                              {s}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="col-span-3 relative pb-4">
+                    <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description</Label>
                       <Input
                         value={item.description}
                         onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                        onFocus={() => { setActiveDescriptionIndex(index); fetchMasterSuggestions('description', item.description); }}
+                        onBlur={() => setTimeout(() => setActiveDescriptionIndex(null), 200)}
                         placeholder="Hardware / Cycle / Kirana"
                         className={`h-10 text-sm rounded-lg ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
+                        autoComplete="off"
                       />
+                      {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
+                        <div className="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
+                          {descriptionSuggestions.map((s, si) => (
+                            <div
+                              key={si}
+                              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                              onMouseDown={() => selectDescriptionSuggestion(index, s)}
+                            >
+                              {s}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {renderCellError(`item_${index}_description`)}
                     </div>
                     <div className="col-span-2 relative pb-4">
