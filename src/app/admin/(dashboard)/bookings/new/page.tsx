@@ -1387,7 +1387,7 @@ function NewBookingForm() {
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
                 <div className="h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-3 font-bold text-gray-700 text-sm">
-                  â‚¹ {totals.total.toFixed(2)}
+                  {'\u20B9'} {totals.total.toFixed(2)}
                 </div>
               </div>
             </div>
