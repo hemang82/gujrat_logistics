@@ -270,6 +270,9 @@ function NewBookingForm() {
           }));
           setShowConsignorDropdown(false);
           setConsignorHighlightIndex(-1);
+          if (firstMatch.name.toLowerCase() !== formData.consignorName.toLowerCase()) {
+            e.preventDefault();
+          }
           return;
         }
       }
@@ -321,6 +324,9 @@ function NewBookingForm() {
           }));
           setShowConsigneeDropdown(false);
           setConsigneeHighlightIndex(-1);
+          if (firstMatch.name.toLowerCase() !== formData.consigneeName.toLowerCase()) {
+            e.preventDefault();
+          }
           return;
         }
       }
@@ -395,6 +401,9 @@ function NewBookingForm() {
           setDestinationBranchSearch(firstMatch.label);
           setShowBranchDropdown(false);
           setBranchHighlightIndex(-1);
+          if (firstMatch.label.toLowerCase() !== destinationBranchSearch.toLowerCase()) {
+            e.preventDefault();
+          }
           return;
         }
       }
@@ -587,7 +596,9 @@ function NewBookingForm() {
       const firstMatch = packagingSuggestions[0];
       if (firstMatch.toLowerCase().startsWith(items[index].packaging.toLowerCase())) {
         selectPackagingSuggestion(index, firstMatch);
-        e.preventDefault();
+        if (firstMatch.toLowerCase() !== items[index].packaging.toLowerCase()) {
+          e.preventDefault();
+        }
         return;
       }
     }
@@ -616,7 +627,9 @@ function NewBookingForm() {
       const firstMatch = descriptionSuggestions[0];
       if (firstMatch.toLowerCase().startsWith(items[index].description.toLowerCase())) {
         selectDescriptionSuggestion(index, firstMatch);
-        e.preventDefault();
+        if (firstMatch.toLowerCase() !== items[index].description.toLowerCase()) {
+          e.preventDefault();
+        }
         return;
       }
     }

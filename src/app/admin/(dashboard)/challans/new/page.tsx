@@ -656,7 +656,9 @@ export default function AddChallanPage() {
                           setLrToBranchSearch(firstMatch.label);
                           setFormData(prev => ({ ...prev, lrToBranch: firstMatch.value }));
                           setShowLrToBranchDropdown(false);
-                          e.preventDefault();
+                          if (firstMatch.label.toLowerCase() !== lrToBranchSearch.toLowerCase()) {
+                            e.preventDefault();
+                          }
                           return;
                         }
                       }
@@ -947,10 +949,12 @@ export default function AddChallanPage() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab' && truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase())) {
-                        e.preventDefault();
                         setTruckNoSearch(truckSuggestions[0].label);
                         setFormData(prev => ({ ...prev, truckNo: truckSuggestions[0].value }));
                         setShowTruckDropdown(false);
+                        if (truckSuggestions[0].label.toLowerCase() !== truckNoSearch.toLowerCase()) {
+                          e.preventDefault();
+                        }
                         return;
                       }
                       if (!showTruckDropdown || truckSuggestions.length === 0) return;
@@ -1018,9 +1022,11 @@ export default function AddChallanPage() {
                     onChange={handleChange}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
-                        e.preventDefault();
                         setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
                         setShowAgentDropdown(false);
+                        if (agentSuggestions[0].value.toLowerCase() !== formData.agent.toLowerCase()) {
+                          e.preventDefault();
+                        }
                         return;
                       }
                       if (!showAgentDropdown || agentSuggestions.length === 0) return;
@@ -1092,10 +1098,12 @@ export default function AddChallanPage() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab' && memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase())) {
-                        e.preventDefault();
                         setMemoSearch(memoSuggestions[0].label);
                         setFormData(prev => ({ ...prev, memoDestinationBranch: memoSuggestions[0].value }));
                         setShowMemoDropdown(false);
+                        if (memoSuggestions[0].label.toLowerCase() !== memoSearch.toLowerCase()) {
+                          e.preventDefault();
+                        }
                         return;
                       }
                       if (!showMemoDropdown || memoSuggestions.length === 0) return;
@@ -1170,10 +1178,12 @@ export default function AddChallanPage() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab' && driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase())) {
-                        e.preventDefault();
                         setDriverSearch(driverSuggestions[0].label);
                         setFormData(prev => ({ ...prev, driverName: driverSuggestions[0].value }));
                         setShowDriverDropdown(false);
+                        if (driverSuggestions[0].label.toLowerCase() !== driverSearch.toLowerCase()) {
+                          e.preventDefault();
+                        }
                         return;
                       }
                       if (!showDriverDropdown || driverSuggestions.length === 0) return;
