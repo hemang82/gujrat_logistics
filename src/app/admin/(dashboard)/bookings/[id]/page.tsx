@@ -64,7 +64,11 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
             <UpdateStatusDialog bookingId={id} currentStatus={booking.status || 'pending'} />
           </div>
           <div className="w-full sm:w-auto flex justify-center mt-2 sm:mt-0">
-            <PrintButton />
+            <Link href={`/admin/bookings/${id}/print`}>
+              <Button className="h-10 rounded-xl bg-brand-primary hover:bg-brand-primary-dark text-white shadow-md shadow-brand-primary/20 flex items-center gap-2 px-6">
+                <Printer className="w-4 h-4" /> Print Bilty
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
