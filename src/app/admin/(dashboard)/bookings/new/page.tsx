@@ -44,6 +44,8 @@ function NewBookingForm() {
   const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
   const [activePackagingIndex, setActivePackagingIndex] = useState<number | null>(null);
   const [activeDescriptionIndex, setActiveDescriptionIndex] = useState<number | null>(null);
+  const [packagingHighlightIndex, setPackagingHighlightIndex] = useState(-1);
+  const [descriptionHighlightIndex, setDescriptionHighlightIndex] = useState(-1);
   const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -457,6 +459,15 @@ function NewBookingForm() {
     }
   };
 
+  // Reset highlight index when suggestions change
+  useEffect(() => {
+    setPackagingHighlightIndex(-1);
+  }, [packagingSuggestions]);
+
+  useEffect(() => {
+    setDescriptionHighlightIndex(-1);
+  }, [descriptionSuggestions]);
+
   // Fetch suggestions from masters API
   const fetchMasterSuggestions = useCallback(async (type: 'packaging' | 'description', query: string) => {
     if (!query || query.length < 1) {
@@ -559,6 +570,7 @@ function NewBookingForm() {
     setItems(newItems);
     setActivePackagingIndex(null);
     setPackagingSuggestions([]);
+    setPackagingHighlightIndex(-1);
   };
 
   const selectDescriptionSuggestion = (index: number, name: string) => {
@@ -567,6 +579,65 @@ function NewBookingForm() {
     setItems(newItems);
     setActiveDescriptionIndex(null);
     setDescriptionSuggestions([]);
+    setDescriptionHighlightIndex(-1);
+  };
+
+  const handlePackagingKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && packagingSuggestions.length > 0 && items[index].packaging) {
+      const firstMatch = packagingSuggestions[0];
+      if (firstMatch.toLowerCase().startsWith(items[index].packaging.toLowerCase())) {
+        selectPackagingSuggestion(index, firstMatch);
+        e.preventDefault();
+        return;
+      }
+    }
+
+    if (activePackagingIndex !== index || packagingSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPackagingHighlightIndex(prev => prev < packagingSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPackagingHighlightIndex(prev => prev > 0 ? prev - 1 : packagingSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      if (packagingHighlightIndex >= 0 && packagingHighlightIndex < packagingSuggestions.length) {
+        e.preventDefault();
+        selectPackagingSuggestion(index, packagingSuggestions[packagingHighlightIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setActivePackagingIndex(null);
+      setPackagingHighlightIndex(-1);
+    }
+  };
+
+  const handleDescriptionKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && descriptionSuggestions.length > 0 && items[index].description) {
+      const firstMatch = descriptionSuggestions[0];
+      if (firstMatch.toLowerCase().startsWith(items[index].description.toLowerCase())) {
+        selectDescriptionSuggestion(index, firstMatch);
+        e.preventDefault();
+        return;
+      }
+    }
+
+    if (activeDescriptionIndex !== index || descriptionSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setDescriptionHighlightIndex(prev => prev < descriptionSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setDescriptionHighlightIndex(prev => prev > 0 ? prev - 1 : descriptionSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      if (descriptionHighlightIndex >= 0 && descriptionHighlightIndex < descriptionSuggestions.length) {
+        e.preventDefault();
+        selectDescriptionSuggestion(index, descriptionSuggestions[descriptionHighlightIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setActiveDescriptionIndex(null);
+      setDescriptionHighlightIndex(-1);
+    }
   };
 
   const addItem = () => {
@@ -1160,53 +1231,79 @@ function NewBookingForm() {
                     </div>
                     <div className="col-span-2 relative pb-4" ref={el => { packagingDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-semibold text-gray-500 lg:hidden">Packaging</Label>
-                      <Input
-                        value={item.packaging}
-                        onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
-                        onFocus={() => { setActivePackagingIndex(index); fetchMasterSuggestions('packaging', item.packaging); }}
-                        onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
-                        placeholder="Bora / Bag / Roll"
-                        className="h-10 text-sm rounded-lg border-gray-200"
-                        autoComplete="off"
-                      />
-                      {activePackagingIndex === index && packagingSuggestions.length > 0 && (
-                        <div className="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
-                          {packagingSuggestions.map((s, si) => (
-                            <div
-                              key={si}
-                              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                              onMouseDown={() => selectPackagingSuggestion(index, s)}
-                            >
-                              {s}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="relative">
+                        {/* Backdrop autocomplete suggestion */}
+                        {item.packaging && activePackagingIndex === index && packagingSuggestions.length > 0 && packagingSuggestions[0].toLowerCase().startsWith(item.packaging.toLowerCase()) && (
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                            <span className="opacity-0">{packagingSuggestions[0].slice(0, item.packaging.length)}</span>
+                            <span>{packagingSuggestions[0].slice(item.packaging.length)}</span>
+                          </div>
+                        )}
+                        <Input
+                          value={item.packaging}
+                          onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
+                          onFocus={() => { setActivePackagingIndex(index); fetchMasterSuggestions('packaging', item.packaging); }}
+                          onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
+                          onKeyDown={(e) => handlePackagingKeyDown(index, e)}
+                          placeholder="Bora / Bag / Roll"
+                          className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                          autoComplete="off"
+                        />
+                        {activePackagingIndex === index && packagingSuggestions.length > 0 && (
+                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                            {packagingSuggestions.map((s, si) => (
+                              <div
+                                key={si}
+                                onMouseDown={() => selectPackagingSuggestion(index, s)}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === packagingHighlightIndex
+                                  ? 'bg-brand-primary/10 text-brand-primary'
+                                  : 'hover:bg-gray-50 text-gray-800'
+                                  }`}
+                              >
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description</Label>
-                      <Input
-                        value={item.description}
-                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        onFocus={() => { setActiveDescriptionIndex(index); fetchMasterSuggestions('description', item.description); }}
-                        onBlur={() => setTimeout(() => setActiveDescriptionIndex(null), 200)}
-                        placeholder="Hardware / Cycle / Kirana"
-                        className={`h-10 text-sm rounded-lg ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
-                        autoComplete="off"
-                      />
-                      {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
-                        <div className="absolute z-50 top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto mt-1">
-                          {descriptionSuggestions.map((s, si) => (
-                            <div
-                              key={si}
-                              className="px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                              onMouseDown={() => selectDescriptionSuggestion(index, s)}
-                            >
-                              {s}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      <div className="relative">
+                        {/* Backdrop autocomplete suggestion */}
+                        {item.description && activeDescriptionIndex === index && descriptionSuggestions.length > 0 && descriptionSuggestions[0].toLowerCase().startsWith(item.description.toLowerCase()) && (
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                            <span className="opacity-0">{descriptionSuggestions[0].slice(0, item.description.length)}</span>
+                            <span>{descriptionSuggestions[0].slice(item.description.length)}</span>
+                          </div>
+                        )}
+                        <Input
+                          value={item.description}
+                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          onFocus={() => { setActiveDescriptionIndex(index); fetchMasterSuggestions('description', item.description); }}
+                          onBlur={() => setTimeout(() => setActiveDescriptionIndex(null), 200)}
+                          onKeyDown={(e) => handleDescriptionKeyDown(index, e)}
+                          placeholder="Hardware / Cycle / Kirana"
+                          className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
+                          autoComplete="off"
+                        />
+                        {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
+                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                            {descriptionSuggestions.map((s, si) => (
+                              <div
+                                key={si}
+                                onMouseDown={() => selectDescriptionSuggestion(index, s)}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === descriptionHighlightIndex
+                                  ? 'bg-brand-primary/10 text-brand-primary'
+                                  : 'hover:bg-gray-50 text-gray-800'
+                                  }`}
+                              >
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {renderCellError(`item_${index}_description`)}
                     </div>
                     <div className="col-span-2 relative pb-4">
