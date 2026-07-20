@@ -103,7 +103,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
+                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
                   <th className="font-semibold p-3">LR Number</th>
                   <th className="font-semibold p-3">Date</th>
                   <th className="font-semibold p-3">Consignor (Sender)</th>
@@ -126,7 +126,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                   </tr>
                 ) : (
                   bookings.map((booking: any) => (
-                    <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-3 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-3 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
