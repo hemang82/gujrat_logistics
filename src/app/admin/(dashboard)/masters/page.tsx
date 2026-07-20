@@ -118,7 +118,7 @@ export default function MastersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
         <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">Masters</h1>
+          <h1 className="text-lg md:text-xl font-bold text-gray-800">PKG &amp; Items</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage packaging types and item descriptions for booking form</p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export default function MastersPage() {
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setSearch(''); setNewName(''); setEditId(null); }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+              className={`cursor-pointer flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                 isActive
                   ? 'bg-brand-primary text-white border-brand-primary shadow-sm shadow-brand-primary/20'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-brand-primary/40 hover:text-brand-primary'
@@ -148,30 +148,32 @@ export default function MastersPage() {
       <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden bg-white">
         <CardContent className="p-0">
           {/* Add + Search bar */}
-          <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-gray-100 bg-gray-50/50">
-            <div className="flex gap-2 flex-1">
+          <div className="flex flex-col sm:flex-row items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/50">
+            {/* Add row */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
               <Input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                placeholder={activeTab === 'packaging' ? 'Add new packaging (e.g. Bora, Box...)' : 'Add new description (e.g. Cotton, Rice...)'}
-                className="h-10 rounded-lg border-gray-200 text-sm flex-1"
+                placeholder={activeTab === 'packaging' ? 'New packaging type...' : 'New item description...'}
+                className="h-9 rounded-lg border-gray-200 text-sm flex-1 min-w-0"
               />
               <Button
                 onClick={handleAdd}
                 disabled={isAdding || !newName.trim()}
-                className="h-10 px-4 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-semibold flex items-center gap-2 shrink-0"
+                className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Add
+                <Plus className="w-3.5 h-3.5" /> Add
               </Button>
             </div>
-            <div className="relative sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            {/* Search */}
+            <div className="relative w-full sm:w-56 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="pl-9 h-10 rounded-lg border-gray-200 text-sm w-full"
+                className="pl-8 h-9 rounded-lg border-gray-200 text-sm w-full"
               />
             </div>
           </div>

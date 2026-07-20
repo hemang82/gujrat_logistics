@@ -127,7 +127,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'Branches', href: '/admin/branches', exact: false },
         { name: 'Clients', href: '/admin/clients', exact: false },
         { name: 'Agents', href: '/admin/agents', exact: false },
-        { name: 'Masters (PKG & Items)', href: '/admin/masters', exact: false },
+        { name: 'PKG & Items', href: '/admin/masters', exact: false },
       ]
     },
     { 
