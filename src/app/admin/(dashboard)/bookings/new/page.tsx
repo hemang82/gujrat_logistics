@@ -1128,15 +1128,15 @@ function NewBookingForm() {
         </Card>
 
         {/* Section 3: Material & Parcel Details */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
+        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
             <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
               3. Material & Packages Details
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-3">
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider">
+            <div className="border border-gray-200 rounded-lg overflow-visible">
+              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider rounded-t-lg">
                 <div className="col-span-1 text-center">Pkgs</div>
                 <div className="col-span-2">Packaging</div>
                 <div className="col-span-3">Description</div>
