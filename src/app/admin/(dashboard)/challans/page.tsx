@@ -128,7 +128,7 @@ export default function ChallansListPage() {
                   </tr>
                 ) : (
                   challans.map((ch) => (
-                    <tr key={ch._id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={ch._id} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 font-extrabold text-brand-primary uppercase">
                         {ch.branch?.code || 'GL'}-{ch.challanNumber}
                         <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch?.name || ch.branch || 'N/A'}</span>

@@ -550,7 +550,7 @@ export default function EditChallanPage() {
         <Button 
           type="button" 
           onClick={() => router.back()} 
-          className="h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center gap-1.5 transition-colors"
+          className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors"
         >
           Back &larr;
         </Button>

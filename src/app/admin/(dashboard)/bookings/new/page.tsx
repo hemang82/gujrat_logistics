@@ -792,7 +792,7 @@ function NewBookingForm() {
                         type="button"
                         onClick={handleFetchEwayBill}
                         disabled={isFetchingEway}
-                        className="h-10 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                        className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
                       >
                         {isFetchingEway ? 'Fetching...' : 'Fetch'}
                       </Button>
@@ -1199,7 +1199,7 @@ function NewBookingForm() {
                       type="button"
                       onClick={handleFetchEwayBill}
                       disabled={isFetchingEway}
-                      className="h-10 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs"
+                      className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
                     >
                       {isFetchingEway ? 'Fetching...' : 'Fetch'}
                     </Button>
@@ -1295,7 +1295,7 @@ function NewBookingForm() {
             type="submit"
             onClick={() => setSubmitAction('print')}
             disabled={isLoading}
-            className="h-10 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
+            className="h-10 px-5 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
           >
             {isLoading && submitAction === 'print' ? 'Printing...' : (
               <>

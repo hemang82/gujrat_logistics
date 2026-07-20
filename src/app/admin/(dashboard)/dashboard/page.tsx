@@ -296,7 +296,7 @@ export default async function AdminDashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
+                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
                   <th className="font-semibold p-4">LR Number</th>
                   <th className="font-semibold p-4">Date</th>
                   <th className="font-semibold p-4">Consignee</th>
@@ -317,7 +317,7 @@ export default async function AdminDashboard() {
                   </tr>
                 ) : (
                   recentBookings.map((booking: any) => (
-                    <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-4 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

@@ -178,7 +178,7 @@ export default function DeliveryEntryPage() {
                 bookings.map((bk) => {
                   const isToPay = bk.paymentCondition === 'to_pay';
                   return (
-                    <tr key={bk._id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={bk._id} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="px-4 py-3">
                         <span className="font-bold text-brand-primary bg-brand-primary/5 px-2 py-1 rounded-md border border-brand-primary/10">
                           #{bk.lrNumber}

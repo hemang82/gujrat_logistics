@@ -182,7 +182,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
           <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
+                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
                   <th className="font-semibold p-4">Date</th>
                   <th className="font-semibold p-4">Type</th>
                   <th className="font-semibold p-4">Vehicle</th>
@@ -204,7 +204,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                   </tr>
                 ) : (
                   expenses.map((expense: any) => (
-                    <tr key={expense._id.toString()} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={expense._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 text-sm text-gray-600">
                         {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>

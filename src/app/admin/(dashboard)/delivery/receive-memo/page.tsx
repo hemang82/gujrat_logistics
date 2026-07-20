@@ -151,7 +151,7 @@ export default function ReceiveMemoPage() {
           {selectedIds.length > 0 && (
             <Button 
               onClick={handleBulkReceive}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-10 px-6 rounded-lg flex items-center gap-2 transition-all shadow-sm whitespace-nowrap"
+              className="bg-brand-primary hover:bg-brand-primary-dark text-white font-bold h-10 px-6 rounded-lg flex items-center gap-2 transition-all shadow-sm whitespace-nowrap"
             >
               <CheckCircle className="w-5 h-5" />
               Receive Selected ({selectedIds.length})
@@ -235,7 +235,7 @@ export default function ReceiveMemoPage() {
                     <td className="px-4 py-3 text-right">
                       <Button 
                         onClick={() => handleReceive(ch._id, ch.challanNumber)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-bold h-9 px-4 rounded-lg flex items-center gap-1.5 transition-all"
+                        className="bg-brand-primary hover:bg-brand-primary-dark text-white shadow-sm font-bold h-9 px-4 rounded-lg flex items-center gap-1.5 transition-all"
                       >
                         <CheckCircle className="w-4 h-4" />
                         Receive

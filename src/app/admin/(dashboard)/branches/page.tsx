@@ -82,7 +82,7 @@ export default async function BranchesPage({
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
+                <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
                   <th className="font-semibold p-4">Code</th>
                   <th className="font-semibold p-4">Branch Name</th>
                   <th className="font-semibold p-4">State</th>
@@ -104,7 +104,7 @@ export default async function BranchesPage({
                   </tr>
                 ) : (
                   branches.map((br: any) => (
-                    <tr key={br._id.toString()} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={br._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 font-bold text-brand-primary uppercase">{br.code}</td>
                       <td className="p-4 text-sm font-semibold text-brand-text-primary">{br.name}</td>
                       <td className="p-4 text-sm text-gray-600">{br.state}</td>

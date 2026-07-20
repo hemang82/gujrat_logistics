@@ -259,7 +259,7 @@ export default function BranchLedgerPage() {
                     </tr>
                   ) : (
                     ledgerData.transactions.map((txn: any) => (
-                      <tr key={txn._id} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={txn._id} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                           {format(new Date(txn.date), 'hh:mm a')}
                         </td>

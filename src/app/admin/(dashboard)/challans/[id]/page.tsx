@@ -71,10 +71,10 @@ export default function ViewChallanPage() {
         </div>
         <div className="flex gap-2">
           <Link href={`/admin/challans/${id}/edit`}>
-            <Button type="button" className="h-9 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
+            <Button type="button" className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
           </Link>
           <Button type="button" onClick={handlePrint} className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">Print</Button>
-          <Button type="button" onClick={() => router.push('/admin/challans')} className="h-9 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium flex items-center gap-1.5 transition-colors">
+          <Button type="button" onClick={() => router.push('/admin/challans')} className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">
             Back &larr;
           </Button>
         </div>
