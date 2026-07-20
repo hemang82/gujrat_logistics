@@ -74,18 +74,20 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
               Export Excel
             </Button>
           </a>
-          <Link href="/admin/bookings/new" className="w-full sm:w-auto">
-            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
-              <Plus className="w-5 h-5" />
-              CREATE
-            </Button>
-          </Link>
-          <Link href="/admin/bookings/new?type=manual" className="w-full sm:w-auto">
-            <Button className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary border border-brand-primary/20 h-12 w-full px-6 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
-              <Plus className="w-5 h-5" />
-              Manual
-            </Button>
-          </Link>
+          <div className="flex gap-3 w-full sm:w-auto">
+            <Link href="/admin/bookings/new" className="flex-1 sm:flex-none">
+              <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
+                <Plus className="w-5 h-5" />
+                CREATE
+              </Button>
+            </Link>
+            <Link href="/admin/bookings/new?type=manual" className="flex-1 sm:flex-none">
+              <Button className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary border border-brand-primary/20 h-12 w-full px-6 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
+                <Plus className="w-5 h-5" />
+                Manual
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
