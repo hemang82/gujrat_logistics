@@ -80,6 +80,23 @@ export default function AddChallanPage() {
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
   const driverSuggestions = driversList.filter(d => d.label.toLowerCase().includes(driverSearch.toLowerCase()));
 
+  const [lrToBranchSearch, setLrToBranchSearch] = useState('');
+  const [showLrToBranchDropdown, setShowLrToBranchDropdown] = useState(false);
+  const lrToBranchSuggestions = branchesList.filter(b => b.label.toLowerCase().includes(lrToBranchSearch.toLowerCase()));
+
+  const [agentHighlightIndex, setAgentHighlightIndex] = useState(-1);
+  const [truckHighlightIndex, setTruckHighlightIndex] = useState(-1);
+  const [memoHighlightIndex, setMemoHighlightIndex] = useState(-1);
+  const [driverHighlightIndex, setDriverHighlightIndex] = useState(-1);
+  const [lrToBranchHighlightIndex, setLrToBranchHighlightIndex] = useState(-1);
+
+  // Reset highlight index when suggestions change
+  useEffect(() => { setAgentHighlightIndex(-1); }, [agentSuggestions]);
+  useEffect(() => { setTruckHighlightIndex(-1); }, [truckSuggestions]);
+  useEffect(() => { setMemoHighlightIndex(-1); }, [memoSuggestions]);
+  useEffect(() => { setDriverHighlightIndex(-1); }, [driverSuggestions]);
+  useEffect(() => { setLrToBranchHighlightIndex(-1); }, [lrToBranchSuggestions]);
+
   // Derived state for checked LRs
   const loadedLrs = pendingLrs.filter(item => selectedLrIds[item._id]);
 
@@ -616,18 +633,79 @@ export default function AddChallanPage() {
               </div>
               <div className="space-y-1 sm:col-span-2 md:col-span-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
-                <ThemeSelect
-                  name="lrToBranch"
-                  value={formData.lrToBranch}
-                  onChange={handleChange as any}
-                  options={[{ value: '', label: 'Select Branch' }, ...branchesList]}
-                  disabled={formData.allBranchwise === 'All'}
-                  className={`flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none ${
-                    formData.allBranchwise === 'All'
-                      ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                      : ''
-                  }`}
-                />
+                <div className="relative">
+                  {/* Backdrop autocomplete suggestion */}
+                  {lrToBranchSearch && lrToBranchSuggestions.length > 0 && lrToBranchSuggestions[0].label.toLowerCase().startsWith(lrToBranchSearch.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{lrToBranchSuggestions[0].label.slice(0, lrToBranchSearch.length)}</span>
+                      <span>{lrToBranchSuggestions[0].label.slice(lrToBranchSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={lrToBranchSearch}
+                    onChange={(e) => {
+                      setLrToBranchSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, lrToBranch: '' }));
+                    }}
+                    onFocus={() => setShowLrToBranchDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowLrToBranchDropdown(false), 200)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && lrToBranchSearch && lrToBranchSuggestions.length > 0) {
+                        const firstMatch = lrToBranchSuggestions[0];
+                        if (firstMatch.label.toLowerCase().startsWith(lrToBranchSearch.toLowerCase())) {
+                          setLrToBranchSearch(firstMatch.label);
+                          setFormData(prev => ({ ...prev, lrToBranch: firstMatch.value }));
+                          setShowLrToBranchDropdown(false);
+                          e.preventDefault();
+                          return;
+                        }
+                      }
+                      if (!showLrToBranchDropdown || lrToBranchSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setLrToBranchHighlightIndex(prev => prev < lrToBranchSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setLrToBranchHighlightIndex(prev => prev > 0 ? prev - 1 : lrToBranchSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (lrToBranchHighlightIndex >= 0 && lrToBranchHighlightIndex < lrToBranchSuggestions.length) {
+                          const selected = lrToBranchSuggestions[lrToBranchHighlightIndex];
+                          setLrToBranchSearch(selected.label);
+                          setFormData(prev => ({ ...prev, lrToBranch: selected.value }));
+                          setShowLrToBranchDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowLrToBranchDropdown(false);
+                      }
+                    }}
+                    placeholder="Search LR to Branch..."
+                    disabled={formData.allBranchwise === 'All'}
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${formData.allBranchwise === 'All' ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {showLrToBranchDropdown && lrToBranchSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {lrToBranchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.value}
+                          onMouseDown={() => {
+                            setLrToBranchSearch(suggestion.label);
+                            setFormData(prev => ({ ...prev, lrToBranch: suggestion.value }));
+                            setShowLrToBranchDropdown(false);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === lrToBranchHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          {suggestion.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -848,10 +926,10 @@ export default function AddChallanPage() {
             {/* Row 3 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Truck No. <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckNoSearch.length)}</span>
                       <span>{truckSuggestions[0].label.slice(truckNoSearch.length)}</span>
                     </div>
@@ -859,8 +937,8 @@ export default function AddChallanPage() {
                   <Input
                     value={truckNoSearch}
                     onChange={(e) => {
-                      setTruckNoSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, truckNo: '' })); // clear ID when typing
+                      setTruckNoSearch(e.target.value.toUpperCase());
+                      setFormData(prev => ({ ...prev, truckNo: '' }));
                       if (errors.truckNo) {
                         const newErrors = { ...errors };
                         delete newErrors.truckNo;
@@ -873,6 +951,26 @@ export default function AddChallanPage() {
                         setTruckNoSearch(truckSuggestions[0].label);
                         setFormData(prev => ({ ...prev, truckNo: truckSuggestions[0].value }));
                         setShowTruckDropdown(false);
+                        return;
+                      }
+                      if (!showTruckDropdown || truckSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setTruckHighlightIndex(prev => prev < truckSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setTruckHighlightIndex(prev => prev > 0 ? prev - 1 : truckSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (truckHighlightIndex >= 0 && truckHighlightIndex < truckSuggestions.length) {
+                          const selected = truckSuggestions[truckHighlightIndex];
+                          setTruckNoSearch(selected.label);
+                          setFormData(prev => ({ ...prev, truckNo: selected.value }));
+                          setShowTruckDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowTruckDropdown(false);
                       }
                     }}
                     onFocus={() => setShowTruckDropdown(true)}
@@ -884,7 +982,7 @@ export default function AddChallanPage() {
                   {renderError('truckNo')}
                   
                   {showTruckDropdown && truckSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {truckSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
@@ -893,9 +991,12 @@ export default function AddChallanPage() {
                             setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
                             setShowTruckDropdown(false);
                           }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === truckHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
                         >
-                          <span className="font-bold">{suggestion.label}</span>
+                          {suggestion.label}
                         </div>
                       ))}
                     </div>
@@ -906,7 +1007,7 @@ export default function AddChallanPage() {
                 <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
                 <div className="relative">
                   {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
                       <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
                     </div>
@@ -920,11 +1021,27 @@ export default function AddChallanPage() {
                         e.preventDefault();
                         setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
                         setShowAgentDropdown(false);
+                        return;
+                      }
+                      if (!showAgentDropdown || agentSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setAgentHighlightIndex(prev => prev < agentSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setAgentHighlightIndex(prev => prev > 0 ? prev - 1 : agentSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (agentHighlightIndex >= 0 && agentHighlightIndex < agentSuggestions.length) {
+                          setFormData(prev => ({ ...prev, agent: agentSuggestions[agentHighlightIndex].value }));
+                          setShowAgentDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowAgentDropdown(false);
                       }
                     }}
-                    onFocus={() => {
-                      if (formData.agent.length >= 0) setShowAgentDropdown(true);
-                    }}
+                    onFocus={() => setShowAgentDropdown(true)}
                     onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
                     placeholder="Search Agent..."
                     className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
@@ -933,7 +1050,7 @@ export default function AddChallanPage() {
                   {renderError('agent')}
                   
                   {showAgentDropdown && agentSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {agentSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
@@ -941,9 +1058,12 @@ export default function AddChallanPage() {
                             setFormData(prev => ({ ...prev, agent: suggestion.value }));
                             setShowAgentDropdown(false);
                           }}
-                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50`}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === agentHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
                         >
-                          <span className="font-bold">{suggestion.value}</span>
+                          {suggestion.value}
                         </div>
                       ))}
                     </div>
@@ -954,7 +1074,7 @@ export default function AddChallanPage() {
                 <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
                 <div className="relative">
                   {memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{memoSuggestions[0].label.slice(0, memoSearch.length)}</span>
                       <span>{memoSuggestions[0].label.slice(memoSearch.length)}</span>
                     </div>
@@ -976,6 +1096,26 @@ export default function AddChallanPage() {
                         setMemoSearch(memoSuggestions[0].label);
                         setFormData(prev => ({ ...prev, memoDestinationBranch: memoSuggestions[0].value }));
                         setShowMemoDropdown(false);
+                        return;
+                      }
+                      if (!showMemoDropdown || memoSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setMemoHighlightIndex(prev => prev < memoSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setMemoHighlightIndex(prev => prev > 0 ? prev - 1 : memoSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (memoHighlightIndex >= 0 && memoHighlightIndex < memoSuggestions.length) {
+                          const selected = memoSuggestions[memoHighlightIndex];
+                          setMemoSearch(selected.label);
+                          setFormData(prev => ({ ...prev, memoDestinationBranch: selected.value }));
+                          setShowMemoDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowMemoDropdown(false);
                       }
                     }}
                     onFocus={() => setShowMemoDropdown(true)}
@@ -987,7 +1127,7 @@ export default function AddChallanPage() {
                   {renderError('memoDestinationBranch')}
                   
                   {showMemoDropdown && memoSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {memoSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
@@ -996,9 +1136,12 @@ export default function AddChallanPage() {
                             setFormData(prev => ({ ...prev, memoDestinationBranch: suggestion.value }));
                             setShowMemoDropdown(false);
                           }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === memoHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
                         >
-                          <span className="font-bold">{suggestion.label}</span>
+                          {suggestion.label}
                         </div>
                       ))}
                     </div>
@@ -1009,7 +1152,7 @@ export default function AddChallanPage() {
                 <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
                 <div className="relative">
                   {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
                       <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
                     </div>
@@ -1018,7 +1161,7 @@ export default function AddChallanPage() {
                     value={driverSearch}
                     onChange={(e) => {
                       setDriverSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, driverName: '' }));
+                      setFormData(prev => ({ ...prev, driverName: e.target.value }));
                       if (errors.driverName) {
                         const newErrors = { ...errors };
                         delete newErrors.driverName;
@@ -1031,6 +1174,26 @@ export default function AddChallanPage() {
                         setDriverSearch(driverSuggestions[0].label);
                         setFormData(prev => ({ ...prev, driverName: driverSuggestions[0].value }));
                         setShowDriverDropdown(false);
+                        return;
+                      }
+                      if (!showDriverDropdown || driverSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setDriverHighlightIndex(prev => prev < driverSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setDriverHighlightIndex(prev => prev > 0 ? prev - 1 : driverSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (driverHighlightIndex >= 0 && driverHighlightIndex < driverSuggestions.length) {
+                          const selected = driverSuggestions[driverHighlightIndex];
+                          setDriverSearch(selected.label);
+                          setFormData(prev => ({ ...prev, driverName: selected.value }));
+                          setShowDriverDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowDriverDropdown(false);
                       }
                     }}
                     onFocus={() => setShowDriverDropdown(true)}
@@ -1042,7 +1205,7 @@ export default function AddChallanPage() {
                   {renderError('driverName')}
                   
                   {showDriverDropdown && driverSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {driverSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
@@ -1051,9 +1214,12 @@ export default function AddChallanPage() {
                             setFormData(prev => ({ ...prev, driverName: suggestion.value }));
                             setShowDriverDropdown(false);
                           }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === driverHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
                         >
-                          <span className="font-bold">{suggestion.label}</span>
+                          {suggestion.label}
                         </div>
                       ))}
                     </div>

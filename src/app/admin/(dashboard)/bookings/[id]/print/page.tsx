@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
-import { Truck, Scissors } from 'lucide-react';
+import { Truck, Scissors, ArrowLeft } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
 import React from 'react';
+import Link from 'next/link';
 
 // Reusable component for a single half-page LR Copy
 const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
@@ -203,7 +204,13 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
     <div className="w-full mx-auto print:p-0 print:m-0 print:max-w-none bg-gray-100 print:bg-white min-h-screen py-8">
       
       {/* Top Actions - Hidden in Print */}
-      <div className="flex justify-center print:hidden mb-6">
+      <div className="flex items-center justify-center gap-4 print:hidden mb-6 max-w-[21cm] mx-auto">
+        <Link 
+          href="/admin/bookings" 
+          className="flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-brand-primary font-bold rounded-xl shadow-sm transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to Bookings
+        </Link>
         <PrintButton />
       </div>
 
