@@ -812,6 +812,16 @@ export default function AddCrossingPage() {
                   </tbody>
                 </table>
               </div>
+              {/* Totals Summary Strip */}
+              <div className="flex flex-wrap items-center gap-4 mt-2 px-4 py-2.5 bg-brand-primary/5 border border-brand-primary/15 rounded-lg">
+                <div className="text-xs font-bold text-gray-600 uppercase">Total LRs: <span className="text-brand-primary text-sm">{loadedLrs.length}</span></div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="text-xs font-bold text-gray-600 uppercase">Packages: <span className="text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.pkg) || 0), 0)}</span></div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="text-xs font-bold text-gray-600 uppercase">Weight: <span className="text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0)} KG</span></div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="text-xs font-bold text-gray-600 uppercase">Freight: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</span></div>
+              </div>
             )}
 
             {/* Row 3: Truck, Agent, Branches */}
