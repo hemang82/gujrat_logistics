@@ -70,7 +70,7 @@ export function AdminLayoutWrapper({
           user={user} 
           onMenuClick={() => setSidebarOpen(true)} 
         />
-        <main className="flex-1 p-3 sm:p-4 md:p-6 xl:p-8 overflow-x-hidden w-full max-w-full print:p-0 print:m-0">
+        <main className="flex-1 p-2 sm:p-3 md:p-4 xl:p-6 overflow-x-hidden w-full max-w-full print:p-0 print:m-0">
           {children}
         </main>
       </div>
