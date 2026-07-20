@@ -787,6 +787,7 @@ export default function EditChallanPage() {
 
             {/* Loaded LRs Table List */}
             {pendingLrs.length > 0 && (
+              <>
               <div className="border border-gray-100 rounded-lg overflow-hidden mt-2 bg-white">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold">
@@ -877,6 +878,7 @@ export default function EditChallanPage() {
                 <div className="w-px h-4 bg-gray-300"></div>
                 <div className="text-xs font-bold text-gray-600 uppercase">Freight: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</span></div>
               </div>
+              </>
             )}
 
             {/* Row 3 */}
