@@ -53,7 +53,7 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
 
   return (
     <>
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-center gap-2">
         {viewUrl && (
           <Link href={viewUrl} onClick={(e) => e.stopPropagation()}>
             <button className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer" title="View">

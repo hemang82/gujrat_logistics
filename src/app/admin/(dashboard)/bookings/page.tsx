@@ -75,7 +75,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             </Button>
           </a>
           <Link href="/admin/bookings/new" className="w-full sm:w-auto">
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
               <Plus className="w-5 h-5" />
               CREATE
             </Button>
@@ -108,8 +108,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                   <th className="font-semibold p-3">Consignee (Receiver)</th>
                   <th className="font-semibold p-3">Destination</th>
                   <th className="font-semibold p-3">Status</th>
-                  <th className="font-semibold p-3 text-right">Amount</th>
-                  <th className="font-semibold p-3 text-right">Actions</th>
+                  <th className="font-semibold p-3 text-right w-28">Amount</th>
+                  <th className="font-semibold p-3 text-center w-40">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -141,17 +141,19 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       <td className="p-3">
                         <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
                       </td>
-                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right">
+                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right w-28">
                         ₹{booking.charges?.totalAmount || 0}
                       </td>
-                      <td className="p-3 text-right">
-                        <ListActions
-                          id={booking._id.toString()}
-                          moduleName="bookings"
-                          viewUrl={`/admin/bookings/${booking._id}`}
-                          editUrl={`/admin/bookings/${booking._id}/edit`}
-                          printUrl={`/admin/bookings/${booking._id}/print`}
-                        />
+                      <td className="p-3 text-center w-40">
+                        <div className="flex justify-center">
+                          <ListActions
+                            id={booking._id.toString()}
+                            moduleName="bookings"
+                            viewUrl={`/admin/bookings/${booking._id}`}
+                            editUrl={`/admin/bookings/${booking._id}/edit`}
+                            printUrl={`/admin/bookings/${booking._id}/print`}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))
