@@ -107,8 +107,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                   <th className="font-semibold p-3">Consignor (Sender)</th>
                   <th className="font-semibold p-3">Consignee (Receiver)</th>
                   <th className="font-semibold p-3">Destination</th>
-                  <th className="font-semibold p-3">Status</th>
-                  <th className="font-semibold p-3 text-right pr-12">Amount</th>
+                  <th className="font-semibold p-3 text-center">Status</th>
+                  <th className="font-semibold p-3 text-right pr-8">Amount</th>
                   <th className="font-semibold p-3 text-center w-48">Actions</th>
                 </tr>
               </thead>
@@ -139,9 +139,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         {booking.destinationBranch?.name || booking.deliveryLocation || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
                       <td className="p-3">
-                        <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
+                        <div className="flex justify-center">
+                          <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
+                        </div>
                       </td>
-                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right pr-12">
+                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right pr-8">
                         ₹{booking.charges?.totalAmount || 0}
                       </td>
                       <td className="p-3 text-center w-48">
