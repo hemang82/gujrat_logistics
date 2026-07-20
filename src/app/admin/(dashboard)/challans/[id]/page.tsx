@@ -64,19 +64,27 @@ export default function ViewChallanPage() {
     <div className="w-full h-full p-4 space-y-5 print:p-0 print:m-0">
       
       {/* Top Header - Screen Only */}
-      <div className="flex justify-between items-start print:hidden">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">View Challan</h1>
-          <p className="text-xs text-gray-500 mt-0.5">View lorry loading details</p>
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4 print:hidden">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.push('/admin/challans')}
+            variant="outline"
+            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-800">View Challan</h1>
+            <p className="text-xs text-gray-500 mt-0.5">View lorry loading details</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link href={`/admin/challans/${id}/edit`}>
-            <Button type="button" className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
+            <Button type="button" className="h-9 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
           </Link>
-          <Button type="button" onClick={handlePrint} className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">Print</Button>
-          <Button type="button" onClick={() => router.push('/admin/challans')} className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors">
-            Back &larr;
-          </Button>
+          <Button type="button" onClick={handlePrint} className="h-9 px-4 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-2 transition-colors"><Printer className="w-4 h-4" /> Print</Button>
         </div>
       </div>
 

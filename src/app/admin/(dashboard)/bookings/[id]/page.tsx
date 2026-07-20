@@ -47,12 +47,23 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
     <div className="w-full mx-auto space-y-6 pb-10 print:p-0 print:m-0 print:max-w-none">
       
       {/* Top Actions - Hidden in Print */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden mb-6">
-        <Link href="/admin/bookings">
-          <Button variant="outline" className="h-10 rounded-xl flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" /> Back to Bookings
-          </Button>
-        </Link>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4 print:hidden">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/bookings">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+              title="Go Back"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-800">View Booking</h1>
+            <p className="text-xs text-gray-500 mt-0.5">View Lorry Receipt (Bilty) details</p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
           <Link href={`/admin/bookings/${id}/edit`} className="flex-1 sm:flex-none">
             <Button variant="outline" className="w-full h-10 rounded-xl bg-white text-gray-700 border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-2">

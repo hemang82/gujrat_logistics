@@ -47,8 +47,17 @@ export default function ViewBranchPage() {
 
   return (
     <div className="w-full pb-8 space-y-5">
-      <div className="mb-4 flex justify-between items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
         <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.push('/admin/branches')}
+            variant="outline"
+            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <div className="w-10 h-10 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center">
             <Building2 className="w-5 h-5" />
           </div>
@@ -58,20 +67,12 @@ export default function ViewBranchPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            type="button" 
-            variant="outline"
-            onClick={() => router.push('/admin/branches')} 
-            className="h-9 px-3 rounded-lg border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back
-          </Button>
           <Link href={`/admin/branches/${id}/edit`}>
             <Button 
               type="button" 
-              className="h-9 px-3.5 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-semibold flex items-center gap-1.5"
+              className="h-9 px-4 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-semibold flex items-center gap-2"
             >
-              <Edit2 className="w-3.5 h-3.5" /> Edit
+              <Edit2 className="w-4 h-4" /> Edit
             </Button>
           </Link>
         </div>
