@@ -108,8 +108,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                   <th className="font-semibold p-3">Consignee (Receiver)</th>
                   <th className="font-semibold p-3">Destination</th>
                   <th className="font-semibold p-3">Status</th>
-                  <th className="font-semibold p-3 text-right w-28">Amount</th>
-                  <th className="font-semibold p-3 text-center w-40">Actions</th>
+                  <th className="font-semibold p-3 text-right w-[140px]">Amount</th>
+                  <th className="font-semibold p-3 text-right pr-6 w-[200px]">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -141,11 +141,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       <td className="p-3">
                         <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
                       </td>
-                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right w-28">
+                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right w-[140px]">
                         ₹{booking.charges?.totalAmount || 0}
                       </td>
-                      <td className="p-3 text-center w-40">
-                        <div className="flex justify-center">
+                      <td className="p-3 pr-6 w-[200px]">
+                        <div className="flex justify-end">
                           <ListActions
                             id={booking._id.toString()}
                             moduleName="bookings"
