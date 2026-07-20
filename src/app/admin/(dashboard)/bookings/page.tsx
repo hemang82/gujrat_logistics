@@ -64,7 +64,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">Bookings & LR Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">Bookings & LR </h1>
           <p className="text-brand-text-secondary mt-1">Manage Lorry Receipts (LR) and track parcels.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

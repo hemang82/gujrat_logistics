@@ -118,7 +118,7 @@ function NewBookingForm() {
 
   useEffect(() => {
     if (!isManual) {
-      // Fetch bookings to determine next GR No for Auto GR Mode
+      // Fetch bookings to determine next LR No for Auto LR Mode
       fetch('/api/admin/bookings')
         .then(res => res.json())
         .then(data => {
@@ -429,7 +429,7 @@ function NewBookingForm() {
       value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
     } else if (['value', 'freightAmount', 'pf', 'labour', 'ddCharge', 'biltyCharge', 'gstRate', 'ewayBillNo', 'grNo'].includes(name)) {
       if (name === 'grNo') {
-        value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase(); // alphanumerics and dashes for manual GR
+        value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase(); // alphanumerics and dashes for manual LR
       } else if (name === 'ewayBillNo') {
         value = value.replace(/\D/g, '');
       } else {
@@ -523,38 +523,43 @@ function NewBookingForm() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.bookingBranch) newErrors.bookingBranch = "Please enter Booking Branch";
-    if (!formData.destinationBranch) newErrors.destinationBranch = "Please select Destination Branch";
-    if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
-    if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
-    if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
+    // --- Common required fields (both modes) ---
+    if (!formData.bookingBranch) newErrors.bookingBranch = "Booking Branch is required";
+    if (!formData.destinationBranch) newErrors.destinationBranch = "Destination Branch is required";
+    if (!formData.consignorName) newErrors.consignorName = "Consignor Name is required";
+    if (!formData.consigneeName) newErrors.consigneeName = "Consignee Name is required";
+    if (!formData.bookingDate) newErrors.bookingDate = "Booking Date is required";
 
+    // --- LR No (manual mode: must enter, auto mode: auto-generated) ---
     if (isManual) {
-      if (!formData.grNo) newErrors.grNo = "Please enter GR No";
+      if (!formData.grNo) newErrors.grNo = "LR No is required";
     } else {
-      if (!formData.grNo && !grNo) newErrors.grNo = "Please enter GR No";
+      if (!formData.grNo && !grNo) newErrors.grNo = "LR No could not be generated. Please refresh.";
     }
 
+    // --- Phone validation (optional but must be valid if entered) ---
     const phoneRegex = /^[6-9]\d{9}$/;
     if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit phone number";
     if (formData.consigneePhone && !phoneRegex.test(formData.consigneePhone)) newErrors.consigneePhone = "Invalid 10-digit phone number";
 
+    // --- GST validation (optional but must be valid if entered) ---
     const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
     if (formData.consignorGst && !gstRegex.test(formData.consignorGst)) newErrors.consignorGst = "Invalid GST format";
     if (formData.consigneeGst && !gstRegex.test(formData.consigneeGst)) newErrors.consigneeGst = "Invalid GST format";
 
+    // --- E-Way Bill: if entered must be 12 digits ---
     const ewayRegex = /^\d{12}$/;
     if (formData.ewayBillNo && !ewayRegex.test(formData.ewayBillNo)) newErrors.ewayBillNo = "E-Way Bill must be exactly 12 digits";
 
-    // Validate items
+    // --- Item rows validation ---
     items.forEach((item, index) => {
-      if (!item.packages) newErrors[`item_${index}_packages`] = "Please enter Pkgs";
-      if (!item.description) newErrors[`item_${index}_description`] = "Please enter Description";
+      if (!item.packages) newErrors[`item_${index}_packages`] = "Pkgs required";
+      if (!item.description) newErrors[`item_${index}_description`] = "Description required";
     });
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
-      toast.error('Please fix validation errors');
+      toast.error('Please fill all required fields before submitting.');
       return false;
     }
     return true;
@@ -707,8 +712,8 @@ function NewBookingForm() {
                   <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
                 </div>
                 <div className="space-y-1 relative pb-4">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">GR No <span className="text-red-500">*</span></Label>
-                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter GR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
+                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
                   {renderError('grNo')}
                 </div>
                 <div className="space-y-1 flex flex-col justify-start">
@@ -804,7 +809,7 @@ function NewBookingForm() {
                     {renderError('ewayBillNo')}
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">GR No</Label>
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">LR No</Label>
                     <Input name="grNo" value={formData.grNo || grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
                   </div>
                   <div className="space-y-1">
@@ -1270,7 +1275,7 @@ function NewBookingForm() {
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
                 <div className="h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-3 font-bold text-gray-700 text-sm">
-                  ₹ {totals.total.toFixed(2)}
+                  â‚¹ {totals.total.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -1321,3 +1326,4 @@ export default function NewBookingPage() {
     </Suspense>
   );
 }
+

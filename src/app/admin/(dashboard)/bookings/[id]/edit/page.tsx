@@ -509,7 +509,7 @@ export default function EditBookingPage() {
     if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
     if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
     if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
-    if (!formData.grNo) newErrors.grNo = "Please enter GR No";
+    if (!formData.grNo) newErrors.grNo = "Please enter LR No";
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit phone number";
@@ -681,8 +681,8 @@ export default function EditBookingPage() {
                   <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                 </div>
                 <div className="space-y-1 relative pb-4">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">GR No <span className="text-red-500">*</span></Label>
-                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter GR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
+                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
                   {renderError('grNo')}
                 </div>
                 <div className="space-y-1 flex flex-col justify-start">
@@ -769,7 +769,7 @@ export default function EditBookingPage() {
                     {renderError('ewayBillNo')}
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">GR No</Label>
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">LR No</Label>
                     <Input name="grNo" value={formData.grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
                   </div>
                   <div className="space-y-1">
