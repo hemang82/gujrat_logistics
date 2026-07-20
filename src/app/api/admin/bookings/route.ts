@@ -83,13 +83,7 @@ export async function POST(req: Request) {
     if (data.bookingBranch) data.bookingBranch = await resolveBranchId(data.bookingBranch);
     if (data.destinationBranch) data.destinationBranch = await resolveBranchId(data.destinationBranch);
     
-    // Check if GR number already exists
-    if (data.lrNumber) {
-      const existingBooking = await Booking.findOne({ lrNumber: data.lrNumber });
-      if (existingBooking) {
-        return NextResponse.json({ error: `GR Number "${data.lrNumber}" already exists` }, { status: 400 });
-      }
-    }
+    // Note: LR number duplicate check is now handled below in the generation logic
     
     
     // Map aggregated items to material field for backwards compatibility
@@ -115,29 +109,34 @@ export async function POST(req: Request) {
       data.deliveryLocation = data.destinationBranch;
     }
 
-    // Auto-generate LR number starting from LR-1000 if not provided
+    // Auto-generate LR number starting from 10001 if not provided
+    // Use database max to avoid race conditions / duplicate errors
     let finalLrNumber = data.lrNumber;
     if (!finalLrNumber) {
-      const latestBooking = await Booking.findOne({}, { lrNumber: 1 }).sort({ createdAt: -1 });
-      let newLrNumber = 'LR-1000';
-      
-      if (latestBooking && latestBooking.lrNumber) {
-        if (latestBooking.lrNumber.startsWith('LR-')) {
-          const lastNumberStr = latestBooking.lrNumber.split('-')[1];
-          const lastNumber = parseInt(lastNumberStr, 10);
-          if (!isNaN(lastNumber)) {
-            newLrNumber = `LR-${lastNumber + 1}`;
-          }
-        } else {
-          const lastNumber = parseInt(latestBooking.lrNumber, 10);
-          if (!isNaN(lastNumber)) {
-            newLrNumber = (lastNumber + 1).toString();
-          } else {
-            newLrNumber = '10001';
-          }
+      // Find the highest existing numeric LR number
+      const allBookings = await Booking.find({ lrNumber: { $exists: true } }, { lrNumber: 1 });
+      let maxNum = 10000;
+      allBookings.forEach((b: any) => {
+        if (b.lrNumber) {
+          const num = parseInt(String(b.lrNumber).replace(/\D/g, ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
         }
+      });
+      finalLrNumber = (maxNum + 1).toString();
+    } else {
+      // If frontend sent a number, verify it's not taken — if taken, auto-increment
+      const existingBooking = await Booking.findOne({ lrNumber: String(data.lrNumber) });
+      if (existingBooking) {
+        const allBookings = await Booking.find({ lrNumber: { $exists: true } }, { lrNumber: 1 });
+        let maxNum = 10000;
+        allBookings.forEach((b: any) => {
+          if (b.lrNumber) {
+            const num = parseInt(String(b.lrNumber).replace(/\D/g, ''), 10);
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+          }
+        });
+        finalLrNumber = (maxNum + 1).toString();
       }
-      finalLrNumber = newLrNumber;
     }
     
     // Initialize tracking history
