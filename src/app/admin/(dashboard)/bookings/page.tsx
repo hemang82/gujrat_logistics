@@ -102,14 +102,14 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100">
-                  <th className="font-semibold p-4">LR Number</th>
-                  <th className="font-semibold p-4">Date</th>
-                  <th className="font-semibold p-4">Consignor (Sender)</th>
-                  <th className="font-semibold p-4">Consignee (Receiver)</th>
-                  <th className="font-semibold p-4">Destination</th>
-                  <th className="font-semibold p-4">Status</th>
-                  <th className="font-semibold p-4">Amount</th>
-                  <th className="font-semibold p-4 text-right">Actions</th>
+                  <th className="font-semibold p-3">LR Number</th>
+                  <th className="font-semibold p-3">Date</th>
+                  <th className="font-semibold p-3">Consignor (Sender)</th>
+                  <th className="font-semibold p-3">Consignee (Receiver)</th>
+                  <th className="font-semibold p-3">Destination</th>
+                  <th className="font-semibold p-3">Status</th>
+                  <th className="font-semibold p-3 text-right">Amount</th>
+                  <th className="font-semibold p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -125,26 +125,26 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                 ) : (
                   bookings.map((booking: any) => (
                     <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4 font-semibold text-brand-primary">LR-{booking.lrNumber}</td>
-                      <td className="p-4 text-sm text-gray-600">
+                      <td className="p-3 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
+                      <td className="p-3 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
-                      <td className="p-4 text-sm font-medium text-brand-text-primary">
-                        {booking.consignor?.name || 'N/A'}
+                      <td className="p-3 text-sm font-medium text-brand-text-primary max-w-[200px] truncate" title={booking.consignor?.name}>
+                        {booking.consignor?.name || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
-                      <td className="p-4 text-sm font-medium text-gray-700">
-                        {booking.consignee?.name || 'N/A'}
+                      <td className="p-3 text-sm font-medium text-gray-700 max-w-[200px] truncate" title={booking.consignee?.name}>
+                        {booking.consignee?.name || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
-                      <td className="p-4 text-sm text-gray-600">
-                        {booking.destinationBranch?.name || booking.deliveryLocation || 'N/A'}
+                      <td className="p-3 text-sm text-gray-600">
+                        {booking.destinationBranch?.name || booking.deliveryLocation || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
-                      <td className="p-4">
+                      <td className="p-3">
                         <BookingStatusDropdown bookingId={booking._id.toString()} currentStatus={booking.status || 'pending'} />
                       </td>
-                      <td className="p-4 text-sm font-semibold text-brand-text-primary">
+                      <td className="p-3 text-sm font-bold text-brand-text-primary text-right">
                         ₹{booking.charges?.totalAmount || 0}
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="p-3 text-right">
                         <ListActions
                           id={booking._id.toString()}
                           moduleName="bookings"
