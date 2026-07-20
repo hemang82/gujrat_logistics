@@ -150,6 +150,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                           moduleName="bookings"
                           viewUrl={`/admin/bookings/${booking._id}`}
                           editUrl={`/admin/bookings/${booking._id}/edit`}
+                          printUrl={`/admin/bookings/${booking._id}/print`}
                         />
                       </td>
                     </tr>
@@ -221,6 +222,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         moduleName="bookings"
                         viewUrl={`/admin/bookings/${booking._id}`}
                         editUrl={`/admin/bookings/${booking._id}/edit`}
+                        printUrl={`/admin/bookings/${booking._id}/print`}
                       />
                     </div>
                   </div>
