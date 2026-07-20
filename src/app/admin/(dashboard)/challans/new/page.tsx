@@ -90,12 +90,12 @@ export default function AddChallanPage() {
   const [driverHighlightIndex, setDriverHighlightIndex] = useState(-1);
   const [lrToBranchHighlightIndex, setLrToBranchHighlightIndex] = useState(-1);
 
-  // Reset highlight index when suggestions change
-  useEffect(() => { setAgentHighlightIndex(-1); }, [agentSuggestions]);
-  useEffect(() => { setTruckHighlightIndex(-1); }, [truckSuggestions]);
-  useEffect(() => { setMemoHighlightIndex(-1); }, [memoSuggestions]);
-  useEffect(() => { setDriverHighlightIndex(-1); }, [driverSuggestions]);
-  useEffect(() => { setLrToBranchHighlightIndex(-1); }, [lrToBranchSuggestions]);
+  // Reset highlight index when search terms change
+  useEffect(() => { setAgentHighlightIndex(-1); }, [formData.agent]);
+  useEffect(() => { setTruckHighlightIndex(-1); }, [truckNoSearch]);
+  useEffect(() => { setMemoHighlightIndex(-1); }, [memoSearch]);
+  useEffect(() => { setDriverHighlightIndex(-1); }, [driverSearch]);
+  useEffect(() => { setLrToBranchHighlightIndex(-1); }, [lrToBranchSearch]);
 
   // Derived state for checked LRs
   const loadedLrs = pendingLrs.filter(item => selectedLrIds[item._id]);
