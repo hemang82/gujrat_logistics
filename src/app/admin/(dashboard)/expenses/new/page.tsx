@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
+import { ArrowLeft } from 'lucide-react';
 
 export default function NewExpensePage() {
   const router = useRouter();
@@ -98,14 +99,22 @@ export default function NewExpensePage() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-brand-text-primary">Log New Expense</h1>
-          <p className="text-brand-text-secondary mt-1">Record fuel, tolls, or maintenance costs.</p>
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            variant="outline"
+            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-800">Log New Expense</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Record fuel, tolls, or maintenance costs.</p>
+          </div>
         </div>
-        <Button variant="outline" onClick={() => router.back()} className="h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50">
-          Cancel
-        </Button>
       </div>
 
       <form onSubmit={handleSubmit} noValidate>

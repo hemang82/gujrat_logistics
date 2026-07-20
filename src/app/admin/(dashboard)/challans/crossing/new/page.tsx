@@ -494,18 +494,22 @@ export default function AddCrossingPage() {
   return (
     <div className="w-full pb-8">
       {/* Header Bar */}
-      <div className="mb-4 flex justify-between items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">Add Crossing Challan</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Load lorry receipts onto crossing agent sheet</p>
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            variant="outline"
+            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-800">Add Crossing Challan</h1>
+            <p className="text-xs text-gray-500 mt-0.5">Load lorry receipts onto crossing agent sheet</p>
+          </div>
         </div>
-        <Button 
-          type="button" 
-          onClick={() => router.back()} 
-          className="h-9 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-1.5 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back
-        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
