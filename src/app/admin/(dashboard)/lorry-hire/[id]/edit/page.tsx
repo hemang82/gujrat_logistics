@@ -32,6 +32,7 @@ export default function LorryHireEditForm() {
     date: new Date().toISOString().split('T')[0],
     fromBranch: userBranch,
     toBranch: '',
+    truckNo: '',
     totalAmount: '',
     advanceAmount: '',
     balancePaidBy: '',
