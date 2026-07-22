@@ -924,8 +924,10 @@ export default function EditChallanPage() {
                   <Input
                     value={truckNoSearch}
                     onChange={(e) => {
-                      setTruckNoSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, truckNo: '' })); // clear ID when typing
+                      const val = e.target.value.toUpperCase();
+                      setTruckNoSearch(val);
+                      const exactMatch = vehiclesList.find(v => v.label.toUpperCase() === val);
+                      setFormData(prev => ({ ...prev, truckNo: exactMatch ? exactMatch.value : '' }));
                       if (errors.truckNo) {
                         const newErrors = { ...errors };
                         delete newErrors.truckNo;
@@ -940,7 +942,14 @@ export default function EditChallanPage() {
                         setShowTruckDropdown(false);
                       }
                     }}
-                    onFocus={() => setShowTruckDropdown(true)}
+                    onFocus={() => {
+                      setShowTruckDropdown(true);
+                      if (errors.truckNo) {
+                        const newErrors = { ...errors };
+                        delete newErrors.truckNo;
+                        setErrors(newErrors);
+                      }
+                    }}
                     onBlur={() => setTimeout(() => setShowTruckDropdown(false), 200)}
                     placeholder="Search Truck..."
                     className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-gray-200'}`}
