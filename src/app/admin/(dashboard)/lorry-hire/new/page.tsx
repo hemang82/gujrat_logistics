@@ -31,7 +31,6 @@ export default function LorryHireForm() {
     toBranch: '',
     truckNo: '',
     totalAmount: '',
-    totalAmount: '',
     advanceAmount: '',
     balancePaidBy: '',
     remark: ''
