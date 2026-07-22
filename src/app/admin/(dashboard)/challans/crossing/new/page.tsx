@@ -809,12 +809,12 @@ export default function AddCrossingPage() {
                             <span className="cursor-help border-b border-dotted border-gray-400">₹{item.totalAmount}</span>
                             <div className="absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 bottom-full mb-2 w-48 transition-all pointer-events-none text-left font-normal">
                               <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
-                              {item.charges?.freightAmount > 0 && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges.freightAmount}</span></div>}
-                              {item.charges?.pf > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
-                              {item.charges?.hamali > 0 && <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges.hamali}</span></div>}
-                              {item.charges?.biltyCharge > 0 && <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges.biltyCharge}</span></div>}
-                              {item.charges?.ddCharge > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
-                              {item.charges?.gstAmount > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
+                              {Number(item.charges?.freightAmount) > 0 && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges.freightAmount}</span></div>}
+                              {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
+                              {Number(item.charges?.hamali) > 0 && <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges.hamali}</span></div>}
+                              {Number(item.charges?.biltyCharge) > 0 && <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges.biltyCharge}</span></div>}
+                              {Number(item.charges?.ddCharge) > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
+                              {Number(item.charges?.gstAmount) > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
                               <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
                               
                               {/* Tooltip arrow */}
