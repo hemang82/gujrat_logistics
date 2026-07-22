@@ -210,6 +210,7 @@ export default function AddCrossingPage() {
             weight: weight,
             freight: freight,
             totalAmount: totalAmount,
+            charges: b.charges || {},
             destinationBranch: b.destinationBranch || 'N/A'
           };
         });
@@ -351,6 +352,7 @@ export default function AddCrossingPage() {
         weight: weight,
         freight: freight,
         totalAmount: totalAmount,
+        charges: booking.charges || {},
         destinationBranch: booking.destinationBranch || 'N/A'
       };
 
@@ -395,6 +397,7 @@ export default function AddCrossingPage() {
       weight: weight,
       freight: freight,
       totalAmount: totalAmount,
+      charges: booking.charges || {},
       destinationBranch: booking.destinationBranch || 'N/A'
     };
 
@@ -802,7 +805,22 @@ export default function AddCrossingPage() {
                           <td className="p-3 text-center">{item.pkg}</td>
                           <td className="p-3 text-center">{item.weight} KG</td>
                           <td className="p-3 text-center">₹{item.freight}</td>
-                          <td className="p-3 text-center font-bold">₹{item.totalAmount}</td>
+                          <td className="p-3 text-center font-bold relative group">
+                            <span className="cursor-help border-b border-dotted border-gray-400">₹{item.totalAmount}</span>
+                            <div className="absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 bottom-full mb-2 w-48 transition-all pointer-events-none text-left font-normal">
+                              <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
+                              {item.charges?.freightAmount > 0 && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges.freightAmount}</span></div>}
+                              {item.charges?.pf > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
+                              {item.charges?.hamali > 0 && <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges.hamali}</span></div>}
+                              {item.charges?.biltyCharge > 0 && <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges.biltyCharge}</span></div>}
+                              {item.charges?.ddCharge > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
+                              {item.charges?.gstAmount > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
+                              <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
+                              
+                              {/* Tooltip arrow */}
+                              <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 border-solid border-t-gray-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"></div>
+                            </div>
+                          </td>
                           <td className="p-3 uppercase text-brand-primary">{getBranchLabel(item.destinationBranch)}</td>
                           <td className="p-3 text-center">
                             <Button 
