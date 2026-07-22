@@ -108,25 +108,33 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
             <thead className="bg-gray-100 text-gray-700 font-bold text-xs uppercase tracking-wide">
               <tr>
                 <th className="py-2.5 px-3 border border-gray-200">Challan No</th>
-                <th className="py-2.5 px-3 border border-gray-200">Date</th>
+                <th className="py-2.5 px-3 border border-gray-200">Station</th>
                 <th className="py-2.5 px-3 border border-gray-200 text-center">LRs</th>
-                <th className="py-2.5 px-3 border border-gray-200">Destination</th>
-                <th className="py-2.5 px-3 border border-gray-200 text-right">Amount</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center">Articles</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center">Weight</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-right">Freight</th>
               </tr>
             </thead>
             <tbody>
-              {challans.map((c: any, index: number) => (
-                <tr key={c._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                  <td className="py-2.5 px-3 border border-gray-200 font-semibold">CH-{c.challanNumber}</td>
-                  <td className="py-2.5 px-3 border border-gray-200">{new Date(c.challanDate).toLocaleDateString('en-IN')}</td>
-                  <td className="py-2.5 px-3 border border-gray-200 text-center font-medium">{c.bookings?.length || 0}</td>
-                  <td className="py-2.5 px-3 border border-gray-200">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'DST'}</td>
-                  <td className="py-2.5 px-3 border border-gray-200 text-right font-semibold text-gray-800">₹{c.truckFreight?.toLocaleString() || 0}</td>
-                </tr>
-              ))}
+              {challans.map((c: any, index: number) => {
+                const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
+                const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                return (
+                  <tr key={c._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                    <td className="py-2.5 px-3 border border-gray-200 font-bold">{c.challanNumber}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 font-semibold uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'N/A'}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 text-center font-medium">{c.bookings?.length || 0}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 text-center">{totalPackages}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 text-center">{totalWeight}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 text-right font-semibold text-gray-800">
+                      {c.truckFreight ? `₹${c.truckFreight.toLocaleString()}` : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
               {challans.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-500">No challans found</td>
+                  <td colSpan={6} className="py-4 text-center text-gray-500">No challans found</td>
                 </tr>
               )}
             </tbody>

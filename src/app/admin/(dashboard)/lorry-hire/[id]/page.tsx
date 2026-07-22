@@ -130,24 +130,28 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                   <thead className="bg-gray-50 text-gray-600 font-semibold text-xs uppercase tracking-wide border-b border-gray-200">
                     <tr>
                       <th className="py-3 px-4">Challan No</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4">LRs</th>
-                      <th className="py-3 px-4">Route</th>
-                      <th className="py-3 px-4 text-right">Amount</th>
+                      <th className="py-3 px-4">Station</th>
+                      <th className="py-3 px-4 text-center">LRs</th>
+                      <th className="py-3 px-4 text-center">Articles</th>
+                      <th className="py-3 px-4 text-center">Weight</th>
+                      <th className="py-3 px-4 text-right">Freight</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {challans.map((c: any) => (
-                      <tr key={c._id} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 font-semibold text-brand-primary">CH-{c.challanNumber}</td>
-                        <td className="py-3 px-4 text-gray-600">{new Date(c.challanDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                        <td className="py-3 px-4 font-medium text-gray-700">{c.bookings?.length || 0}</td>
-                        <td className="py-3 px-4 text-gray-600 text-xs">
-                          {lorryHire.fromBranch?.code || 'SRC'} → {c.memoDestinationBranch?.code || 'DST'}
-                        </td>
-                        <td className="py-3 px-4 font-semibold text-gray-800 text-right">₹{c.truckFreight?.toLocaleString() || 0}</td>
-                      </tr>
-                    ))}
+                    {challans.map((c: any) => {
+                      const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
+                      const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                      return (
+                        <tr key={c._id} className="hover:bg-gray-50">
+                          <td className="py-3 px-4 font-bold text-brand-primary">{c.challanNumber}</td>
+                          <td className="py-3 px-4 font-semibold text-gray-700 uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'N/A'}</td>
+                          <td className="py-3 px-4 font-semibold text-gray-800 text-center">{c.bookings?.length || 0}</td>
+                          <td className="py-3 px-4 text-center text-gray-700">{totalPackages}</td>
+                          <td className="py-3 px-4 text-center text-gray-700">{totalWeight}</td>
+                          <td className="py-3 px-4 font-semibold text-gray-800 text-right">₹{c.truckFreight?.toLocaleString() || 0}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
