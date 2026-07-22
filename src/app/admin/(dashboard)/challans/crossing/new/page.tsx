@@ -30,8 +30,8 @@ export default function AddCrossingPage() {
   
   // Lists loaded from APIs
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
-  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string }[]>([]);
-  const [driversList, setDriversList] = useState<{ value: string; label: string }[]>([]);
+  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string; status?: string }[]>([]);
+  const [driversList, setDriversList] = useState<{ value: string; label: string; status?: string }[]>([]);
   const [agentsList, setAgentsList] = useState<{ value: string; label: string }[]>([]);
 
   // Challan Form State
@@ -112,7 +112,8 @@ export default function AddCrossingPage() {
         if (data && Array.isArray(data)) {
           const list = data.map((v: any) => ({
             value: v._id,
-            label: v.vehicleNumber
+            label: v.vehicleNumber,
+            status: v.status
           }));
           setVehiclesList(list);
         }
@@ -125,7 +126,8 @@ export default function AddCrossingPage() {
         if (data && Array.isArray(data)) {
           const list = data.map((d: any) => ({
             value: d._id,
-            label: d.name
+            label: d.name,
+            status: d.status
           }));
           setDriversList(list);
         }

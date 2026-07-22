@@ -30,8 +30,8 @@ export default function AddChallanPage() {
   
   // Lists loaded from APIs
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
-  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string }[]>([]);
-  const [driversList, setDriversList] = useState<{ value: string; label: string }[]>([]);
+  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string; status?: string }[]>([]);
+  const [driversList, setDriversList] = useState<{ value: string; label: string; status?: string }[]>([]);
   const [agentsList, setAgentsList] = useState<{ value: string; label: string }[]>([]);
 
   // Challan Form State
@@ -144,7 +144,8 @@ export default function AddChallanPage() {
         if (data && Array.isArray(data)) {
           const list = data.map((v: any) => ({
             value: v._id,
-            label: v.vehicleNumber
+            label: v.vehicleNumber,
+            status: v.status
           }));
           setVehiclesList(list);
         }
@@ -157,7 +158,8 @@ export default function AddChallanPage() {
         if (data && Array.isArray(data)) {
           const list = data.map((d: any) => ({
             value: d._id,
-            label: d.name
+            label: d.name,
+            status: d.status
           }));
           setDriversList(list);
         }
@@ -1047,7 +1049,14 @@ export default function AddChallanPage() {
                             : 'hover:bg-gray-50 text-gray-800'
                             }`}
                         >
-                          {suggestion.label}
+                          <div className="flex justify-between items-center w-full">
+                            <span>{suggestion.label}</span>
+                            {suggestion.status && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {suggestion.status.replace('-', ' ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1276,7 +1285,14 @@ export default function AddChallanPage() {
                             : 'hover:bg-gray-50 text-gray-800'
                             }`}
                         >
-                          {suggestion.label}
+                          <div className="flex justify-between items-center w-full">
+                            <span>{suggestion.label}</span>
+                            {suggestion.status && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {suggestion.status.replace('-', ' ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

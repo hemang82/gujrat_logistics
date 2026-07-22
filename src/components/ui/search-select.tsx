@@ -6,6 +6,7 @@ import { Search, ChevronDown, X } from 'lucide-react';
 interface Option {
   value: string;
   label: string;
+  status?: string;
 }
 
 interface SearchSelectProps {
@@ -177,6 +178,11 @@ export function SearchSelect({
                     }`}
                   >
                     <span className="truncate">{opt.label}</span>
+                    {opt.status && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0 ml-2 ${opt.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {opt.status.replace('-', ' ')}
+                      </span>
+                    )}
                   </div>
                 );
               })

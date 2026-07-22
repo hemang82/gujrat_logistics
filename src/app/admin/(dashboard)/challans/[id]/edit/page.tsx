@@ -30,8 +30,8 @@ export default function EditChallanPage() {
   
   // Lists loaded from APIs
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
-  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string }[]>([]);
-  const [driversList, setDriversList] = useState<{ value: string; label: string }[]>([]);
+  const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string; status?: string }[]>([]);
+  const [driversList, setDriversList] = useState<{ value: string; label: string; status?: string }[]>([]);
   const [agentsList, setAgentsList] = useState<{ value: string; label: string }[]>([]);
 
   // Challan Form State
@@ -104,7 +104,8 @@ export default function EditChallanPage() {
         if (vehiclesData && Array.isArray(vehiclesData)) {
           setVehiclesList(vehiclesData.map((v: any) => ({
             value: v._id,
-            label: v.vehicleNumber
+            label: v.vehicleNumber,
+            status: v.status
           })));
         }
 
@@ -114,7 +115,8 @@ export default function EditChallanPage() {
         if (driversData && Array.isArray(driversData)) {
           setDriversList(driversData.map((d: any) => ({
             value: d._id,
-            label: d.name
+            label: d.name,
+            status: d.status
           })));
         }
 
@@ -967,9 +969,15 @@ export default function EditChallanPage() {
                             setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
                             setShowTruckDropdown(false);
                           }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
                         >
-                          <span className="font-bold">{suggestion.label}</span>
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-bold">{suggestion.label}</span>
+                            {suggestion.status && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {suggestion.status.replace('-', ' ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1125,9 +1133,15 @@ export default function EditChallanPage() {
                             setFormData(prev => ({ ...prev, driverName: suggestion.value }));
                             setShowDriverDropdown(false);
                           }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
                         >
-                          <span className="font-bold">{suggestion.label}</span>
+                          <div className="flex justify-between items-center w-full">
+                            <span className="font-bold">{suggestion.label}</span>
+                            {suggestion.status && (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {suggestion.status.replace('-', ' ')}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
