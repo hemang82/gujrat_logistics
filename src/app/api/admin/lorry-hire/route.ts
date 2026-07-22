@@ -53,10 +53,10 @@ export async function GET(request: Request) {
       .populate('balancePaidBy', 'name code')
       .populate({
         path: 'challans',
-        populate: {
-          path: 'bookings',
-          model: 'Booking'
-        }
+        populate: [
+          { path: 'bookings', model: 'Booking' },
+          { path: 'memoDestinationBranch', model: 'Branch', select: 'name code' }
+        ]
       })
       .sort({ createdAt: -1 })
       .skip(skip)

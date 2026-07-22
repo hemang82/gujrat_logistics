@@ -425,12 +425,15 @@ export default function LorryHireEditForm() {
       const toBranch = challan.memoDestinationBranch?._id || challan.memoDestinationBranch || challan.lrToBranch?._id || challan.lrToBranch || '';
       const truck = challan.truckNo?._id || challan.truckNo || '';
       
+      // Calculate total from LR charges instead of truckFreight
+      const lrTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
+      
       setFormData(prev => ({
         ...prev,
         fromBranch: fromBranch,
         toBranch: toBranch,
         truckNo: truck,
-        totalAmount: challan.truckFreight?.toString() || '',
+        totalAmount: lrTotal.toString(),
         advanceAmount: challan.advanceAmount?.toString() || ''
       }));
 
@@ -448,10 +451,11 @@ export default function LorryHireEditForm() {
         if (truckObj) setTruckSearch(truckObj.vehicleNumber || '');
       }
     } else {
-      // If adding second challan, just sum the freight, advance, commission
+      // Sum LR charges for the new challan being added
+      const newChallanLRTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
       setFormData(prev => ({
         ...prev,
-        totalAmount: (Number(prev.totalAmount || 0) + Number(challan.truckFreight || 0)).toString(),
+        totalAmount: (Number(prev.totalAmount || 0) + newChallanLRTotal).toString(),
         advanceAmount: (Number(prev.advanceAmount || 0) + Number(challan.advanceAmount || 0)).toString()
       }));
     }
