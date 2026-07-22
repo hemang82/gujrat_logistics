@@ -32,12 +32,8 @@ export default function LorryHireEditForm() {
     date: new Date().toISOString().split('T')[0],
     fromBranch: userBranch,
     toBranch: '',
-    truckNo: '',
     totalAmount: '',
     advanceAmount: '',
-    commission: '',
-    hamali: '',
-    tds: '',
     balancePaidBy: '',
     status: 'pending',
     remark: ''
@@ -120,9 +116,6 @@ export default function LorryHireEditForm() {
                 truckNo: data.truckNo?._id || data.truckNo || '',
                 totalAmount: data.totalAmount?.toString() || '0',
                 advanceAmount: data.advanceAmount?.toString() || '0',
-                commission: data.commission?.toString() || '0',
-                hamali: data.hamali?.toString() || '0',
-                tds: data.tds?.toString() || '0',
                 balancePaidBy: data.balancePaidBy?._id || data.balancePaidBy || '',
                 status: data.status || 'pending',
                 remark: data.remark || ''
@@ -438,8 +431,7 @@ export default function LorryHireEditForm() {
         toBranch: toBranch,
         truckNo: truck,
         totalAmount: challan.truckFreight?.toString() || '',
-        advanceAmount: challan.advanceAmount?.toString() || '',
-        commission: challan.commission?.toString() || ''
+        advanceAmount: challan.advanceAmount?.toString() || ''
       }));
 
       // Update search inputs for UI feedback
@@ -460,8 +452,7 @@ export default function LorryHireEditForm() {
       setFormData(prev => ({
         ...prev,
         totalAmount: (Number(prev.totalAmount || 0) + Number(challan.truckFreight || 0)).toString(),
-        advanceAmount: (Number(prev.advanceAmount || 0) + Number(challan.advanceAmount || 0)).toString(),
-        commission: (Number(prev.commission || 0) + Number(challan.commission || 0)).toString()
+        advanceAmount: (Number(prev.advanceAmount || 0) + Number(challan.advanceAmount || 0)).toString()
       }));
     }
 
@@ -476,10 +467,7 @@ export default function LorryHireEditForm() {
   const calculateBalance = () => {
     const total = Number(formData.totalAmount) || 0;
     const advance = Number(formData.advanceAmount) || 0;
-    const commission = Number(formData.commission) || 0;
-    const hamali = Number(formData.hamali) || 0;
-    const tds = Number(formData.tds) || 0;
-    return total - advance - commission - hamali - tds;
+    return total - advance;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -511,9 +499,6 @@ export default function LorryHireEditForm() {
         challans: selectedChallans.map(c => c._id),
         totalAmount: Number(formData.totalAmount) || 0,
         advanceAmount: Number(formData.advanceAmount) || 0,
-        commission: Number(formData.commission) || 0,
-        hamali: Number(formData.hamali) || 0,
-        tds: Number(formData.tds) || 0,
         balanceAmount: calculateBalance(),
         balancePaidBy: formData.balancePaidBy || null,
         status: formData.status,
@@ -820,31 +805,58 @@ export default function LorryHireEditForm() {
                 <table className="w-full text-sm text-left">
                   <thead className="bg-gray-50 text-gray-600 font-semibold text-xs uppercase tracking-wide">
                     <tr>
-                      <th className="px-4 py-3">Challan No</th>
-                      <th className="px-4 py-3">Date</th>
-                      <th className="px-4 py-3">Total LRs</th>
+                      <th className="px-4 py-3 border-r border-gray-200">Challan No</th>
+                      <th className="px-4 py-3 border-r border-gray-200">Date</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-center">Total LRs</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-center">Packages</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-center">Weight</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-right">Amount</th>
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {selectedChallans.map(c => (
-                      <tr key={c._id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 font-bold text-brand-primary">CH-{c.challanNumber}</td>
-                        <td className="px-4 py-3 text-gray-600">{new Date(c.challanDate).toLocaleDateString('en-IN')}</td>
-                        <td className="px-4 py-3 font-semibold text-gray-800">{c.bookings?.length || 0}</td>
-                        <td className="px-4 py-3 text-right">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
-                            onClick={() => removeChallan(c._id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedChallans.map(c => {
+                      const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
+                      const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                      return (
+                        <tr key={c._id} className="hover:bg-gray-50/50">
+                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
+                          <td className="px-4 py-3 text-gray-600 border-r border-gray-100">{new Date(c.challanDate).toLocaleDateString('en-IN')}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
+                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>
+                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight} KG</td>
+                          <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{(c.truckFreight || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                              onClick={() => removeChallan(c._id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Summary Row */}
+                    <tr className="bg-gray-50/80 font-black text-gray-900 border-t border-gray-200">
+                      <td colSpan={2} className="px-4 py-3 text-right border-r border-gray-200">TOTAL:</td>
+                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.length || 0), 0)}
+                      </td>
+                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
+                      </td>
+                      <td className="px-4 py-3 text-center border-r border-gray-200 text-brand-primary">
+                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)} KG
+                      </td>
+                      <td className="px-4 py-3 text-right border-r border-gray-200 text-brand-primary">
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.truckFreight || 0), 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3"></td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -866,74 +878,38 @@ export default function LorryHireEditForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
               <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Freight</Label>
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
                 <Input
                   type="number"
                   name="totalAmount"
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold bg-gray-50"
+                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold bg-gray-50"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Advance</Label>
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Advance Amount</Label>
                 <Input
                   type="number"
                   name="advanceAmount"
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
+                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Commission</Label>
-                <Input
-                  type="number"
-                  name="commission"
-                  value={formData.commission}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Hamali</Label>
-                <Input
-                  type="number"
-                  name="hamali"
-                  value={formData.hamali}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TDS</Label>
-                <Input
-                  type="number"
-                  name="tds"
-                  value={formData.tds}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Net Balance</Label>
+                <Label className="text-xs font-semibold text-gray-800 uppercase">Balance Amount</Label>
                 <Input
                   type="text"
                   value={calculateBalance()}
                   disabled
-                  className="h-9 rounded-md border-gray-200 bg-orange-50/50 font-bold text-sm text-right pr-3 text-orange-600 shadow-inner"
+                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm text-right pr-4 text-gray-900"
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2 border-t border-gray-100 pt-4">
 
               {/* Balance Paid By Dropdown */}
               <div className="space-y-1 relative pb-4">

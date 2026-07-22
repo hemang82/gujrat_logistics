@@ -54,7 +54,7 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('bookings', 'lrNumber consignor consignee charges')
+      .populate('bookings', 'lrNumber consignor consignee charges items material')
       .populate('truckNo', 'vehicleNumber')
       .populate('driverName', 'name')
       .populate('branch', 'name code')
