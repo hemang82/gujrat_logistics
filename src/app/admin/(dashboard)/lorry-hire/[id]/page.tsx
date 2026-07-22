@@ -153,6 +153,23 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                       );
                     })}
                   </tbody>
+                  <tfoot className="bg-gray-100/80 border-t border-gray-200">
+                    <tr>
+                      <td colSpan={2} className="py-3 px-4 font-bold text-gray-800 uppercase tracking-wide">TOTAL</td>
+                      <td className="py-3 px-4 font-bold text-gray-800 text-center">
+                        {challans.reduce((acc: number, c: any) => acc + (c.bookings?.length || 0), 0)}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-gray-800 text-center">
+                        {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-gray-800 text-center">
+                        {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
+                      </td>
+                      <td className="py-3 px-4 font-bold text-brand-primary text-right">
+                        ₹{challans.reduce((acc: number, c: any) => acc + (c.truckFreight || 0), 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             ) : (
