@@ -21,10 +21,10 @@ export function Navbar() {
 
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'Services', href: '/services' },
-    { name: 'Track', href: '/track' },
+    { name: 'Features', href: '/features' },
+    { name: 'How It Works', href: '/how-it-works' },
+    { name: 'Pricing', href: '/pricing' },
     { name: 'About', href: '/about' },
-    { name: 'Contact', href: '/contact' },
   ];
 
   const isHomePage = pathname === '/';
@@ -44,7 +44,7 @@ export function Navbar() {
             <Truck className="w-6 h-6 text-white" />
           </div>
           <span className={`font-bold text-xl tracking-tight transition-colors ${!shouldBeTransparent ? 'text-brand-text-primary' : 'text-white'}`}>
-            Gujarat <span className={!shouldBeTransparent ? "text-brand-primary" : "text-white opacity-80"}>Logistic</span>
+            Logi<span className={!shouldBeTransparent ? "text-brand-primary" : "text-white opacity-80"}>Master</span>
           </span>
         </Link>
 
@@ -66,14 +66,14 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/admin/login" className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${!shouldBeTransparent ? 'text-gray-500 hover:text-brand-primary' : 'text-white/80 hover:text-white'}`}>
+          <Link href="/login" className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${!shouldBeTransparent ? 'text-gray-500 hover:text-brand-primary' : 'text-white/80 hover:text-white'}`}>
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            Staff Login
+            Login
           </Link>
           <div className={`w-px h-6 ${!shouldBeTransparent ? 'bg-gray-200' : 'bg-white/20'}`}></div>
-          <Link href="/contact">
-            <Button className="bg-brand-secondary hover:bg-brand-secondary-dark text-white rounded-full px-8 h-11 font-bold shadow-md active:scale-95 transition-all cursor-pointer">
-              Get a Quote
+          <Link href="/demo">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white rounded-full px-8 h-11 font-bold shadow-md active:scale-95 transition-all cursor-pointer">
+              Book a Free Demo
             </Button>
           </Link>
         </div>
@@ -101,12 +101,11 @@ export function Navbar() {
             </Link>
           ))}
           <div className="border-t border-gray-100 pt-4 flex flex-col gap-3">
-            <Link href="/admin/login" className="text-center text-sm font-medium text-brand-text-secondary p-2">
-              Staff Login
+            <Link href="/demo" onClick={() => setIsMobileMenuOpen(false)}>
+              <Button className="w-full bg-brand-primary text-white mt-2 rounded-lg">
+                Book a Free Demo
+              </Button>
             </Link>
-            <Button className="w-full bg-brand-secondary hover:bg-brand-secondary-dark text-white rounded-full">
-              Get a Quote
-            </Button>
           </div>
         </div>
       )}

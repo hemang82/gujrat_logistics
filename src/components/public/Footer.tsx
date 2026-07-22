@@ -13,11 +13,11 @@ export function Footer() {
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <span className="font-bold text-xl tracking-tight text-white">
-                Gujarat<span className="text-brand-primary-light">Logistic</span>
+                Logi<span className="text-brand-primary-light">Master</span>
               </span>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">
-              Connecting Gujarat, Delivering Trust. We provide reliable and fast logistics solutions across the state with real-time tracking and dedicated support.
+              India's #1 Logistics Management Software. Digitize your transport business, streamline operations, and scale with ease.
             </p>
             <div className="flex gap-4 mt-2">
               <Link href="#" className="text-gray-300 hover:text-white transition-colors">
@@ -31,35 +31,30 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-lg mb-4 text-white">Quick Links</h3>
+            <h3 className="font-semibold text-lg mb-4 text-white">Product</h3>
             <ul className="flex flex-col gap-2">
               <li>
-                <Link href="/" className="text-gray-300 hover:text-white text-sm transition-colors">Home</Link>
+                <Link href="/features" className="text-gray-300 hover:text-white text-sm transition-colors">Features</Link>
               </li>
               <li>
-                <Link href="/services" className="text-gray-300 hover:text-white text-sm transition-colors">Our Services</Link>
+                <Link href="/how-it-works" className="text-gray-300 hover:text-white text-sm transition-colors">How It Works</Link>
               </li>
               <li>
-                <Link href="/track" className="text-gray-300 hover:text-white text-sm transition-colors">Track Shipment</Link>
+                <Link href="/pricing" className="text-gray-300 hover:text-white text-sm transition-colors">Pricing</Link>
               </li>
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-white text-sm transition-colors">About Us</Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-300 hover:text-white text-sm transition-colors">Contact</Link>
+                <Link href="/demo" className="text-gray-300 hover:text-white text-sm transition-colors">Book a Demo</Link>
               </li>
             </ul>
           </div>
 
           {/* Services */}
           <div>
-            <h3 className="font-semibold text-lg mb-4 text-white">Services</h3>
+            <h3 className="font-semibold text-lg mb-4 text-white">Company</h3>
             <ul className="flex flex-col gap-2">
-              <li className="text-gray-300 text-sm">Full Truck Load (FTL)</li>
-              <li className="text-gray-300 text-sm">Part Load / LTL</li>
-              <li className="text-gray-300 text-sm">Warehousing Solutions</li>
-              <li className="text-gray-300 text-sm">Express Delivery</li>
-              <li className="text-gray-300 text-sm">Packing & Moving</li>
+              <li><Link href="/about" className="text-gray-300 hover:text-white text-sm transition-colors">About Us</Link></li>
+              <li><Link href="/blog" className="text-gray-300 hover:text-white text-sm transition-colors">Blog</Link></li>
+              <li><Link href="/contact" className="text-gray-300 hover:text-white text-sm transition-colors">Contact</Link></li>
             </ul>
           </div>
 
@@ -77,7 +72,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-brand-primary-light shrink-0" />
-                <span className="text-sm text-gray-300">info@gujaratlogistic.com</span>
+                <span className="text-sm text-gray-300">hello@logimaster.com</span>
               </li>
             </ul>
           </div>
@@ -85,7 +80,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-gray-700/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} Gujarat Logistic. All rights reserved.
+            &copy; {new Date().getFullYear()} LogiMaster. All rights reserved.
           </p>
           <div className="flex gap-4 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
