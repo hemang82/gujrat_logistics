@@ -54,9 +54,37 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
 
     const { id } = await params;
-    const doc = await LorryHire.findByIdAndUpdate(id, body, { new: true });
-    if (!doc) {
+    
+    // Get old doc to compare challans
+    const oldDoc = await LorryHire.findById(id);
+    if (!oldDoc) {
       return NextResponse.json({ error: 'Lorry Hire not found' }, { status: 404 });
+    }
+
+    const oldChallanIds = (oldDoc.challans || []).map((c: any) => c.toString());
+    const newChallanIds = (body.challans || []).map((c: string) => c.toString());
+
+    // Find added and removed challans
+    const addedChallans = newChallanIds.filter((c: string) => !oldChallanIds.includes(c));
+    const removedChallans = oldChallanIds.filter((c: string) => !newChallanIds.includes(c));
+
+    // Update the document
+    const doc = await LorryHire.findByIdAndUpdate(id, body, { new: true });
+
+    // Mark newly added challans as in_transit
+    if (addedChallans.length > 0) {
+      await Challan.updateMany(
+        { _id: { $in: addedChallans } },
+        { $set: { status: 'in_transit' } }
+      );
+    }
+
+    // Reset removed challans back to pending
+    if (removedChallans.length > 0) {
+      await Challan.updateMany(
+        { _id: { $in: removedChallans } },
+        { $set: { status: 'pending' } }
+      );
     }
 
     return NextResponse.json({ success: true, message: 'Lorry Hire updated successfully', data: doc });
@@ -79,6 +107,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const doc = await LorryHire.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
     if (!doc) {
       return NextResponse.json({ error: 'Lorry Hire not found' }, { status: 404 });
+    }
+
+    // Reset all challans back to pending
+    if (doc.challans && doc.challans.length > 0) {
+      await Challan.updateMany(
+        { _id: { $in: doc.challans } },
+        { $set: { status: 'pending' } }
+      );
     }
 
     return NextResponse.json({ success: true, message: 'Lorry Hire deleted successfully' });
