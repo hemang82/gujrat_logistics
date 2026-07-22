@@ -9,6 +9,40 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+
+// Basic Dialog components to avoid adding huge dependencies if not present. We can just build a simple modal.
+function PaymentModal({ isOpen, onClose, onSubmit, defaultAmount }: any) {
+  const [amount, setAmount] = useState(defaultAmount || '');
+  
+  useEffect(() => {
+    setAmount(defaultAmount || '');
+  }, [defaultAmount, isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-5 space-y-4">
+        <h2 className="text-lg font-bold text-gray-800">Settle Balance Payment</h2>
+        <div className="space-y-2">
+          <Label>Amount to Pay (₹)</Label>
+          <Input 
+            type="number" 
+            value={amount} 
+            onChange={(e) => setAmount(e.target.value)} 
+            placeholder="0.00" 
+            autoFocus
+          />
+        </div>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => onSubmit(amount)} className="bg-brand-primary">Pay & Settle</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function LorryHireList() {
   const [vouchers, setVouchers] = useState<any[]>([]);
@@ -19,6 +53,9 @@ export default function LorryHireList() {
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
 
   const fetchVouchers = async () => {
     try {
@@ -56,17 +93,29 @@ export default function LorryHireList() {
     }
   };
 
-  const handleMarkAsCompleted = async (id: string) => {
-    if (!confirm('Mark this Lorry Hire voucher as Completed?')) return;
+  const handleOpenPayment = (voucher: any) => {
+    setSelectedVoucher(voucher);
+    setPayModalOpen(true);
+  };
+
+  const handleSettlePayment = async (amount: string) => {
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    
     try {
-      const res = await fetch(`/api/admin/lorry-hire/${id}`, {
-        method: 'PUT',
+      const res = await fetch(`/api/admin/lorry-hire/${selectedVoucher._id}/settle`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed' })
+        body: JSON.stringify({ amount: Number(amount) })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success('Status updated to Completed');
+      
+      toast.success('Payment recorded successfully!');
+      setPayModalOpen(false);
+      setSelectedVoucher(null);
       fetchVouchers();
     } catch (err: any) {
       toast.error(err.message);
@@ -173,8 +222,14 @@ export default function LorryHireList() {
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-end gap-1.5">
                           {v.status !== 'completed' && (
-                            <Button onClick={() => handleMarkAsCompleted(v._id)} variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" title="Mark as Completed">
-                              <CheckCircle className="w-4 h-4" />
+                            <Button 
+                              onClick={() => handleOpenPayment(v)} 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 px-2 text-brand-primary hover:text-brand-primary-dark hover:bg-brand-primary/10 border border-brand-primary/20 text-xs font-bold" 
+                              title="Settle Payment"
+                            >
+                              Pay Balance
                             </Button>
                           )}
                           <ListActions
@@ -237,6 +292,13 @@ export default function LorryHireList() {
           </div>
         ) : null}
       </Card>
+      
+      <PaymentModal 
+        isOpen={payModalOpen} 
+        onClose={() => { setPayModalOpen(false); setSelectedVoucher(null); }} 
+        onSubmit={handleSettlePayment} 
+        defaultAmount={selectedVoucher ? Math.max(0, (Number(selectedVoucher.totalAmount) || 0) - (Number(selectedVoucher.advanceAmount) || 0)) : ''} 
+      />
     </div>
   );
 }
