@@ -138,10 +138,8 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
           <div>
             <div className="border border-gray-200 rounded-lg p-4 h-full">
               <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-2 mb-3">Remarks / Terms</h3>
-              <p className="text-sm text-gray-600 italic">
-                - Ensure safe and timely delivery.<br />
-                - Any damages will be recovered from balance payment.<br />
-                - Drive safely and follow all traffic rules.
+              <p className="text-sm text-gray-600 italic whitespace-pre-line">
+                {lorryHire.remark || '- Ensure safe and timely delivery.\n- Any damages will be recovered from balance payment.\n- Drive safely and follow all traffic rules.'}
               </p>
             </div>
           </div>
@@ -149,16 +147,34 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
             <table className="w-full text-sm border-collapse border border-gray-300">
               <tbody>
                 <tr>
-                  <td className="p-3 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Total Freight Amount</td>
-                  <td className="p-3 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Total Freight Amount</td>
+                  <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>
                 <tr>
-                  <td className="p-3 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Advance Paid</td>
-                  <td className="p-3 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.advanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Advance Paid</td>
+                  <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.advanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>
+                {Number(lorryHire.commission || 0) > 0 && (
+                  <tr>
+                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Commission</td>
+                    <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                )}
+                {Number(lorryHire.hamali || 0) > 0 && (
+                  <tr>
+                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Hamali</td>
+                    <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.hamali || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                )}
+                {Number(lorryHire.tds || 0) > 0 && (
+                  <tr>
+                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">TDS</td>
+                    <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.tds || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  </tr>
+                )}
                 <tr>
-                  <td className="p-3 border border-gray-300 font-bold text-gray-800 bg-gray-100 uppercase text-xs">Balance Amount</td>
-                  <td className="p-3 border border-gray-300 text-right font-bold text-gray-900 text-lg bg-gray-100">₹ {Number(lorryHire.balanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                  <td className="p-2 border border-gray-300 font-bold text-gray-800 bg-gray-100 uppercase text-xs">Balance Amount</td>
+                  <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-lg bg-gray-100">₹ {Number(lorryHire.balanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>
               </tbody>
             </table>

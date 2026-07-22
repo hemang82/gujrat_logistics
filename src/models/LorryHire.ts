@@ -9,9 +9,13 @@ export interface ILorryHire extends Document {
   challans: mongoose.Types.ObjectId[] | any[];
   totalAmount: number;
   advanceAmount: number;
+  commission: number;
+  hamali: number;
+  tds: number;
   balanceAmount: number;
   balancePaidBy: mongoose.Types.ObjectId | any;
   status: 'pending' | 'completed';
+  remark?: string;
   createdBy?: mongoose.Types.ObjectId;
   isDeleted: boolean;
 }
@@ -26,9 +30,13 @@ const LorryHireSchema = new Schema<ILorryHire>(
     challans: [{ type: Schema.Types.ObjectId, ref: 'Challan' }],
     totalAmount: { type: Number, default: 0 },
     advanceAmount: { type: Number, default: 0 },
+    commission: { type: Number, default: 0 },
+    hamali: { type: Number, default: 0 },
+    tds: { type: Number, default: 0 },
     balanceAmount: { type: Number, default: 0 },
     balancePaidBy: { type: Schema.Types.ObjectId, ref: 'Branch' },
     status: { type: String, enum: ['pending', 'completed'], default: 'pending' },
+    remark: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     isDeleted: { type: Boolean, default: false },
   },

@@ -32,7 +32,11 @@ export default function LorryHireForm() {
     truckNo: '',
     totalAmount: '',
     advanceAmount: '',
+    commission: '',
+    hamali: '',
+    tds: '',
     balancePaidBy: '',
+    remark: ''
   });
 
   const [selectedChallans, setSelectedChallans] = useState<any[]>([]);
@@ -318,8 +322,48 @@ export default function LorryHireForm() {
     }
     
     setSelectedChallans(prev => [...prev, challan]);
+    
+    // Super Auto-Fill Logic (Only on first challan added)
+    if (selectedChallans.length === 0) {
+      const fromBranch = challan.branch?._id || challan.branch || '';
+      const toBranch = challan.memoDestinationBranch?._id || challan.memoDestinationBranch || challan.lrToBranch?._id || challan.lrToBranch || '';
+      const truck = challan.truckNo?._id || challan.truckNo || '';
+      
+      setFormData(prev => ({
+        ...prev,
+        fromBranch: fromBranch,
+        toBranch: toBranch,
+        truckNo: truck,
+        totalAmount: challan.truckFreight?.toString() || '',
+        advanceAmount: challan.advanceAmount?.toString() || '',
+        commission: challan.commission?.toString() || ''
+      }));
+
+      // Update search inputs for UI feedback
+      if (fromBranch) {
+        const branchObj = branches.find(b => b._id === fromBranch);
+        if (branchObj) setFromBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+      }
+      if (toBranch) {
+        const branchObj = branches.find(b => b._id === toBranch);
+        if (branchObj) setToBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+      }
+      if (truck) {
+        const truckObj = vehicles.find(v => v._id === truck);
+        if (truckObj) setTruckSearch(truckObj.vehicleNumber || '');
+      }
+    } else {
+      // If adding second challan, just sum the freight, advance, commission
+      setFormData(prev => ({
+        ...prev,
+        totalAmount: (Number(prev.totalAmount || 0) + Number(challan.truckFreight || 0)).toString(),
+        advanceAmount: (Number(prev.advanceAmount || 0) + Number(challan.advanceAmount || 0)).toString(),
+        commission: (Number(prev.commission || 0) + Number(challan.commission || 0)).toString()
+      }));
+    }
+    
     setScanChallanNo('');
-    toast.success('Challan added');
+    toast.success('Challan added & Details Auto-Filled!');
   };
 
   const removeChallan = (id: string) => {
@@ -329,7 +373,10 @@ export default function LorryHireForm() {
   const calculateBalance = () => {
     const total = Number(formData.totalAmount) || 0;
     const advance = Number(formData.advanceAmount) || 0;
-    return total - advance;
+    const commission = Number(formData.commission) || 0;
+    const hamali = Number(formData.hamali) || 0;
+    const tds = Number(formData.tds) || 0;
+    return total - advance - commission - hamali - tds;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -361,8 +408,12 @@ export default function LorryHireForm() {
         challans: selectedChallans.map(c => c._id),
         totalAmount: Number(formData.totalAmount) || 0,
         advanceAmount: Number(formData.advanceAmount) || 0,
+        commission: Number(formData.commission) || 0,
+        hamali: Number(formData.hamali) || 0,
+        tds: Number(formData.tds) || 0,
         balanceAmount: calculateBalance(),
-        balancePaidBy: formData.balancePaidBy || null
+        balancePaidBy: formData.balancePaidBy || null,
+        remark: formData.remark
       };
 
       const res = await fetch('/api/admin/lorry-hire', {
@@ -569,27 +620,26 @@ export default function LorryHireForm() {
               </div>
 
               {/* Challan Search */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Search Challan <span className="text-red-500">*</span></Label>
+              <div className="space-y-1 relative pb-4 md:col-span-2 lg:col-span-3">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Search Challan (Auto-Fills Details) <span className="text-red-500">*</span></Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
                     <Input
-                      placeholder={(!formData.fromBranch || !formData.toBranch) ? "Select Branches First..." : "Enter Challan No..."}
+                      placeholder="Enter Challan No (e.g. 1001)..."
                       value={scanChallanNo}
                       onChange={(e) => setScanChallanNo(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleScanChallan(); } }}
-                      disabled={!formData.fromBranch || !formData.toBranch}
-                      className={`h-10 pl-9 rounded-lg text-sm focus-visible:ring-brand-primary/50 ${(!formData.fromBranch || !formData.toBranch) ? 'bg-gray-100 border-gray-200 cursor-not-allowed text-gray-400' : 'bg-transparent border-gray-200'}`}
+                      className="h-10 pl-9 rounded-lg text-sm bg-white border-brand-primary/30 ring-1 ring-brand-primary/10 focus-visible:ring-brand-primary/50"
+                      autoFocus
                     />
                   </div>
                   <Button 
                     type="button" 
                     onClick={handleScanChallan} 
-                    disabled={!formData.fromBranch || !formData.toBranch}
                     className="bg-brand-primary hover:bg-brand-primary-dark"
                   >
-                    Add
+                    Add Challan
                   </Button>
                 </div>
               </div>
@@ -656,38 +706,74 @@ export default function LorryHireForm() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
               <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
+                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Freight</Label>
                 <Input
                   type="number"
                   name="totalAmount"
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold"
+                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold bg-gray-50"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Advance Amount</Label>
+                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Advance</Label>
                 <Input
                   type="number"
                   name="advanceAmount"
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold"
+                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Balance Amount</Label>
+                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Commission</Label>
+                <Input
+                  type="number"
+                  name="commission"
+                  value={formData.commission}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Hamali</Label>
+                <Input
+                  type="number"
+                  name="hamali"
+                  value={formData.hamali}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">TDS</Label>
+                <Input
+                  type="number"
+                  name="tds"
+                  value={formData.tds}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-9 rounded-md border-gray-200 text-sm text-right pr-3 font-semibold"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Net Balance</Label>
                 <Input
                   type="text"
                   value={calculateBalance()}
                   disabled
-                  className="h-10 rounded-lg border-gray-200 bg-gray-50 font-bold text-sm text-right pr-4 text-orange-600"
+                  className="h-9 rounded-md border-gray-200 bg-orange-50/50 font-bold text-sm text-right pr-3 text-orange-600 shadow-inner"
                 />
               </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-4">
 
               {/* Balance Paid By Dropdown */}
               <div className="space-y-1 relative pb-4">
@@ -732,6 +818,18 @@ export default function LorryHireForm() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Remark */}
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Remark (Optional)</Label>
+                <Input
+                  name="remark"
+                  value={formData.remark}
+                  onChange={handleChange}
+                  placeholder="Any notes..."
+                  className="h-10 text-sm rounded-lg border-gray-200"
+                />
               </div>
             </div>
           </CardContent>
