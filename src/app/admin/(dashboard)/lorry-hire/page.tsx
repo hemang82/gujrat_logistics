@@ -12,32 +12,55 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 
 // Basic Dialog components to avoid adding huge dependencies if not present. We can just build a simple modal.
-function PaymentModal({ isOpen, onClose, onSubmit, defaultAmount }: any) {
-  const [amount, setAmount] = useState(defaultAmount || '');
+function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
+  const defaultAmount = voucher ? Math.max(0, (Number(voucher.totalAmount) || 0) - (Number(voucher.advanceAmount) || 0)) : '';
+  const [amount, setAmount] = useState<string | number>('');
   
   useEffect(() => {
-    setAmount(defaultAmount || '');
+    setAmount(defaultAmount);
   }, [defaultAmount, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !voucher) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-sm p-5 space-y-4">
-        <h2 className="text-lg font-bold text-gray-800">Settle Balance Payment</h2>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-5">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Settle Balance Payment</h2>
+          <p className="text-xs text-gray-500 mt-1">Lorry Hire Memo: <span className="font-bold text-gray-700">{voucher.voucherNo}</span></p>
+        </div>
+
+        <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-600">Total Freight:</span>
+            <span className="font-semibold text-gray-800">₹{Number(voucher.totalAmount || 0).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-600">Advance Paid:</span>
+            <span className="font-semibold text-emerald-600">₹{Number(voucher.advanceAmount || 0).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between border-t border-gray-200 pt-2 mt-2">
+            <span className="font-bold text-gray-800">Balance Remaining:</span>
+            <span className="font-bold text-orange-600">₹{defaultAmount.toLocaleString()}</span>
+          </div>
+        </div>
+
         <div className="space-y-2">
-          <Label>Amount to Pay (₹)</Label>
+          <Label className="text-sm font-semibold text-gray-700">Amount Paying Now (₹)</Label>
           <Input 
             type="number" 
             value={amount} 
             onChange={(e) => setAmount(e.target.value)} 
             placeholder="0.00" 
+            className="h-12 text-lg font-bold"
             autoFocus
           />
+          <p className="text-[11px] text-gray-400">By default, the full balance amount is auto-filled.</p>
         </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onSubmit(amount)} className="bg-brand-primary">Pay & Settle</Button>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button variant="outline" onClick={onClose} className="h-10 px-4">Cancel</Button>
+          <Button onClick={() => onSubmit(amount)} className="bg-brand-primary h-10 px-6 font-bold shadow-sm hover:shadow">Pay & Settle</Button>
         </div>
       </div>
     </div>
@@ -297,7 +320,7 @@ export default function LorryHireList() {
         isOpen={payModalOpen} 
         onClose={() => { setPayModalOpen(false); setSelectedVoucher(null); }} 
         onSubmit={handleSettlePayment} 
-        defaultAmount={selectedVoucher ? Math.max(0, (Number(selectedVoucher.totalAmount) || 0) - (Number(selectedVoucher.advanceAmount) || 0)) : ''} 
+        voucher={selectedVoucher}
       />
     </div>
   );
