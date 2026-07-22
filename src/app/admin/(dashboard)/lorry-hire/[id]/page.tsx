@@ -143,7 +143,7 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                       return (
                         <tr key={c._id} className="hover:bg-gray-50">
-                          <td className="py-3 px-4 font-bold text-brand-primary">{c.challanNumber}</td>
+                          <td className="py-3 px-4 font-bold text-brand-primary">CH-{c.challanNumber}</td>
                           <td className="py-3 px-4 font-semibold text-gray-700 uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'N/A'}</td>
                           <td className="py-3 px-4 font-semibold text-gray-800 text-center">{c.bookings?.length || 0}</td>
                           <td className="py-3 px-4 text-center text-gray-700">{totalPackages}</td>

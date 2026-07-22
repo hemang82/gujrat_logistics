@@ -820,7 +820,7 @@ export default function LorryHireEditForm() {
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                       return (
                         <tr key={c._id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">{c.challanNumber}</td>
+                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
                           <td className="px-4 py-3 font-semibold text-gray-700 uppercase border-r border-gray-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
                           <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
                           <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>

@@ -121,7 +121,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
                 const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                 return (
                   <tr key={c._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="py-2.5 px-3 border border-gray-200 font-bold">{c.challanNumber}</td>
+                    <td className="py-2.5 px-3 border border-gray-200 font-bold">CH-{c.challanNumber}</td>
                     <td className="py-2.5 px-3 border border-gray-200 font-semibold uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'N/A'}</td>
                     <td className="py-2.5 px-3 border border-gray-200 text-center font-medium">{c.bookings?.length || 0}</td>
                     <td className="py-2.5 px-3 border border-gray-200 text-center">{totalPackages}</td>
