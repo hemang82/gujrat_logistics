@@ -199,7 +199,15 @@ export async function DELETE(
     const { id } = resolvedParams;
 
     await connectToDatabase();
-    const deletedBooking = await Booking.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
+    const booking = await Booking.findById(id);
+    if (!booking) {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    const deletedBooking = await Booking.findByIdAndUpdate(id, { 
+      isDeleted: true,
+      lrNumber: `${booking.lrNumber}_deleted_${Date.now()}`
+    }, { new: true });
     
     if (!deletedBooking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });

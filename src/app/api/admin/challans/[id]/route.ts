@@ -198,6 +198,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     challan.isDeleted = true;
+    challan.challanNumber = `${challan.challanNumber}_deleted_${Date.now()}`;
     await challan.save();
 
     // Reset truck and driver to available if challan is deleted before delivery
