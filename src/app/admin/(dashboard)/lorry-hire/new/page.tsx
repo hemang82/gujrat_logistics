@@ -854,7 +854,7 @@ export default function LorryHireForm() {
               </div>
 
               {/* Balance Paid By Dropdown */}
-              <div className="space-y-1 relative pb-4">4">
+              <div className="space-y-1 relative pb-4">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Balance Paid By</Label>
                 <div className="relative">
                   {balancePaidBySearch && balancePaidBySuggestions.length > 0 && balancePaidBySuggestions[0].label.toLowerCase().startsWith(balancePaidBySearch.toLowerCase()) && (
