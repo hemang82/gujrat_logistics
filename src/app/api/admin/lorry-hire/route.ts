@@ -83,8 +83,19 @@ export async function POST(request: Request) {
     // Generate voucher no
     const voucherNo = await generateNextVoucherNo();
 
+    // Auto-calculate status based on balance
+    const total = Number(body.totalAmount) || 0;
+    const advance = Number(body.advanceAmount) || 0;
+    let finalStatus = body.status || 'pending';
+    
+    // If balance is 0 or less (and there is a total amount), mark as completed
+    if (total > 0 && advance >= total) {
+      finalStatus = 'completed';
+    }
+
     const newDoc = new LorryHire({
       ...body,
+      status: finalStatus,
       voucherNo,
       createdBy: session.user.id
     });

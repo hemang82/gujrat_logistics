@@ -68,6 +68,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const addedChallans = newChallanIds.filter((c: string) => !oldChallanIds.includes(c));
     const removedChallans = oldChallanIds.filter((c: string) => !newChallanIds.includes(c));
 
+    // Auto-calculate status based on balance
+    const total = Number(body.totalAmount) || 0;
+    const advance = Number(body.advanceAmount) || 0;
+    if (total > 0 && advance >= total) {
+      body.status = 'completed';
+    } else {
+      // Allow manual override to completed, but if they changed amounts and balance is pending, ensure it is pending if it wasn't manually overridden in this request.
+      // Wait, let's just enforce: if balance > 0, it's pending. Unless they manually selected completed.
+      // The frontend sends formData.status. We will respect it, but auto-override to completed if balance is 0.
+      if (body.status !== 'completed') {
+        body.status = 'pending';
+      }
+    }
+
     // Update the document
     const doc = await LorryHire.findByIdAndUpdate(id, body, { new: true });
 
