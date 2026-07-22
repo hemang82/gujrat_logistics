@@ -141,6 +141,7 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                     {challans.map((c: any) => {
                       const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                      const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
                       return (
                         <tr key={c._id} className="hover:bg-gray-50">
                           <td className="py-3 px-4 font-bold text-brand-primary">CH-{c.challanNumber}</td>
@@ -148,7 +149,7 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                           <td className="py-3 px-4 font-semibold text-gray-800 text-center">{c.bookings?.length || 0}</td>
                           <td className="py-3 px-4 text-center text-gray-700">{totalPackages}</td>
                           <td className="py-3 px-4 text-center text-gray-700">{totalWeight}</td>
-                          <td className="py-3 px-4 font-semibold text-gray-800 text-right">₹{c.truckFreight?.toLocaleString() || 0}</td>
+                          <td className="py-3 px-4 font-semibold text-gray-800 text-right">₹{totalLRFreight.toLocaleString()}</td>
                         </tr>
                       );
                     })}
@@ -166,7 +167,7 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
                         {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
                       </td>
                       <td className="py-3 px-4 font-bold text-brand-primary text-right">
-                        ₹{challans.reduce((acc: number, c: any) => acc + (c.truckFreight || 0), 0).toLocaleString()}
+                        ₹{challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0).toLocaleString()}
                       </td>
                     </tr>
                   </tfoot>

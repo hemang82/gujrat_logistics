@@ -818,6 +818,7 @@ export default function LorryHireEditForm() {
                     {selectedChallans.map(c => {
                       const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                      const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
                       return (
                         <tr key={c._id} className="hover:bg-gray-50/50">
                           <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
@@ -825,7 +826,7 @@ export default function LorryHireEditForm() {
                           <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
                           <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>
                           <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{(c.truckFreight || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{totalLRFreight.toFixed(2)}</td>
                           <td className="px-4 py-3 text-right">
                             <Button
                               type="button"
@@ -853,7 +854,7 @@ export default function LorryHireEditForm() {
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
                       </td>
                       <td className="px-4 py-3 text-right border-r border-gray-200 text-brand-primary">
-                        ₹{selectedChallans.reduce((acc, c) => acc + (c.truckFreight || 0), 0).toFixed(2)}
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0).toFixed(2)}
                       </td>
                       <td className="px-4 py-3"></td>
                     </tr>

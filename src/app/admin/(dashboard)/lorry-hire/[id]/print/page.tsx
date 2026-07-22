@@ -119,6 +119,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
               {challans.map((c: any, index: number) => {
                 const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                 const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
+                const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
                 return (
                   <tr key={c._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className="py-2.5 px-3 border border-gray-200 font-bold">CH-{c.challanNumber}</td>
@@ -127,7 +128,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
                     <td className="py-2.5 px-3 border border-gray-200 text-center">{totalPackages}</td>
                     <td className="py-2.5 px-3 border border-gray-200 text-center">{totalWeight}</td>
                     <td className="py-2.5 px-3 border border-gray-200 text-right font-semibold text-gray-800">
-                      {c.truckFreight ? `₹${c.truckFreight.toLocaleString()}` : '-'}
+                      {totalLRFreight > 0 ? `₹${totalLRFreight.toLocaleString()}` : '-'}
                     </td>
                   </tr>
                 );
@@ -152,7 +153,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
                 </td>
                 <td className="py-2.5 px-3 border border-gray-200 text-right">
                   {(() => {
-                    const totalFreight = challans.reduce((acc: number, c: any) => acc + (c.truckFreight || 0), 0);
+                    const totalFreight = challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0);
                     return totalFreight > 0 ? `₹${totalFreight.toLocaleString()}` : '-';
                   })()}
                 </td>
