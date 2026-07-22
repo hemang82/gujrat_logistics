@@ -224,7 +224,8 @@ export default function AddChallanPage() {
         const mapped = matchedBookings.map((b: any) => {
           const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
           const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-          const freight = b.charges?.totalAmount || b.charges?.freightAmount || 0;
+          const freight = b.charges?.freightAmount || 0;
+          const totalAmount = b.charges?.totalAmount || freight;
           return {
             _id: b._id,
             lrNumber: b.lrNumber,
@@ -234,6 +235,7 @@ export default function AddChallanPage() {
             pkg: packages,
             weight: weight,
             freight: freight,
+            totalAmount: totalAmount,
             destinationBranch: b.destinationBranch || 'N/A'
           };
         });
@@ -365,7 +367,8 @@ export default function AddChallanPage() {
       // Parse item packages and weight sum
       const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
       const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-      const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
+      const freight = booking.charges?.freightAmount || 0;
+      const totalAmount = booking.charges?.totalAmount || freight;
 
       const newScanned = {
         _id: booking._id,
@@ -376,6 +379,7 @@ export default function AddChallanPage() {
         pkg: packages,
         weight: weight,
         freight: freight,
+        totalAmount: totalAmount,
         destinationBranch: booking.destinationBranch || 'N/A'
       };
 
@@ -408,7 +412,8 @@ export default function AddChallanPage() {
 
     const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
     const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-    const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
+    const freight = booking.charges?.freightAmount || 0;
+    const totalAmount = booking.charges?.totalAmount || freight;
 
     const newScanned = {
       _id: booking._id,
@@ -419,6 +424,7 @@ export default function AddChallanPage() {
       pkg: packages,
       weight: weight,
       freight: freight,
+      totalAmount: totalAmount,
       destinationBranch: booking.destinationBranch || 'N/A'
     };
 
@@ -873,6 +879,7 @@ export default function AddChallanPage() {
                       <th className="p-3 text-center">Packages</th>
                       <th className="p-3 text-center">Weight (KG)</th>
                       <th className="p-3 text-center">Freight</th>
+                      <th className="p-3 text-center">Total Amt</th>
                       <th className="p-3">Destination</th>
                       <th className="p-3 text-center">Action</th>
                     </tr>
@@ -906,6 +913,7 @@ export default function AddChallanPage() {
                           <td className="p-3 text-center">{item.pkg}</td>
                           <td className="p-3 text-center">{item.weight} KG</td>
                           <td className="p-3 text-center">₹{item.freight}</td>
+                          <td className="p-3 text-center font-bold">₹{item.totalAmount}</td>
                           <td className="p-3 uppercase text-brand-primary">{getBranchLabel(item.destinationBranch)}</td>
                           <td className="p-3 text-center">
                             <Button 
@@ -933,6 +941,8 @@ export default function AddChallanPage() {
                 <div className="text-xs font-bold text-gray-600 uppercase">Weight: <span className="text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0)} KG</span></div>
                 <div className="w-px h-4 bg-gray-300"></div>
                 <div className="text-xs font-bold text-gray-600 uppercase">Freight: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</span></div>
+                <div className="w-px h-4 bg-gray-300"></div>
+                <div className="text-xs font-bold text-gray-600 uppercase">Total Amount: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.totalAmount) || 0), 0)}</span></div>
               </div>
               </>
             )}
