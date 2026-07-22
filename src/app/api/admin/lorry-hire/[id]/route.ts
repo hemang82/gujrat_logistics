@@ -68,9 +68,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const addedChallans = newChallanIds.filter((c: string) => !oldChallanIds.includes(c));
     const removedChallans = oldChallanIds.filter((c: string) => !newChallanIds.includes(c));
 
-    // Auto-calculate status based on balance
+    // Auto-calculate status and balance
     const total = Number(body.totalAmount) || 0;
     const advance = Number(body.advanceAmount) || 0;
+    body.balanceAmount = total - advance;
+    
     if (total > 0 && advance >= total) {
       body.status = 'completed';
     } else {

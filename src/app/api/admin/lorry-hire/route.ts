@@ -86,6 +86,8 @@ export async function POST(request: Request) {
     // Auto-calculate status based on balance
     const total = Number(body.totalAmount) || 0;
     const advance = Number(body.advanceAmount) || 0;
+    body.balanceAmount = total - advance; // Force strict backend calculation
+    
     let finalStatus = body.status || 'pending';
     
     // If balance is 0 or less (and there is a total amount), mark as completed

@@ -38,6 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Update Lorry Hire
     lorryHire.advanceAmount = newAdvance;
+    lorryHire.balanceAmount = total - newAdvance;
     lorryHire.status = newStatus;
     await lorryHire.save();
 
