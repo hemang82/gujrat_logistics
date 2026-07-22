@@ -806,11 +806,11 @@ export default function LorryHireEditForm() {
                   <thead className="bg-gray-50 text-gray-600 font-semibold text-xs uppercase tracking-wide">
                     <tr>
                       <th className="px-4 py-3 border-r border-gray-200">Challan No</th>
-                      <th className="px-4 py-3 border-r border-gray-200">Date</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Total LRs</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Packages</th>
+                      <th className="px-4 py-3 border-r border-gray-200">Station</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-center">LRs</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-center">Articles</th>
                       <th className="px-4 py-3 border-r border-gray-200 text-center">Weight</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-right">Amount</th>
+                      <th className="px-4 py-3 border-r border-gray-200 text-right">Freight</th>
                       <th className="px-4 py-3 text-right">Action</th>
                     </tr>
                   </thead>
@@ -820,11 +820,11 @@ export default function LorryHireEditForm() {
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                       return (
                         <tr key={c._id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
-                          <td className="px-4 py-3 text-gray-600 border-r border-gray-100">{new Date(c.challanDate).toLocaleDateString('en-IN')}</td>
+                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">{c.challanNumber}</td>
+                          <td className="px-4 py-3 font-semibold text-gray-700 uppercase border-r border-gray-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
                           <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
                           <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>
-                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight} KG</td>
+                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight}</td>
                           <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{(c.truckFreight || 0).toFixed(2)}</td>
                           <td className="px-4 py-3 text-right">
                             <Button
@@ -850,7 +850,7 @@ export default function LorryHireEditForm() {
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
                       </td>
                       <td className="px-4 py-3 text-center border-r border-gray-200 text-brand-primary">
-                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)} KG
+                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
                       </td>
                       <td className="px-4 py-3 text-right border-r border-gray-200 text-brand-primary">
                         ₹{selectedChallans.reduce((acc, c) => acc + (c.truckFreight || 0), 0).toFixed(2)}
