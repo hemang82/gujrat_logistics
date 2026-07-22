@@ -224,7 +224,7 @@ export default function AddChallanPage() {
         const mapped = matchedBookings.map((b: any) => {
           const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
           const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-          const freight = b.charges?.freight || 0;
+          const freight = b.charges?.totalAmount || b.charges?.freightAmount || 0;
           return {
             _id: b._id,
             lrNumber: b.lrNumber,
@@ -365,7 +365,7 @@ export default function AddChallanPage() {
       // Parse item packages and weight sum
       const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
       const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-      const freight = booking.charges?.freight || 0;
+      const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
 
       const newScanned = {
         _id: booking._id,
@@ -408,7 +408,7 @@ export default function AddChallanPage() {
 
     const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
     const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-    const freight = booking.charges?.freight || 0;
+    const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
 
     const newScanned = {
       _id: booking._id,

@@ -234,7 +234,7 @@ export default function ViewChallanPage() {
                         <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300">{packages}</td>
                         <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300">{weight}</td>
                         <td className="p-3 print:p-1.5 uppercase border-r border-gray-50 print:border-gray-300">{b.destinationBranch?.name || (b.deliveryLocation?.length !== 24 ? b.deliveryLocation : null) || b.destinationBranch || 'N/A'}</td>
-                        <td className="p-3 print:p-1.5 text-right font-bold text-gray-900 print:text-gray-900">₹{(b.charges?.freightAmount || 0).toFixed(2)}</td>
+                        <td className="p-3 print:p-1.5 text-right font-bold text-gray-900 print:text-gray-900">₹{(b.charges?.totalAmount || b.charges?.freightAmount || 0).toFixed(2)}</td>
                       </tr>
                     );
                   })
@@ -247,7 +247,7 @@ export default function ViewChallanPage() {
                   <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">{totalWeight}</td>
                   <td className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300"></td>
                   <td className="p-3 print:p-1.5 text-right font-extrabold text-brand-primary print:text-[#0F3B8C]">
-                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.charges?.freightAmount || 0), 0).toFixed(2)}
+                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.charges?.totalAmount || b.charges?.freightAmount || 0), 0).toFixed(2)}
                   </td>
                 </tr>
               </tbody>

@@ -144,7 +144,7 @@ export default function EditCrossingPage() {
           const lrs = data.bookings.map((booking: any) => {
             const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
             const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-            const freight = booking.charges?.freight || 0;
+            const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
             return {
               _id: booking._id,
               lrNumber: booking.lrNumber,
@@ -222,7 +222,7 @@ export default function EditCrossingPage() {
         const mapped = matchedBookings.map((b: any) => {
           const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
           const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-          const freight = b.charges?.freight || 0;
+          const freight = b.charges?.totalAmount || b.charges?.freightAmount || 0;
           return {
             _id: b._id,
             lrNumber: b.lrNumber,
@@ -360,7 +360,7 @@ export default function EditCrossingPage() {
 
       const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
       const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-      const freight = booking.charges?.freight || 0;
+      const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
 
       const newScanned = {
         _id: booking._id,
@@ -402,7 +402,7 @@ export default function EditCrossingPage() {
 
     const packages = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
     const weight = booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-    const freight = booking.charges?.freight || 0;
+    const freight = booking.charges?.totalAmount || booking.charges?.freightAmount || 0;
 
     const newScanned = {
       _id: booking._id,
