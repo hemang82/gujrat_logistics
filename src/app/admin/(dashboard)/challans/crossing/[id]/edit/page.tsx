@@ -819,7 +819,7 @@ export default function EditCrossingPage() {
                             <span className="cursor-help border-b border-dotted border-gray-400">₹{item.totalAmount}</span>
                             <div className="absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 bottom-full mb-2 w-48 transition-all pointer-events-none text-left font-normal">
                               <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
-                              {Number(item.charges?.freightAmount) > 0 && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges.freightAmount}</span></div>}
+                              {(Number(item.charges?.freightAmount) > 0 || Number(item.freight) > 0) && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges?.freightAmount || item.freight}</span></div>}
                               {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
                               {Number(item.charges?.hamali) > 0 && <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges.hamali}</span></div>}
                               {Number(item.charges?.biltyCharge) > 0 && <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges.biltyCharge}</span></div>}
