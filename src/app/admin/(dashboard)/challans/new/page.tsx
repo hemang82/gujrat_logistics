@@ -948,19 +948,17 @@ export default function AddChallanPage() {
                       );
                     })}
                   </tbody>
+                  <tfoot className="bg-brand-primary/5 text-gray-700 font-bold border-t-2 border-brand-primary/20">
+                    <tr>
+                      <td colSpan={5} className="p-3 text-right uppercase text-xs">Total LRs: <span className="text-brand-primary text-sm">{loadedLrs.length}</span></td>
+                      <td className="p-3 text-center text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.pkg) || 0), 0)}</td>
+                      <td className="p-3 text-center text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0)} KG</td>
+                      <td className="p-3 text-center text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</td>
+                      <td className="p-3 text-center text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.totalAmount) || 0), 0)}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tfoot>
                 </table>
-              </div>
-              {/* Totals Summary Strip */}
-              <div className="flex flex-wrap items-center gap-4 mt-2 px-4 py-2.5 bg-brand-primary/5 border border-brand-primary/15 rounded-lg">
-                <div className="text-xs font-bold text-gray-600 uppercase">Total LRs: <span className="text-brand-primary text-sm">{loadedLrs.length}</span></div>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="text-xs font-bold text-gray-600 uppercase">Packages: <span className="text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.pkg) || 0), 0)}</span></div>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="text-xs font-bold text-gray-600 uppercase">Weight: <span className="text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0)} KG</span></div>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="text-xs font-bold text-gray-600 uppercase">Freight: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</span></div>
-                <div className="w-px h-4 bg-gray-300"></div>
-                <div className="text-xs font-bold text-gray-600 uppercase">Total Amount: <span className="text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.totalAmount) || 0), 0)}</span></div>
               </div>
               </>
             )}
