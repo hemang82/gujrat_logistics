@@ -40,7 +40,11 @@ export default function LorryHireForm() {
   });
 
   const [selectedChallans, setSelectedChallans] = useState<any[]>([]);
+  
   const [scanChallanNo, setScanChallanNo] = useState('');
+  const [showChallanDropdown, setShowChallanDropdown] = useState(false);
+  const [challanHighlightIndex, setChallanHighlightIndex] = useState(-1);
+  const [challanSuggestions, setChallanSuggestions] = useState<any[]>([]);
 
   // Autocomplete states
   const [fromBranchSearch, setFromBranchSearch] = useState('');
@@ -127,6 +131,57 @@ export default function LorryHireForm() {
 
   const branchOptions = branches.map(b => ({ value: b._id, label: `${b.name || ''} (${b.code || ''})` }));
   const vehicleOptions = vehicles.map(v => ({ value: v._id, label: v.vehicleNumber || 'Unknown' }));
+
+  // ------------- CHALLAN AUTOCOMPLETE -------------
+  useEffect(() => {
+    if (!scanChallanNo || scanChallanNo.trim().length < 1) {
+      setChallanSuggestions([]);
+      return;
+    }
+    const query = scanChallanNo.trim().toLowerCase().replace(/^ch-/i, '');
+    const filtered = challans
+      .filter(c => String(c.challanNumber).toLowerCase().includes(query))
+      .map(c => ({ value: c._id, label: `CH-${c.challanNumber}`, original: c }));
+    setChallanSuggestions(filtered);
+  }, [scanChallanNo, challans]);
+
+  useEffect(() => setChallanHighlightIndex(-1), [challanSuggestions]);
+
+  const handleChallanKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = challanSuggestions[0];
+      if (firstMatch && scanChallanNo && firstMatch.label.toLowerCase().startsWith(scanChallanNo.toLowerCase())) {
+        setScanChallanNo(firstMatch.label);
+        setShowChallanDropdown(false);
+        setChallanHighlightIndex(-1);
+        return;
+      }
+    }
+    if (!showChallanDropdown || challanSuggestions.length === 0) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleScanChallan();
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setChallanHighlightIndex(prev => prev < challanSuggestions.length - 1 ? prev + 1 : 0); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setChallanHighlightIndex(prev => prev > 0 ? prev - 1 : challanSuggestions.length - 1); }
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (challanHighlightIndex >= 0 && challanHighlightIndex < challanSuggestions.length) {
+        const selected = challanSuggestions[challanHighlightIndex];
+        setScanChallanNo(selected.label);
+        setShowChallanDropdown(false);
+        setChallanHighlightIndex(-1);
+        // Automatically add it after selecting
+        setTimeout(() => {
+          document.getElementById('add-challan-btn')?.click();
+        }, 50);
+      } else {
+        handleScanChallan();
+      }
+    } else if (e.key === 'Escape') { setShowChallanDropdown(false); setChallanHighlightIndex(-1); }
+  };
 
   // ------------- FROM BRANCH AUTOCOMPLETE -------------
   useEffect(() => {
@@ -478,6 +533,70 @@ export default function LorryHireForm() {
                 />
               </div>
 
+              {/* Challan Search at the Top */}
+              <div className="space-y-1 relative pb-4 md:col-span-1 lg:col-span-1">
+                <Label className="text-[10px] font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/10 px-2 py-0.5 rounded text-brand-primary">
+                  🔍 Super Auto-Fill (Search Challan) <span className="text-red-500">*</span>
+                </Label>
+                <div className="flex gap-2 mt-1 relative">
+                  <div className="relative flex-1">
+                    {scanChallanNo && challanSuggestions.length > 0 && challanSuggestions[0].label.toLowerCase().startsWith(scanChallanNo.toLowerCase()) && (
+                      <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{challanSuggestions[0].label.slice(0, scanChallanNo.length)}</span>
+                        <span>{challanSuggestions[0].label.slice(scanChallanNo.length)}</span>
+                      </div>
+                    )}
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                    <Input
+                      placeholder="e.g. 1001..."
+                      value={scanChallanNo}
+                      onChange={(e) => {
+                        setScanChallanNo(e.target.value);
+                      }}
+                      onFocus={() => setShowChallanDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowChallanDropdown(false), 250)}
+                      onKeyDown={handleChallanKeyDown}
+                      className="h-10 pl-9 rounded-lg text-sm bg-white border-brand-primary/50 ring-2 ring-brand-primary/20 focus-visible:ring-brand-primary"
+                      autoFocus
+                    />
+                  </div>
+                  <Button 
+                    id="add-challan-btn"
+                    type="button" 
+                    onClick={handleScanChallan} 
+                    className="bg-brand-primary hover:bg-brand-primary-dark shrink-0 px-3"
+                  >
+                    Add
+                  </Button>
+                  
+                  {/* Dropdown for Challan */}
+                  {showChallanDropdown && challanSuggestions.length > 0 && (
+                    <div className="absolute z-50 top-full left-0 mt-1 w-[300px] bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {challanSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.value}
+                          onClick={() => {
+                            setScanChallanNo(suggestion.label);
+                            setShowChallanDropdown(false);
+                            setChallanHighlightIndex(-1);
+                            setTimeout(() => {
+                              document.getElementById('add-challan-btn')?.click();
+                            }, 50);
+                          }}
+                          onMouseEnter={() => setChallanHighlightIndex(index)}
+                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors flex justify-between ${challanHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          <span className="font-bold">{suggestion.label}</span>
+                          <span className="text-xs text-gray-500">{suggestion.original?.memoDestinationBranch?.code || 'N/A'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="col-span-full border-t border-gray-100 my-2"></div>
+
               {/* Truck Dropdown */}
               <div className="space-y-1 relative pb-4">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
@@ -619,30 +738,7 @@ export default function LorryHireForm() {
                 )}
               </div>
 
-              {/* Challan Search */}
-              <div className="space-y-1 relative pb-4 md:col-span-2 lg:col-span-3">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Search Challan (Auto-Fills Details) <span className="text-red-500">*</span></Label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
-                    <Input
-                      placeholder="Enter Challan No (e.g. 1001)..."
-                      value={scanChallanNo}
-                      onChange={(e) => setScanChallanNo(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleScanChallan(); } }}
-                      className="h-10 pl-9 rounded-lg text-sm bg-white border-brand-primary/30 ring-1 ring-brand-primary/10 focus-visible:ring-brand-primary/50"
-                      autoFocus
-                    />
-                  </div>
-                  <Button 
-                    type="button" 
-                    onClick={handleScanChallan} 
-                    className="bg-brand-primary hover:bg-brand-primary-dark"
-                  >
-                    Add Challan
-                  </Button>
-                </div>
-              </div>
+              {/* Challan Search removed from here and moved to top */}
             </div>
           </CardContent>
         </Card>
