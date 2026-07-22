@@ -33,6 +33,7 @@ export default function LorryHireForm() {
     totalAmount: '',
     advanceAmount: '',
     balancePaidBy: '',
+    status: 'pending',
     remark: ''
   });
 
