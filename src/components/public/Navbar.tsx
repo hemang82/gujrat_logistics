@@ -27,8 +27,7 @@ export function Navbar() {
     { name: 'About', href: '/about' },
   ];
 
-  const isHomePage = pathname === '/';
-  const shouldBeTransparent = isHomePage && !isScrolled;
+  const shouldBeTransparent = false; // Disabled because hero section is light
 
   return (
     <nav
