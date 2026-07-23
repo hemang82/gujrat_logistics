@@ -39,10 +39,13 @@ export default function SaaSMarketingHome() {
         {/* Dashboard Mockup */}
         <div className="container mx-auto px-4 mt-16 max-w-6xl relative z-10">
           <div className="rounded-xl border border-gray-200/50 bg-white/50 p-2 md:p-4 backdrop-blur-xl shadow-2xl">
-            <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-[16/9] relative flex items-center justify-center text-gray-400">
-              {/* Note: In a real app, this would be an actual next/image of the dashboard */}
-              <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/5 to-transparent"></div>
-              <p className="font-semibold text-lg flex items-center gap-2"><BarChart3 className="w-6 h-6"/> Product Dashboard Preview</p>
+            <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-[16/9] md:aspect-[16/10] relative flex items-center justify-center text-gray-400 group">
+              <img 
+                src="/images/dashboard-preview.png" 
+                alt="LogiMaster Dashboard Preview" 
+                className="w-full h-full object-cover object-top border-none group-hover:scale-[1.02] transition-transform duration-700 ease-out" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none"></div>
             </div>
           </div>
         </div>
