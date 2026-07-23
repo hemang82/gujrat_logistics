@@ -38,13 +38,8 @@ export function Navbar() {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 group-hover:shadow-md transition-shadow">
-            <img src="/images/logo.jpg" alt="Trust Logistic Logo" className="w-full h-full object-cover" />
-          </div>
-          <span className={`font-bold text-xl tracking-tight transition-colors ${!shouldBeTransparent ? 'text-brand-text-primary' : 'text-white'}`}>
-            Trust <span className={!shouldBeTransparent ? "text-brand-primary" : "text-white opacity-80"}>Logistic</span>
-          </span>
+        <Link href="/" className="flex items-center group">
+          <img src="/images/trust-logo.png" alt="Trust Logistic Logo" className="h-12 w-auto object-contain" />
         </Link>
 
         {/* Desktop Nav */}
