@@ -13,7 +13,7 @@ export function Footer() {
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <span className="font-bold text-xl tracking-tight text-white">
-                Logi<span className="text-brand-primary-light">Master</span>
+                Trust <span className="text-brand-primary-light">Logistic</span>
               </span>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">
@@ -72,7 +72,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-brand-primary-light shrink-0" />
-                <span className="text-sm text-gray-300">hello@logimaster.com</span>
+                <span className="text-sm text-gray-300">hello@trustlogistic.in</span>
               </li>
             </ul>
           </div>
@@ -80,7 +80,7 @@ export function Footer() {
 
         <div className="pt-8 border-t border-gray-700/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-gray-400">
-            &copy; {new Date().getFullYear()} LogiMaster. All rights reserved.
+            &copy; {new Date().getFullYear()} Trust Logistic. All rights reserved.
           </p>
           <div className="flex gap-4 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>

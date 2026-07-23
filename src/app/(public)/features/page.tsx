@@ -23,7 +23,7 @@ export default function FeaturesPage() {
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">Powerful Features Built for Indian Transport</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">Discover how LogiMaster streamlines every aspect of your logistics business.</p>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">Discover how Trust Logistic streamlines every aspect of your logistics business.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">

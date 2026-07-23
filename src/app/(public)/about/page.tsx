@@ -8,13 +8,13 @@ export default function AboutPage() {
         
         <div className="prose prose-lg mx-auto text-gray-600 space-y-6 leading-relaxed">
           <p>
-            LogiMaster was built by people who deeply understand the daily struggles of running a transport business in India. We saw first-hand how much time was wasted on manual paperwork, tracking down WhatsApp messages for old Challans, and losing money because balance freights weren't recorded properly.
+            Trust Logistic was built by people who deeply understand the daily struggles of running a transport business in India. We saw first-hand how much time was wasted on manual paperwork, tracking down WhatsApp messages for old Challans, and losing money because balance freights weren't recorded properly.
           </p>
           <p>
             We realized that existing software was either too complex, not designed for the Indian market, or too expensive. 
           </p>
           <p>
-            That's why we created <strong>LogiMaster</strong> — an all-in-one logistics management software designed specifically for transporters, fleet owners, and logistics brokers. Our mission is to eliminate paperwork, ensure 100% compliance with GST and E-way bills, and help you scale your business with confidence.
+            That's why we created <strong>Trust Logistic</strong> — an all-in-one logistics management software designed specifically for transporters, fleet owners, and logistics brokers. Our mission is to eliminate paperwork, ensure 100% compliance with GST and E-way bills, and help you scale your business with confidence.
           </p>
           <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100 my-10">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Our Core Values</h3>

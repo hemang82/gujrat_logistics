@@ -43,7 +43,7 @@ export function Navbar() {
             <Truck className="w-6 h-6 text-white" />
           </div>
           <span className={`font-bold text-xl tracking-tight transition-colors ${!shouldBeTransparent ? 'text-brand-text-primary' : 'text-white'}`}>
-            Logi<span className={!shouldBeTransparent ? "text-brand-primary" : "text-white opacity-80"}>Master</span>
+            Trust <span className={!shouldBeTransparent ? "text-brand-primary" : "text-white opacity-80"}>Logistic</span>
           </span>
         </Link>
 

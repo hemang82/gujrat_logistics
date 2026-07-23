@@ -42,7 +42,7 @@ export default function DemoPage() {
         <div className="max-w-xl mx-auto bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="bg-brand-primary-dark p-8 text-center text-white">
             <h1 className="text-3xl font-extrabold mb-2">Book a Free Demo</h1>
-            <p className="text-brand-primary-light">See how LogiMaster can digitize your transport business today.</p>
+            <p className="text-brand-primary-light">See how Trust Logistic can digitize your transport business today.</p>
           </div>
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">

@@ -42,7 +42,7 @@ export default function SaaSMarketingHome() {
             <div className="rounded-lg overflow-hidden border border-gray-200 bg-white relative flex items-center justify-center group shadow-sm">
               <img 
                 src="/images/dashboard-preview.png" 
-                alt="LogiMaster Dashboard Preview" 
+                alt="Trust Logistic Dashboard Preview" 
                 className="w-full h-auto border-none group-hover:scale-[1.02] transition-transform duration-700 ease-out" 
               />
             </div>
@@ -79,7 +79,7 @@ export default function SaaSMarketingHome() {
       <section className="py-20 bg-gray-50">
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why upgrade to LogiMaster?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why upgrade to Trust Logistic?</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">Stop managing a multi-lakh business with outdated tools.</p>
           </div>
 
@@ -115,7 +115,7 @@ export default function SaaSMarketingHome() {
                   <div className="bg-brand-primary p-2 rounded-full">
                     <CheckCircle2 className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">The LogiMaster Way</h3>
+                  <h3 className="text-2xl font-bold text-gray-900">The Trust Logistic Way</h3>
                 </div>
                 <ul className="space-y-4">
                   {[

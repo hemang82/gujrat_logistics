@@ -6,7 +6,7 @@ export default function HowItWorksPage() {
     <div className="pt-28 pb-20 bg-white min-h-screen">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">How LogiMaster Works</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">How Trust Logistic Works</h1>
           <p className="text-xl text-gray-600">From setup to scaling, see how our software streamlines your daily operations.</p>
         </div>
 
