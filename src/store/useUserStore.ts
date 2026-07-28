@@ -7,6 +7,7 @@ interface User {
   role: string;
   branch: string;
   bookingBranch: string;
+  ewbApiAccess?: boolean;
 }
 
 interface UserState {

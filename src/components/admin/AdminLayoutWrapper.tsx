@@ -25,6 +25,7 @@ export function AdminLayoutWrapper({
         role: user.role || '',
         branch: user.branch || 'ASL',
         bookingBranch: user.bookingBranch || 'ASLALI',
+        ewbApiAccess: user.ewbApiAccess || false,
       });
     } else {
       setUser(null);
@@ -45,6 +46,7 @@ export function AdminLayoutWrapper({
             role: liveUser.role || user?.role || '',
             branch: liveUser.branch || 'ASL',
             bookingBranch: liveUser.bookingBranch || 'ASLALI',
+            ewbApiAccess: liveUser.ewbApiAccess || user?.ewbApiAccess || false,
           });
         }
       })

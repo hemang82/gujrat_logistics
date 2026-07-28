@@ -961,14 +961,16 @@ function NewBookingForm() {
                     <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
                     <div className="flex gap-2">
                       <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg font-semibold text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-emerald-500 focus-visible:ring-emerald-500'}`} />
-                      <Button
-                        type="button"
-                        onClick={handleFetchEwayBill}
-                        disabled={isFetchingEway}
-                        className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
-                      >
-                        {isFetchingEway ? 'Fetching...' : 'Fetch'}
-                      </Button>
+                      {user?.ewbApiAccess && (
+                        <Button
+                          type="button"
+                          onClick={handleFetchEwayBill}
+                          disabled={isFetchingEway}
+                          className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
+                        >
+                          {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                        </Button>
+                      )}
                     </div>
                     {renderError('ewayBillNo')}
                   </div>
@@ -1426,14 +1428,16 @@ function NewBookingForm() {
                   <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
                   <div className="flex gap-2">
                     <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`} />
-                    <Button
-                      type="button"
-                      onClick={handleFetchEwayBill}
-                      disabled={isFetchingEway}
-                      className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
-                    >
-                      {isFetchingEway ? 'Fetching...' : 'Fetch'}
-                    </Button>
+                    {user?.ewbApiAccess && (
+                      <Button
+                        type="button"
+                        onClick={handleFetchEwayBill}
+                        disabled={isFetchingEway}
+                        className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
+                      >
+                        {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                      </Button>
+                    )}
                   </div>
                   {renderError('ewayBillNo')}
                 </div>

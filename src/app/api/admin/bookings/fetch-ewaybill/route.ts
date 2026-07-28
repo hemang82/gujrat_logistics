@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import dbConnect from '@/lib/db';
+import User from '@/models/User';
+import ApiLog from '@/models/ApiLog';
 
 export async function GET(request: Request) {
   try {
@@ -14,6 +17,42 @@ export async function GET(request: Request) {
 
     if (!number || !/^\d{12}$/.test(number)) {
       return NextResponse.json({ error: 'Invalid E-Way Bill Number. Must be exactly 12 digits.' }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    // 1. Check User Permission
+    const dbUser = await User.findById(session.user.id);
+    if (!dbUser || !dbUser.ewbApiAccess) {
+      return NextResponse.json({ error: 'E-Way Bill API Access Denied. Contact Admin to enable this feature.' }, { status: 403 });
+    }
+
+    // 2. Smart Caching System (Check if fetched in last 24 hours)
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const cachedLog = await ApiLog.findOne({
+      apiType: 'EWAY_BILL_FETCH',
+      requestData: number,
+      responseStatus: 'success',
+      createdAt: { $gte: twentyFourHoursAgo }
+    }).sort({ createdAt: -1 });
+
+    if (cachedLog && cachedLog.errorMessage) {
+      // If we saved the parsed JSON inside errorMessage string (hacky but works for mock cache)
+      try {
+        const cachedData = JSON.parse(cachedLog.errorMessage);
+        
+        // Log this cache hit
+        await ApiLog.create({
+          userId: dbUser._id,
+          apiType: 'EWAY_BILL_FETCH',
+          requestData: number,
+          responseStatus: 'cached'
+        });
+
+        return NextResponse.json(cachedData, { status: 200 });
+      } catch (e) {
+        // Ignore JSON parse error and proceed to fresh fetch
+      }
     }
 
     // ==========================================
@@ -151,6 +190,15 @@ export async function GET(request: Request) {
         ]
       };
     }
+
+    // Log this fresh hit
+    await ApiLog.create({
+      userId: dbUser._id,
+      apiType: 'EWAY_BILL_FETCH',
+      requestData: number,
+      responseStatus: 'success',
+      errorMessage: JSON.stringify(mockEwayBillDetails) // Saving data to use as cache later
+    });
 
     return NextResponse.json(mockEwayBillDetails);
   } catch (error: any) {

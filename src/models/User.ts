@@ -8,6 +8,8 @@ export interface IUser extends Document {
   phone?: string;
   branch?: mongoose.Types.ObjectId | any;
   bookingBranch?: mongoose.Types.ObjectId | any;
+  ewbApiAccess?: boolean;
+  ewbApiQuota?: number;
   createdAt: Date;
 }
 
@@ -24,6 +26,8 @@ const UserSchema = new Schema<IUser>(
     phone: { type: String },
     branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
     bookingBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    ewbApiAccess: { type: Boolean, default: false },
+    ewbApiQuota: { type: Number, default: 0 },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

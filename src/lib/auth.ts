@@ -40,6 +40,7 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           branch: user.branch ? user.branch.toString() : '',
           bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
+          ewbApiAccess: user.ewbApiAccess || false,
         };
       }
     })
@@ -51,13 +52,17 @@ export const authOptions: NextAuthOptions = {
         token.role = (user as any).role;
         token.branch = (user as any).branch;
         token.bookingBranch = (user as any).bookingBranch;
+        token.ewbApiAccess = (user as any).ewbApiAccess;
       } else if (token.id) {
         // Fetch fresh branch/bookingBranch details from the database on refresh
         try {
           await connectToDatabase();
-          const dbUser = await User.findById(token.id).select('branch bookingBranch role');
+          const dbUser = await User.findById(token.id).select('branch bookingBranch role ewbApiAccess');
           if (dbUser) {
             token.branch = dbUser.branch ? dbUser.branch.toString() : '';
+            token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
+            token.role = dbUser.role;
+            token.ewbApiAccess = dbUser.ewbApiAccess || false;
             token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
             token.role = dbUser.role;
           }
@@ -68,11 +73,12 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
         (session.user as any).branch = token.branch;
         (session.user as any).bookingBranch = token.bookingBranch;
+        (session.user as any).ewbApiAccess = token.ewbApiAccess;
       }
       return session;
     }

@@ -14,7 +14,7 @@ export async function GET() {
     await connectToDatabase();
     
     // Fetch live user data directly from MongoDB
-    const dbUser = await User.findById((session.user as any).id).select('name email role branch bookingBranch');
+    const dbUser = await User.findById((session.user as any).id).select('name email role branch bookingBranch ewbApiAccess');
     
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
