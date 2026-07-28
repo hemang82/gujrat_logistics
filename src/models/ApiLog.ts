@@ -11,7 +11,7 @@ export interface IApiLog extends Document {
 
 const ApiLogSchema = new Schema<IApiLog>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: false },
     apiType: { type: String, required: true }, // e.g., 'EWAY_BILL_FETCH'
     requestData: { type: String, required: true }, // e.g., EWB Number
     responseStatus: { type: String, enum: ['success', 'failed', 'cached'], required: true },

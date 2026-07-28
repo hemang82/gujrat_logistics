@@ -19,7 +19,8 @@ import {
   MapPin,
   FileText,
   Database,
-  Box
+  Box,
+  Activity
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -157,6 +158,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     },
     { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },
     { name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false },
+    { name: 'API Logs', href: '/admin/api-logs', icon: <Activity className="w-5 h-5" />, isDropdown: false },
   ];
 
   return (

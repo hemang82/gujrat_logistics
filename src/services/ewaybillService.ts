@@ -13,6 +13,24 @@ export class EwayBillService {
     }
 
     try {
+      // 1. Check if we already have a valid token from today (last 23 hours) in the database
+      const dbConnect = (await import('@/lib/db')).default;
+      const ApiLog = (await import('@/models/ApiLog')).default;
+      await dbConnect();
+
+      const twentyThreeHoursAgo = new Date(Date.now() - 23 * 60 * 60 * 1000);
+      const cachedTokenLog = await ApiLog.findOne({
+        apiType: 'MASTERS_INDIA_TOKEN',
+        responseStatus: 'success',
+        createdAt: { $gte: twentyThreeHoursAgo }
+      }).sort({ createdAt: -1 });
+
+      if (cachedTokenLog && cachedTokenLog.errorMessage) {
+        // Return the token we saved in the database
+        return cachedTokenLog.errorMessage;
+      }
+
+      // 2. If no token found or it's expired, fetch a new one
       const response = await fetch(`${this.API_BASE}/token-auth/`, {
         method: 'POST',
         headers: {
@@ -33,6 +51,18 @@ export class EwayBillService {
       if (!data.token) {
         throw new Error('Token not found in authentication response');
       }
+
+      // 3. Save the new token in the database for the rest of the day
+      const User = (await import('@/models/User')).default;
+      const adminUser = await User.findOne({ role: 'admin' });
+      
+      await ApiLog.create({
+        userId: adminUser ? adminUser._id : null, 
+        apiType: 'MASTERS_INDIA_TOKEN',
+        requestData: 'JWT',
+        responseStatus: 'success',
+        errorMessage: data.token // Saving token here
+      });
 
       return data.token;
     } catch (error: any) {
