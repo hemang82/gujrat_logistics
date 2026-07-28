@@ -8,9 +8,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="flex flex-col gap-4">
-            <Link href="/" className="flex items-center group">
-              <div className="h-14 w-auto bg-white p-2 rounded-xl shadow-sm relative">
-                <img src="/images/logo.png" alt="Trust Logistic Logo" className="h-full w-auto object-contain" />
+            <Link href="/" className="flex items-center group overflow-hidden w-fit">
+              <div className="h-16 w-56 bg-white rounded-xl shadow-sm relative flex items-center justify-center">
+                <img src="/images/logo.png" alt="Trust Logistic Logo" className="w-full h-full object-contain scale-[1.3]" />
               </div>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">
