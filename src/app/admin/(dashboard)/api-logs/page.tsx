@@ -24,26 +24,48 @@ export default function ApiLogsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, limit: 50, totalPages: 1 });
+
   useEffect(() => {
     fetchLogs();
-  }, []);
+  }, [page]); // Re-fetch when page changes
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/admin/api-logs');
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '50',
+      });
+      if (search) params.append('search', search);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const res = await fetch(`/api/admin/api-logs?${params.toString()}`);
       const data = await res.json();
       
       if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
       
       setLogs(data.logs || []);
+      if (data.pagination) setPagination(data.pagination);
     } catch (err: any) {
       console.error(err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchLogs();
   };
 
   const getStatusBadge = (status: string) => {
@@ -81,28 +103,67 @@ export default function ApiLogsPage() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">API Usage Logs</h1>
           <p className="text-sm text-gray-500 mt-1">Monitor E-Way bill API fetches and system token requests.</p>
         </div>
-        <button 
-          onClick={fetchLogs}
-          disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-brand-primary transition-colors disabled:opacity-50"
-        >
-          <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
       </div>
+
+      <Card className="p-4 bg-white border-gray-200">
+        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Search User or Bill No.</label>
+            <input 
+              type="text" 
+              placeholder="Search..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none"
+            />
+          </div>
+          <div className="w-full md:w-48">
+            <label className="block text-xs font-medium text-gray-700 mb-1">From Date</label>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none"
+            />
+          </div>
+          <div className="w-full md:w-48">
+            <label className="block text-xs font-medium text-gray-700 mb-1">To Date</label>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary outline-none"
+            />
+          </div>
+          <button 
+            type="submit"
+            disabled={loading}
+            className="flex-shrink-0 px-4 py-2 bg-brand-primary text-white rounded-md text-sm font-medium hover:bg-brand-primary/90 transition-colors disabled:opacity-50"
+          >
+            Apply Filters
+          </button>
+          <button 
+            type="button"
+            onClick={() => { setSearch(''); setStartDate(''); setEndDate(''); setPage(1); }}
+            className="flex-shrink-0 px-4 py-2 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200 transition-colors"
+          >
+            Clear
+          </button>
+        </form>
+      </Card>
 
       {error ? (
         <Card className="p-6 bg-red-50 border-red-100">
           <p className="text-red-600 text-sm font-medium">{error}</p>
         </Card>
       ) : (
-        <Card className="overflow-hidden border-gray-200 shadow-sm">
+        <Card className="overflow-hidden border-gray-200 shadow-sm flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-500 uppercase font-semibold">
@@ -124,7 +185,7 @@ export default function ApiLogsPage() {
                 ) : logs.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                      No API logs found.
+                      No API logs found for the selected filters.
                     </td>
                   </tr>
                 ) : (
@@ -169,6 +230,31 @@ export default function ApiLogsPage() {
               </tbody>
             </table>
           </div>
+          
+          {/* Pagination Controls */}
+          {!loading && pagination.total > 0 && (
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <span className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-900">{((page - 1) * pagination.limit) + 1}</span> to <span className="font-medium text-gray-900">{Math.min(page * pagination.limit, pagination.total)}</span> of <span className="font-medium text-gray-900">{pagination.total}</span> entries
+              </span>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button 
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={page >= pagination.totalPages}
+                  className="px-3 py-1 bg-white border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>
