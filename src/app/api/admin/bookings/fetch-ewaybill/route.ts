@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ApiLog from '@/models/ApiLog';
+import { EwayBillService } from '@/services/ewaybillService';
 
 export async function GET(request: Request) {
   try {
@@ -55,141 +56,39 @@ export async function GET(request: Request) {
       }
     }
 
-    // ==========================================
-    // PLACEHOLDER: Integration with Government GSP APIs (ClearTax, Sandbox, etc.)
-    // ==========================================
-    // Example call logic:
-    // const gspResponse = await fetch(`https://api.sandbox.co.in/gsp/ewb/v1.03/ewaybill?ewbNo=${number}`, {
-    //   headers: {
-    //     'Authorization': `Bearer ${process.env.GSP_BEARER_TOKEN}`,
-    //     'x-api-key': process.env.GSP_API_KEY
-    //   }
-    // });
-    // const data = await gspResponse.json();
-    // ==========================================
+    // Call Masters India API via Service Layer
+    const ewbData = await EwayBillService.fetchEwayBillDetails(number);
 
-    // Mock response details matching realistic goods shipments for testing:
-    // We select different mock data depending on the last digit of the ewayBillNo for a dynamic feel
-    const lastDigit = parseInt(number.slice(-1)) || 0;
-    const index = lastDigit % 3;
-
-    let mockEwayBillDetails: any;
-
-    if (index === 0) {
-      mockEwayBillDetails = {
-        ewayBillNo: number,
-        ewayBillDate: new Date().toLocaleDateString('en-IN'),
-        consignor: {
-          name: 'GUJARAT CHEMICALS LTD',
-          gst: '24AAACG1234A1Z1',
-          phone: '9825012345',
-          address: 'Plot No. 12, GIDC Estate, Vatva, Ahmedabad, Gujarat - 382445'
-        },
-        consignee: {
-          name: 'MAHARASHTRA PLASTICS CORP',
-          gst: '27AAACM5678B2Z2',
-          phone: '9922098765',
-          address: 'Bldg C, Phase 2, Industrial Area, Thane, Maharashtra - 400604'
-        },
-        destinationBranch: 'MUMBAI',
-        invoiceNumber: `INV/2026/08${lastDigit}0`,
-        invoiceDate: new Date().toISOString().slice(0, 10),
-        totalValue: 125000,
-        items: [
-          {
-            packages: 25,
-            packaging: 'BAGS',
-            description: 'POLYPROPYLENE GRANULES RAW MATERIAL',
-            weight: 1250,
-            nw: 'W',
-            rate: 4.5,
-            amount: 5625
-          },
-          {
-            packages: 10,
-            packaging: 'DRUMS',
-            description: 'INDUSTRIAL PLASTICIZERS CHEMICALS',
-            weight: 800,
-            nw: 'W',
-            rate: 6.0,
-            amount: 4800
-          }
-        ]
-      };
-    } else if (index === 1) {
-      mockEwayBillDetails = {
-        ewayBillNo: number,
-        ewayBillDate: new Date().toLocaleDateString('en-IN'),
-        consignor: {
-          name: 'SHREE AMBICA TEXTILES',
-          gst: '24AABCS4589C1Z4',
-          phone: '9426011223',
-          address: 'G-24, New Textile Market, Ring Road, Surat, Gujarat - 395002'
-        },
-        consignee: {
-          name: 'BALAJI GARMENTS',
-          gst: '27AAEFB9876D2Z8',
-          phone: '9892044556',
-          address: 'Shop No 10, Sector 17, Vashi, Navi Mumbai, Maharashtra - 400703'
-        },
-        destinationBranch: 'SURAT',
-        invoiceNumber: `INV/2026/09${lastDigit}1`,
-        invoiceDate: new Date().toISOString().slice(0, 10),
-        totalValue: 98000,
-        items: [
-          {
-            packages: 45,
-            packaging: 'ROLLS',
-            description: 'COTTON FABRIC GREY SHIRTING CLOTH',
-            weight: 2150,
-            nw: 'W',
-            rate: 8.5,
-            amount: 18275
-          },
-          {
-            packages: 15,
-            packaging: 'BOXES',
-            description: 'TEXTILE DYES & COLOUR CHEMICALS',
-            weight: 320,
-            nw: 'W',
-            rate: 12.0,
-            amount: 3840
-          }
-        ]
-      };
-    } else {
-      mockEwayBillDetails = {
-        ewayBillNo: number,
-        ewayBillDate: new Date().toLocaleDateString('en-IN'),
-        consignor: {
-          name: 'RAJKOT ENGINE VALVES',
-          gst: '24AABCR7890F1Z9',
-          phone: '9099088776',
-          address: 'Plot 232, GIDC Metoda, Kalawad Road, Rajkot, Gujarat - 360021'
-        },
-        consignee: {
-          name: 'AUTO PARTS DISTRIBUTORS',
-          gst: '27AABCA4560E1ZA',
-          phone: '9167055443',
-          address: 'Ground Floor, Opera House, Mumbai, Maharashtra - 400004'
-        },
-        destinationBranch: 'RAJKOT',
-        invoiceNumber: `INV/2026/07${lastDigit}2`,
-        invoiceDate: new Date().toISOString().slice(0, 10),
-        totalValue: 156000,
-        items: [
-          {
-            packages: 120,
-            packaging: 'BOXES',
-            description: 'AUTOMOTIVE ENGINE VALVES PRECISION PARTS',
-            weight: 1500,
-            nw: 'W',
-            rate: 15.0,
-            amount: 22500
-          }
-        ]
-      };
-    }
+    // Map Masters India response to our Frontend UI format
+    const mappedDetails = {
+      ewayBillNo: ewbData.eway_bill_number || number,
+      ewayBillDate: ewbData.eway_bill_date || '',
+      consignor: {
+        name: ewbData.legal_name_of_consignor || ewbData.trade_name_of_consignor || '',
+        gst: ewbData.gstin_of_consignor || '',
+        phone: '', // Usually not provided in EWB
+        address: [ewbData.address1_of_consignor, ewbData.address2_of_consignor, ewbData.place_of_consignor, ewbData.state_of_consignor, ewbData.pincode_of_consignor].filter(Boolean).join(', ')
+      },
+      consignee: {
+        name: ewbData.legal_name_of_consignee || ewbData.trade_name_of_consignee || '',
+        gst: ewbData.gstin_of_consignee || '',
+        phone: '',
+        address: [ewbData.address1_of_consignee, ewbData.address2_of_consignee, ewbData.place_of_consignee, ewbData.state_of_consignee, ewbData.pincode_of_consignee].filter(Boolean).join(', ')
+      },
+      destinationBranch: '', // Requires manual selection by user
+      invoiceNumber: ewbData.document_number || '',
+      invoiceDate: ewbData.document_date || '',
+      totalValue: ewbData.total_invoice_value || ewbData.taxable_amount || 0,
+      items: (ewbData.itemList || []).map((item: any) => ({
+        packages: item.quantity || 1,
+        packaging: item.unit_of_product || 'BOX',
+        description: item.product_name || item.product_description || 'Goods',
+        weight: 0, // EWB API doesn't always provide weight per item, user can fill
+        nw: 'N', // Default to number of packages
+        rate: 0, // Rate per kg/pkg usually isn't in EWB, only taxable value
+        amount: item.taxable_amount || 0
+      }))
+    };
 
     // Log this fresh hit
     await ApiLog.create({
@@ -197,11 +96,25 @@ export async function GET(request: Request) {
       apiType: 'EWAY_BILL_FETCH',
       requestData: number,
       responseStatus: 'success',
-      errorMessage: JSON.stringify(mockEwayBillDetails) // Saving data to use as cache later
+      errorMessage: JSON.stringify(mappedDetails) // Saving data to use as cache later
     });
 
-    return NextResponse.json(mockEwayBillDetails);
+    return NextResponse.json(mappedDetails);
   } catch (error: any) {
+    // Log failure
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.id) {
+        await ApiLog.create({
+          userId: session.user.id,
+          apiType: 'EWAY_BILL_FETCH',
+          requestData: new URL(request.url).searchParams.get('number') || 'Unknown',
+          responseStatus: 'failed',
+          errorMessage: error.message
+        });
+      }
+    } catch (e) {}
+
     return NextResponse.json({ error: 'Failed to fetch E-Way Bill details.', details: error.message }, { status: 500 });
   }
 }
