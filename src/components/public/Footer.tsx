@@ -8,8 +8,10 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="flex flex-col gap-4">
-            <Link href="/" className="inline-block bg-white p-2 rounded-xl">
-              <img src="/images/trust-logo.png" alt="Trust Logistic Logo" className="h-10 w-auto object-contain" />
+            <Link href="/" className="flex items-center group">
+              <div className="h-14 w-auto bg-white p-2 rounded-xl shadow-sm relative">
+                <img src="/images/logo.png" alt="Trust Logistic Logo" className="h-full w-auto object-contain" />
+              </div>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">
               India's #1 Logistics Management Software. Digitize your transport business, streamline operations, and scale with ease.

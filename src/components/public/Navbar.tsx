@@ -39,7 +39,9 @@ export function Navbar() {
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center group">
-          <img src="/images/trust-logo.png" alt="Trust Logistic Logo" className="h-12 w-auto object-contain" />
+          <div className="h-12 w-auto relative">
+            <img src="/images/logo.png" alt="Trust Logistic Logo" className="h-full w-auto object-contain" />
+          </div>
         </Link>
 
         {/* Desktop Nav */}

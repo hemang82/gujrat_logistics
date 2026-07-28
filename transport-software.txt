@@ -1,0 +1,132 @@
+┌────────────────────────────────────────────┐
+│                SELLER ERP                  │
+└────────────────────────────────────────────┘
+
+Invoice
+      │
+      ▼
+Generate E-Way Bill
+(Vehicle may be Empty)
+      │
+      ▼
+EWB Number
+      │
+      ▼
+
+═══════════════════════════════════════════════
+
+┌────────────────────────────────────────────┐
+│        TRANSPORT MANAGEMENT SYSTEM         │
+└────────────────────────────────────────────┘
+
+Customer Gives EWB Number
+      │
+      ▼
+
+① Get EWB Details API
+      │
+      ▼
+Auto Fetch
+- Consignor
+- Consignee
+- Invoice
+- Material
+- Weight
+- Distance
+      │
+      ▼
+
+② Create LR
+(1 LR = 1 EWB)
+
+LR0001 → EWB1
+LR0002 → EWB2
+LR0003 → EWB3
+
+      │
+      ▼
+
+③ Create Trip
+
+Trip001
+
+↓
+
+Assign
+
+✔ Truck
+✔ Driver
+✔ Route
+
+↓
+
+LR0001
+LR0002
+LR0003
+
+↓
+
+④ (If Required)
+Update Vehicle (Part-B)
+
+↓
+
+⑤ Generate Consolidated EWB
+
+↓
+
+Government Gives
+
+CEWB Number
+
+↓
+
+Trip Start
+
+↓
+
+GPS Tracking
+
+↓
+
+Vehicle Change?
+
+      │
+ ┌────┴─────┐
+ │          │
+No         Yes
+ │          │
+ │          ▼
+ │   Update Vehicle API
+ │
+ ▼
+
+Continue Trip
+
+↓
+
+Delay?
+
+      │
+ ┌────┴─────┐
+ │          │
+No         Yes
+ │          │
+ │          ▼
+ │   Extend EWB API
+ │
+ ▼
+
+Delivery
+
+↓
+
+POD
+
+↓
+
+Billing
+
+↓
+
+Reports
