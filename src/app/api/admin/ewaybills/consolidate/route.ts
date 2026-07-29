@@ -56,7 +56,9 @@ export async function POST(request: Request) {
         fromPlace: body.from_place,
         fromState: body.from_state,
         transMode: body.transportation_mode,
-        ewbNoDetails: body.eway_bill_list,
+        ewbNoDetails: body.eway_bill_list.map((item: any) => ({
+          ewbNo: parseInt(item.eway_bill_no, 10)
+        })),
         cEwbDate: cewbResponse.cEwbDate,
         status: 'Active',
         createdBy: dbUser._id
@@ -65,7 +67,7 @@ export async function POST(request: Request) {
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',
-        requestData: `Vehicle: ${body.vehicleNo}, EWBs: ${body.ewbNoDetails.length}`,
+        requestData: `Vehicle: ${body.vehicle_number}, EWBs: ${body.eway_bill_list?.length || 0}`,
         responseStatus: 'success',
       });
 
@@ -75,7 +77,7 @@ export async function POST(request: Request) {
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',
-        requestData: `Vehicle: ${body.vehicleNo}, EWBs: ${body.ewbNoDetails.length}`,
+        requestData: `Vehicle: ${body.vehicle_number}, EWBs: ${body.eway_bill_list?.length || 0}`,
         responseStatus: 'failed',
         errorMessage: apiError.message,
       });
