@@ -140,6 +140,11 @@ export default function CEWBDetailsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                 
                 <div className="space-y-1">
+                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Challan Ref</Label>
+                  <p className="font-semibold text-lg font-mono text-brand-primary">{bill.challanNo || 'N/A'}</p>
+                </div>
+
+                <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Vehicle Number</Label>
                   {isEditing ? (
                     <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())} />
@@ -162,19 +167,7 @@ export default function CEWBDetailsPage() {
                   )}
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Vehicle Number</Label>
-                  {isEditing ? (
-                    <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())} />
-                  ) : (
-                    <p className="font-semibold text-lg">{bill.vehicleNo}</p>
-                  )}
-                </div>
 
-                <div className="space-y-1">
-                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Challan Ref</Label>
-                  <p className="font-semibold text-lg font-mono">{bill.challanNo || 'N/A'}</p>
-                </div>
 
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">From Place</Label>
@@ -186,29 +179,11 @@ export default function CEWBDetailsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-gray-500 text-xs uppercase tracking-wider">From State Code</Label>
+                  <Label className="text-gray-500 text-xs uppercase tracking-wider">From State</Label>
                   {isEditing ? (
                     <Input value={fromState} onChange={(e) => setFromState(e.target.value)} />
                   ) : (
                     <p className="font-medium">{bill.fromState || 'N/A'}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Transporter Doc No</Label>
-                  {isEditing ? (
-                    <Input value={transDocNo} onChange={(e) => setTransDocNo(e.target.value)} />
-                  ) : (
-                    <p className="font-medium">{bill.transDocNo || 'N/A'}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Transporter Doc Date</Label>
-                  {isEditing ? (
-                    <Input value={transDocDate} onChange={(e) => setTransDocDate(e.target.value)} placeholder="DD/MM/YYYY" />
-                  ) : (
-                    <p className="font-medium">{bill.transDocDate || 'N/A'}</p>
                   )}
                 </div>
 
