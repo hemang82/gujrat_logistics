@@ -91,6 +91,7 @@ export default function ConsolidatedEwayBillPage() {
       .map(b => ({ eway_bill_no: b.ewayBillNo }));
 
     const payload = {
+      challanNo: challanNo, // Added explicitly for DB saving
       userGstin: "05AAABC0181E1ZE", // Updated from user input
       transporter_id: "05AAABB0639G1Z8", // Updated from user input
       trip_no: challanNo || "TRIP1001",

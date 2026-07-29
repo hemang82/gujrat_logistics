@@ -49,7 +49,7 @@ export default function CEWBListPage() {
           <p className="text-sm text-gray-500 mt-1">Manage and generate master e-way bills for multiple parcels.</p>
         </div>
         <Link href="/admin/ewaybills/consolidated/new">
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2 h-10 px-6">
             <Plus className="w-4 h-4" />
             Generate New CEWB
           </Button>
@@ -61,7 +61,7 @@ export default function CEWBListPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-500 font-medium">
-                <tr>
+                <tr className="text-xs uppercase tracking-wider text-gray-600 font-semibold">
                   <th className="px-6 py-4">CEWB NO</th>
                   <th className="px-6 py-4">DATE</th>
                   <th className="px-6 py-4">VEHICLE NO</th>
