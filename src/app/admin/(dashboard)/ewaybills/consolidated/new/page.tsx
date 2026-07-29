@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Truck, Plus, Trash2, FileOutput, CheckCircle2 } from 'lucide-react';
+import { Truck, FileOutput, CheckCircle2, ListFilter, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
+import { SearchSelect } from '@/components/ui/search-select';
 
 export default function ConsolidatedEwayBillPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [successData, setSuccessData] = useState<any>(null);
+
+  // Filters
+  const [selectedDate, setSelectedDate] = useState<string | undefined>(new Date().toISOString().split('T')[0]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
+  const [branches, setBranches] = useState<any[]>([]);
+
+  // LRs
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isFetchingLRs, setIsFetchingLRs] = useState(false);
+  const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
 
   // Form states
   const [vehicleNo, setVehicleNo] = useState('');
@@ -21,50 +32,83 @@ export default function ConsolidatedEwayBillPage() {
   const [transMode, setTransMode] = useState('1'); // 1 = Road
   const [transDocNo, setTransDocNo] = useState('');
   const [transDocDate, setTransDocDate] = useState('');
-  
-  // EWB list
-  const [ewbList, setEwbList] = useState([{ ewbNo: '' }]);
 
-  const handleAddEwb = () => {
-    setEwbList([...ewbList, { ewbNo: '' }]);
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [selectedDate, selectedBranch]);
+
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/admin/branches');
+      const data = await res.json();
+      if (res.ok) setBranches(data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleRemoveEwb = (index: number) => {
-    const newList = [...ewbList];
-    newList.splice(index, 1);
-    setEwbList(newList);
+  const fetchBookings = async () => {
+    try {
+      setIsFetchingLRs(true);
+      const query = new URLSearchParams();
+      if (selectedDate) query.append('date', selectedDate);
+      if (selectedBranch) query.append('branch', selectedBranch);
+
+      const res = await fetch(`/api/admin/bookings/for-cewb?${query.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setBookings(data.data || []);
+      setSelectedBookingIds(new Set()); // reset selection
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fetch pending LRs');
+    } finally {
+      setIsFetchingLRs(false);
+    }
   };
 
-  const handleEwbChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (value && !/^\d+$/.test(value)) return;
-    
-    const newList = [...ewbList];
-    newList[index].ewbNo = value;
-    setEwbList(newList);
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedBookingIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedBookingIds(newSet);
+  };
+
+  const toggleAll = () => {
+    if (selectedBookingIds.size === bookings.length) {
+      setSelectedBookingIds(new Set());
+    } else {
+      setSelectedBookingIds(new Set(bookings.map(b => b._id)));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validations
     if (!vehicleNo) return toast.error("Vehicle Number is required");
     
-    // Filter empty EWBs
-    const validEwbs = ewbList.filter(item => item.ewbNo && item.ewbNo.length === 12);
-    if (validEwbs.length < 2) {
-      return toast.error("Please add at least 2 valid 12-digit E-Way Bill numbers to consolidate.");
+    if (selectedBookingIds.size < 2) {
+      return toast.error("Please select at least 2 pending LRs to consolidate.");
     }
 
+    // Get selected EWBs
+    const selectedEwbs = bookings
+      .filter(b => selectedBookingIds.has(b._id) && b.ewayBillNo)
+      .map(b => ({ ewbNo: parseInt(b.ewayBillNo) }));
+
     const payload = {
-      userGstin: "05AAABB0639G1Z8", // Use from env or master in real app
+      userGstin: "05AAABB0639G1Z8", // Example format
       vehicleNo,
       fromPlace,
-      fromState, // e.g. 24 for Gujarat, need State Code
+      fromState,
       transDocNo,
-      transDocDate: transDocDate ? transDocDate.split('-').reverse().join('/') : '', // Format DD/MM/YYYY
+      transDocDate: transDocDate ? transDocDate.split('-').reverse().join('/') : '', 
       transMode,
-      ewbNoDetails: validEwbs.map(item => ({ ewbNo: parseInt(item.ewbNo) }))
+      ewbNoDetails: selectedEwbs
     };
 
     try {
@@ -76,10 +120,7 @@ export default function ConsolidatedEwayBillPage() {
       });
       
       const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate Consolidated EWB");
-      }
+      if (!res.ok) throw new Error(data.error);
       
       toast.success("Consolidated E-Way Bill generated successfully!");
       setSuccessData(data.data);
@@ -123,15 +164,15 @@ export default function ConsolidatedEwayBillPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bill (CEWB)</h1>
-          <p className="text-sm text-gray-500 mt-1">Group multiple e-way bills for a single transport journey.</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Generate CEWB</h1>
+          <p className="text-sm text-gray-500 mt-1">Select Pending LRs to group into a master e-way bill.</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         
-        {/* Left Column - Transporter & Vehicle Info */}
-        <div className="xl:col-span-2 space-y-6">
+        {/* Left Column - Transport Details */}
+        <div className="xl:col-span-1 space-y-6">
           <Card className="border-gray-200">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
               <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -139,8 +180,7 @@ export default function ConsolidatedEwayBillPage() {
                 Transport Details
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label>Vehicle Number <span className="text-red-500">*</span></Label>
                   <Input 
@@ -180,7 +220,7 @@ export default function ConsolidatedEwayBillPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Transporter Doc / LR Number</Label>
+                  <Label>Transporter Doc / LR No</Label>
                   <Input 
                     placeholder="e.g. LR-1002" 
                     value={transDocNo}
@@ -196,71 +236,121 @@ export default function ConsolidatedEwayBillPage() {
                     className="w-full"
                   />
                 </div>
-              </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || selectedBookingIds.size === 0}
+                  className="w-full flex items-center justify-center gap-2 text-base py-6 shadow-md mt-4"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <FileOutput className="w-5 h-5" />
+                  )}
+                  Generate ({selectedBookingIds.size} selected)
+                </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column - EWB List */}
-        <div className="space-y-6">
+        {/* Right Column - LRs Table */}
+        <div className="xl:col-span-2 space-y-6">
           <Card className="border-gray-200">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <CardTitle className="text-lg font-bold">E-Way Bills</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <p className="text-xs text-gray-500 mb-2">Enter 12-digit E-Way bill numbers to group into the CEWB.</p>
-              
-              {ewbList.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm w-6 text-center">{index + 1}.</span>
-                  <Input 
-                    placeholder="123456789012" 
-                    value={item.ewbNo}
-                    onChange={(e) => handleEwbChange(index, e.target.value)}
-                    maxLength={12}
-                    className="font-mono tracking-widest text-sm"
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <ListFilter className="w-5 h-5 text-brand-primary" />
+                  Pending LRs with EWB
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <DatePicker
+                    value={selectedDate || ''}
+                    onChange={(date) => setSelectedDate(date)}
+                    placeholder="Filter by Date"
+                    className="w-[140px]"
                   />
-                  {ewbList.length > 1 && (
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveEwb(index)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <select 
+                    value={selectedBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    className="flex h-10 w-[160px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  >
+                    <option value="">All Branches</option>
+                    {branches.map(b => (
+                      <option key={b._id} value={b._id}>{b.branchName}</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full border-dashed flex items-center justify-center gap-2 mt-2 text-brand-primary"
-                onClick={handleAddEwb}
-              >
-                <Plus className="w-4 h-4" />
-                Add Another E-Way Bill
-              </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-medium">
+                    <tr>
+                      <th className="px-4 py-3 w-10 text-center">
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                          checked={bookings.length > 0 && selectedBookingIds.size === bookings.length}
+                          onChange={toggleAll}
+                          disabled={bookings.length === 0}
+                        />
+                      </th>
+                      <th className="px-4 py-3">LR NUMBER</th>
+                      <th className="px-4 py-3">CONSIGNOR</th>
+                      <th className="px-4 py-3">DESTINATION</th>
+                      <th className="px-4 py-3">E-WAY BILL NO</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {isFetchingLRs ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
+                          Fetching LRs...
+                        </td>
+                      </tr>
+                    ) : bookings.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                          No pending LRs with E-Way Bill found for this filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      bookings.map((booking) => (
+                        <tr 
+                          key={booking._id} 
+                          className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedBookingIds.has(booking._id) ? 'bg-blue-50/30' : ''}`}
+                          onClick={() => toggleSelection(booking._id)}
+                        >
+                          <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input 
+                              type="checkbox" 
+                              className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                              checked={selectedBookingIds.has(booking._id)}
+                              onChange={() => toggleSelection(booking._id)}
+                            />
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-brand-primary">
+                            {booking.lrNumber}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {booking.consignor?.name}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {booking.destinationBranch?.branchName || 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 font-mono font-medium tracking-widest text-emerald-700">
+                            {booking.ewayBillNo}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
-          
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 text-base py-6 shadow-md"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Generating CEWB...
-              </span>
-            ) : (
-              <>
-                <FileOutput className="w-5 h-5" />
-                Generate Master EWB
-              </>
-            )}
-          </Button>
         </div>
 
       </form>
