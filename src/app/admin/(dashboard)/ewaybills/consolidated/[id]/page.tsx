@@ -125,10 +125,10 @@ export default function CEWBDetailsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="space-y-6">
         
-        {/* Left Col - Transport Details */}
-        <div className="xl:col-span-2 space-y-6">
+        {/* Top Section - Transport Details */}
+        <div className="space-y-6">
           <Card className="border-gray-200 shadow-sm print:shadow-none print:border-black">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4 print:bg-white print:border-black">
               <CardTitle className="text-lg font-bold flex items-center gap-2">
@@ -137,7 +137,7 @@ export default function CEWBDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-y-6 gap-x-8">
                 
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Challan Ref</Label>
@@ -192,40 +192,60 @@ export default function CEWBDetailsPage() {
           </Card>
         </div>
 
-        {/* Right Col - EWB List */}
+        {/* Bottom Section - EWB List */}
         <div className="space-y-6">
           <Card className="border-gray-200 shadow-sm print:shadow-none print:border-black">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4 print:bg-white print:border-black">
               <CardTitle className="text-lg font-bold flex items-center gap-2">
                 <List className="w-5 h-5 text-brand-primary print:text-black" />
-                Included E-Way Bills
+                Included E-Way Bills & LRs
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-100 print:bg-white print:border-black">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">#</th>
-                    <th className="px-4 py-3 text-left font-semibold text-gray-600">EWB Number</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 print:divide-black">
-                  {bill.ewbNoDetails?.map((item: any, i: number) => (
-                    <tr key={i} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-500">{i + 1}</td>
-                      <td className="px-4 py-3 font-mono font-medium tracking-widest">{item.ewbNo}</td>
-                    </tr>
-                  ))}
-                  {(!bill.ewbNoDetails || bill.ewbNoDetails.length === 0) && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-100 print:bg-white print:border-black">
                     <tr>
-                      <td colSpan={2} className="px-4 py-6 text-center text-gray-500">No details found</td>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600 w-12">#</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">LR NUMBER</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">CONSIGNOR</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">DESTINATION</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">ITEM</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-600">EWB NUMBER</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 print:divide-black">
+                    {bill.bookings && bill.bookings.length > 0 ? (
+                      bill.bookings.map((booking: any, i: number) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+                          <td className="px-4 py-3 font-semibold text-brand-primary">{booking.lrNumber}</td>
+                          <td className="px-4 py-3">{booking.consignor?.name || 'N/A'}</td>
+                          <td className="px-4 py-3">{booking.destinationBranch?.name || 'N/A'}</td>
+                          <td className="px-4 py-3">{booking.material?.itemName || 'N/A'}</td>
+                          <td className="px-4 py-3 font-mono font-medium tracking-widest bg-gray-50/50">{booking.ewayBillNo}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      bill.ewbNoDetails?.map((item: any, i: number) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-gray-500">{i + 1}</td>
+                          <td colSpan={4} className="px-4 py-3 text-gray-400 italic">Legacy record (LR details not fetched)</td>
+                          <td className="px-4 py-3 font-mono font-medium tracking-widest bg-gray-50/50">{item.ewbNo}</td>
+                        </tr>
+                      ))
+                    )}
+                    {(!bill.ewbNoDetails || bill.ewbNoDetails.length === 0) && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-gray-500">No details found</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
               <div className="p-4 bg-gray-50 border-t border-gray-100 print:bg-white print:border-black flex justify-between items-center">
-                <span className="font-semibold text-gray-600">Total Count:</span>
-                <span className="font-bold text-lg">{bill.ewbNoDetails?.length || 0}</span>
+                <span className="font-semibold text-gray-600">Total LRs included:</span>
+                <span className="font-bold text-xl text-brand-primary">{bill.ewbNoDetails?.length || 0}</span>
               </div>
             </CardContent>
           </Card>
