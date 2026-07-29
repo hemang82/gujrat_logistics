@@ -214,7 +214,7 @@ export default function ConsolidatedEwayBillPage() {
                 <select 
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                  className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary"
                 >
                   <option value="Regular">Regular</option>
                   <option value="ODC">ODC (Over Dimensional Cargo)</option>
@@ -225,7 +225,7 @@ export default function ConsolidatedEwayBillPage() {
                 <select 
                   value={transMode}
                   onChange={(e) => setTransMode(e.target.value)}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                  className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary"
                 >
                   <option value="Road">Road</option>
                   <option value="Rail">Rail</option>

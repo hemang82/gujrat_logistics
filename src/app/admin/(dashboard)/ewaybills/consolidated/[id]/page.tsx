@@ -156,14 +156,14 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Mode of Transport</Label>
                   {isEditing ? (
-                    <select value={transMode} onChange={(e) => setTransMode(e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary">
-                      <option value="1">Road</option>
-                      <option value="2">Rail</option>
-                      <option value="3">Air</option>
-                      <option value="4">Ship</option>
+                    <select value={transMode} onChange={(e) => setTransMode(e.target.value)} className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary">
+                      <option value="Road">Road</option>
+                      <option value="Rail">Rail</option>
+                      <option value="Air">Air</option>
+                      <option value="Ship">Ship</option>
                     </select>
                   ) : (
-                    <p className="font-medium">{bill.transMode === '1' ? 'Road' : bill.transMode === '2' ? 'Rail' : bill.transMode === '3' ? 'Air' : 'Ship'}</p>
+                    <p className="font-semibold text-lg">{bill.transMode || 'Road'}</p>
                   )}
                 </div>
 
