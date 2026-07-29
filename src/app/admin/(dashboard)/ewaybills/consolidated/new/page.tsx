@@ -106,9 +106,9 @@ export default function ConsolidatedEwayBillPage() {
               <p className="text-3xl font-bold text-brand-primary font-mono tracking-widest">{successData.cEwbNo}</p>
             </div>
             <p className="text-sm text-gray-600">Generated on: {successData.cEwbDate}</p>
-            <div className="pt-4 flex flex-col sm:flex-row gap-4 w-full">
-              <Button className="w-full" variant="outline" onClick={() => setSuccessData(null)}>Generate Another</Button>
-              <Button className="w-full" onClick={() => window.print()}>Print CEWB</Button>
+            <div className="pt-4 flex flex-col sm:flex-row gap-4 w-full px-4">
+              <Button className="flex-1" variant="outline" onClick={() => setSuccessData(null)}>Generate Another</Button>
+              <Button className="flex-1" onClick={() => window.print()}>Print CEWB</Button>
             </div>
             <Link href="/admin/ewaybills/consolidated" className="text-sm text-brand-primary hover:underline mt-2">
               &larr; Back to CEWB List
