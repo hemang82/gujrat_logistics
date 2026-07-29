@@ -120,8 +120,9 @@ export class EwayBillService {
    */
   public static async generateConsolidatedEwayBill(payload: any): Promise<any> {
     try {
+      /* 
+      // Temporarily commented out until we get the real Master India API endpoint
       const token = await this.getAuthToken();
-      // Assuming typical endpoint for Master's India CEWB Generate
       const url = `${this.API_BASE}/cEwayBillsGenerate/`;
 
       const response = await fetch(url, {
@@ -135,7 +136,6 @@ export class EwayBillService {
 
       const data = await response.json();
 
-      // Typically success returns { results: { message: { cEwbNo: ..., cEwbDate: ... } } }
       if (data?.results?.message && typeof data.results.message === 'object') {
         return data.results.message;
       } else if (data?.results?.errorMessage || data?.results?.message) {
@@ -145,6 +145,14 @@ export class EwayBillService {
       } else {
         throw new Error('Invalid response structure from CEWB Generate API');
       }
+      */
+
+      // Mock Data for Testing
+      return {
+        cEwbNo: Math.floor(100000000000 + Math.random() * 900000000000).toString(),
+        cEwbDate: new Date().toLocaleString('en-IN')
+      };
+
     } catch (error: any) {
       console.error('Error generating CEWB:', error);
       throw error;
