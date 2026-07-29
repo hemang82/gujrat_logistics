@@ -161,6 +161,34 @@ export default function ConsolidatedEwayBillPage() {
         </div>
       </div>
 
+      {/* Challan Selection Row */}
+      <Card className="border-brand-primary/20 bg-brand-primary/5 shadow-sm">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+          <Label className="font-semibold text-brand-primary whitespace-nowrap text-base">Load from Challan:</Label>
+          <Input 
+            placeholder="Enter Challan No (e.g. CH-1001)" 
+            value={challanNo}
+            onChange={(e) => setChallanNo(e.target.value.toUpperCase())}
+            className="max-w-xs bg-white border-brand-primary/30 focus-visible:ring-brand-primary"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                fetchChallanLRs();
+              }
+            }}
+          />
+          <Button 
+            type="button" 
+            onClick={fetchChallanLRs} 
+            disabled={isFetchingLRs}
+            className="shadow-sm"
+          >
+            {isFetchingLRs ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Fetch Details & LRs
+          </Button>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* Top Row - Transport Details */}
@@ -240,23 +268,6 @@ export default function ConsolidatedEwayBillPage() {
                 <ListFilter className="w-5 h-5 text-brand-primary" />
                 Pending LRs with EWB
               </CardTitle>
-              <div className="flex flex-wrap items-center gap-2">
-                <Input 
-                  placeholder="Enter Challan No (e.g. CH-1001)" 
-                  value={challanNo}
-                  onChange={(e) => setChallanNo(e.target.value.toUpperCase())}
-                  className="w-[220px]"
-                />
-                <Button 
-                  type="button" 
-                  onClick={fetchChallanLRs} 
-                  disabled={isFetchingLRs}
-                  variant="secondary"
-                >
-                  {isFetchingLRs ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                  Fetch LRs
-                </Button>
-              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">

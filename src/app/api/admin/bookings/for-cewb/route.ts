@@ -23,7 +23,7 @@ export async function GET(request: Request) {
       Challan.init(); Vehicle.init(); Branch.init(); Booking.init();
 
       const challan = await Challan.findOne({ challanNumber: { $regex: new RegExp(`^${challanNo}$`, 'i') } })
-        .populate('truckNo', 'vehicleNo')
+        .populate('truckNo', 'vehicleNumber')
         .populate('branch', 'name code')
         .populate({
           path: 'bookings',
@@ -36,10 +36,14 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Challan not found' }, { status: 404 });
       }
 
+      if (challan.status === 'delivered') {
+        return NextResponse.json({ error: 'This Challan is already delivered. You cannot generate a Master CEWB for it.' }, { status: 400 });
+      }
+
       return NextResponse.json({ 
         data: challan.bookings,
         challanDetails: {
-          vehicleNo: challan.truckNo?.vehicleNo || '',
+          vehicleNo: challan.truckNo?.vehicleNumber || '',
           branchName: challan.branch?.name || '',
           branchCode: challan.branch?.code || ''
         }
