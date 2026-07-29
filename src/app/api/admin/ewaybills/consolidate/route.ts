@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       // Create Database Record
       const newBill = await ConsolidatedEwayBill.create({
         cEwbNo: cewbResponse.cEwbNo,
+        challanNo: body.challanNo || '',
         vehicleNo: body.vehicleNo,
         fromPlace: body.fromPlace,
         fromState: body.fromState,

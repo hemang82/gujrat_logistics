@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import Booking from '@/models/Booking';
+import Challan from '@/models/Challan';
+import Vehicle from '@/models/Vehicle';
+import Branch from '@/models/Branch';
 
 export async function GET(request: Request) {
   try {
@@ -10,29 +13,48 @@ export async function GET(request: Request) {
     if (!session || !session.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const dateStr = searchParams.get('date');
+    const challanNo = searchParams.get('challanNo');
     const branchId = searchParams.get('branch');
 
+    await dbConnect();
+
+    // If searching by Challan Number
+    if (challanNo) {
+      Challan.init(); Vehicle.init(); Branch.init(); Booking.init();
+
+      const challan = await Challan.findOne({ challanNumber: { $regex: new RegExp(`^${challanNo}$`, 'i') } })
+        .populate('truckNo', 'vehicleNo')
+        .populate('branch', 'name code')
+        .populate({
+          path: 'bookings',
+          match: { ewayBillNo: { $exists: true, $ne: '' } }, // only get bookings that have EWB
+          select: 'lrNumber bookingDate consignor consignee ewayBillNo material.itemName destinationBranch',
+          populate: { path: 'destinationBranch', select: 'name code' }
+        });
+
+      if (!challan) {
+        return NextResponse.json({ error: 'Challan not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({ 
+        data: challan.bookings,
+        challanDetails: {
+          vehicleNo: challan.truckNo?.vehicleNo || '',
+          branchName: challan.branch?.name || '',
+          branchCode: challan.branch?.code || ''
+        }
+      }, { status: 200 });
+    }
+
+    // Fallback: search by branch
     const filter: any = { 
       status: 'pending', 
       ewayBillNo: { $exists: true, $ne: '' } 
     };
 
-    if (dateStr) {
-      // Assuming dateStr is in ISO format YYYY-MM-DD
-      const start = new Date(dateStr);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(dateStr);
-      end.setHours(23, 59, 59, 999);
-      
-      filter.bookingDate = { $gte: start, $lte: end };
-    }
-
     if (branchId) {
       filter.bookingBranch = branchId;
     }
-
-    await dbConnect();
 
     const bookings = await Booking.find(filter)
       .populate('bookingBranch', 'name code')

@@ -6,6 +6,9 @@ const consolidatedEwayBillSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  challanNo: {
+    type: String
+  },
   vehicleNo: {
     type: String,
     required: true

@@ -65,6 +65,7 @@ export default function CEWBListPage() {
                   <th className="px-6 py-4">CEWB NO</th>
                   <th className="px-6 py-4">DATE</th>
                   <th className="px-6 py-4">VEHICLE NO</th>
+                  <th className="px-6 py-4">CHALLAN REF</th>
                   <th className="px-6 py-4">FROM</th>
                   <th className="px-6 py-4">TOTAL EWBS</th>
                   <th className="px-6 py-4">STATUS</th>
@@ -74,14 +75,14 @@ export default function CEWBListPage() {
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
                       Loading master bills...
                     </td>
                   </tr>
                 ) : bills.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                       <FileOutput className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                       <p>No Consolidated E-Way Bills found.</p>
                       <Link href="/admin/ewaybills/consolidated/new">
@@ -102,6 +103,9 @@ export default function CEWBListPage() {
                         <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-800 font-semibold text-xs uppercase tracking-wider">
                           {bill.vehicleNo}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-500 text-xs font-mono font-medium">
+                        {bill.challanNo || '-'}
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}

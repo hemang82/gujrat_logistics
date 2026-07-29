@@ -163,11 +163,25 @@ export default function CEWBDetailsPage() {
                 </div>
 
                 <div className="space-y-1">
+                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Vehicle Number</Label>
+                  {isEditing ? (
+                    <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())} />
+                  ) : (
+                    <p className="font-semibold text-lg">{bill.vehicleNo}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Challan Ref</Label>
+                  <p className="font-semibold text-lg font-mono">{bill.challanNo || 'N/A'}</p>
+                </div>
+
+                <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">From Place</Label>
                   {isEditing ? (
                     <Input value={fromPlace} onChange={(e) => setFromPlace(e.target.value)} />
                   ) : (
-                    <p className="font-medium">{bill.fromPlace || 'N/A'}</p>
+                    <p className="font-semibold text-lg">{bill.fromPlace || 'N/A'}</p>
                   )}
                 </div>
 

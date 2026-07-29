@@ -16,8 +16,7 @@ export default function ConsolidatedEwayBillPage() {
   const [successData, setSuccessData] = useState<any>(null);
 
   // Filters
-  const [selectedBranch, setSelectedBranch] = useState<string>('');
-  const [branches, setBranches] = useState<any[]>([]);
+  const [challanNo, setChallanNo] = useState<string>('');
 
   // LRs
   const [bookings, setBookings] = useState<any[]>([]);
@@ -32,43 +31,32 @@ export default function ConsolidatedEwayBillPage() {
   const [transDocNo, setTransDocNo] = useState('');
   const [transDocDate, setTransDocDate] = useState('');
 
-  useEffect(() => {
-    fetchBranches();
-  }, []);
-
-  useEffect(() => {
-    if (selectedBranch) {
-      fetchBookings();
-    } else {
-      setBookings([]);
-      setSelectedBookingIds(new Set());
-    }
-  }, [selectedBranch]);
-
-  const fetchBranches = async () => {
-    try {
-      const res = await fetch('/api/admin/branches');
-      const data = await res.json();
-      if (res.ok) setBranches(data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchBookings = async () => {
+  const fetchChallanLRs = async () => {
+    if (!challanNo) return toast.error("Please enter a Challan Number");
     try {
       setIsFetchingLRs(true);
-      const query = new URLSearchParams();
-      if (selectedBranch) query.append('branch', selectedBranch);
-
-      const res = await fetch(`/api/admin/bookings/for-cewb?${query.toString()}`);
+      
+      const res = await fetch(`/api/admin/bookings/for-cewb?challanNo=${challanNo}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       setBookings(data.data || []);
-      setSelectedBookingIds(new Set()); // reset selection
+      
+      // Auto-select all LRs
+      if (data.data && data.data.length > 0) {
+        setSelectedBookingIds(new Set(data.data.map((b: any) => b._id)));
+      } else {
+        setSelectedBookingIds(new Set());
+      }
+
+      // Auto-fill details
+      if (data.challanDetails) {
+        if (data.challanDetails.vehicleNo) setVehicleNo(data.challanDetails.vehicleNo);
+        if (data.challanDetails.branchName) setFromPlace(data.challanDetails.branchName);
+      }
+      
     } catch (err: any) {
-      toast.error(err.message || 'Failed to fetch pending LRs');
+      toast.error(err.message || 'Failed to fetch challan details');
     } finally {
       setIsFetchingLRs(false);
     }
@@ -104,6 +92,7 @@ export default function ConsolidatedEwayBillPage() {
       .map(b => ({ ewbNo: parseInt(b.ewayBillNo) }));
 
     const payload = {
+      challanNo, // Added challan reference
       userGstin: "05AAABB0639G1Z8", // Example format
       vehicleNo,
       fromPlace,
@@ -252,16 +241,21 @@ export default function ConsolidatedEwayBillPage() {
                 Pending LRs with EWB
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <select 
-                  value={selectedBranch}
-                  onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="flex h-10 w-[200px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                <Input 
+                  placeholder="Enter Challan No (e.g. CH-1001)" 
+                  value={challanNo}
+                  onChange={(e) => setChallanNo(e.target.value.toUpperCase())}
+                  className="w-[220px]"
+                />
+                <Button 
+                  type="button" 
+                  onClick={fetchChallanLRs} 
+                  disabled={isFetchingLRs}
+                  variant="secondary"
                 >
-                  <option value="">Select Branch to load LRs</option>
-                  {branches.map(b => (
-                    <option key={b._id} value={b._id}>{b.name}</option>
-                  ))}
-                </select>
+                  {isFetchingLRs ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Fetch LRs
+                </Button>
               </div>
             </div>
           </CardHeader>
