@@ -74,27 +74,27 @@ export default function ApiLogsPage() {
     switch (status) {
       case 'success':
         return (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Success</span>
-          </div>
+          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase tracking-wider">
+            <CheckCircle2 className="w-3 h-3" />
+            Success
+          </span>
         );
       case 'cached':
         return (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-medium">
-            <Database className="w-3.5 h-3.5" />
-            <span>Cached</span>
-          </div>
+          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-blue-700 text-[11px] font-semibold uppercase tracking-wider">
+            <Database className="w-3 h-3" />
+            Cached
+          </span>
         );
       case 'failed':
         return (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-red-700 text-xs font-medium">
-            <XCircle className="w-3.5 h-3.5" />
-            <span>Failed</span>
-          </div>
+          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase tracking-wider">
+            <XCircle className="w-3 h-3" />
+            Failed
+          </span>
         );
       default:
-        return <span className="text-gray-500">{status}</span>;
+        return <span className="text-gray-500 text-xs">{status}</span>;
     }
   };
 
