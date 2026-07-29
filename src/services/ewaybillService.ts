@@ -113,4 +113,41 @@ export class EwayBillService {
       throw error;
     }
   }
+
+  /**
+   * Generates a Consolidated E-Way Bill (CEWB)
+   * @param payload JSON payload containing multiple EWB numbers and vehicle info
+   */
+  public static async generateConsolidatedEwayBill(payload: any): Promise<any> {
+    try {
+      const token = await this.getAuthToken();
+      // Assuming typical endpoint for Master's India CEWB Generate
+      const url = `${this.API_BASE}/cEwayBillsGenerate/`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `JWT ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      // Typically success returns { results: { message: { cEwbNo: ..., cEwbDate: ... } } }
+      if (data?.results?.message && typeof data.results.message === 'object') {
+        return data.results.message;
+      } else if (data?.results?.errorMessage || data?.results?.message) {
+        throw new Error(data.results.errorMessage || data.results.message);
+      } else if (data?.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('Invalid response structure from CEWB Generate API');
+      }
+    } catch (error: any) {
+      console.error('Error generating CEWB:', error);
+      throw error;
+    }
+  }
 }

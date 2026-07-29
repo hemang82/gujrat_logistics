@@ -140,6 +140,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       isActive: isFleetActive,
       children: [
         { name: 'Dashboard', href: '/admin/fleet', exact: true },
+        { name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false },
         { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
         { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
         { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
