@@ -16,7 +16,6 @@ export default function ConsolidatedEwayBillPage() {
   const [successData, setSuccessData] = useState<any>(null);
 
   // Filters
-  const [selectedDate, setSelectedDate] = useState<string | undefined>(new Date().toISOString().split('T')[0]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [branches, setBranches] = useState<any[]>([]);
 
@@ -38,8 +37,13 @@ export default function ConsolidatedEwayBillPage() {
   }, []);
 
   useEffect(() => {
-    fetchBookings();
-  }, [selectedDate, selectedBranch]);
+    if (selectedBranch) {
+      fetchBookings();
+    } else {
+      setBookings([]);
+      setSelectedBookingIds(new Set());
+    }
+  }, [selectedBranch]);
 
   const fetchBranches = async () => {
     try {
@@ -55,7 +59,6 @@ export default function ConsolidatedEwayBillPage() {
     try {
       setIsFetchingLRs(true);
       const query = new URLSearchParams();
-      if (selectedDate) query.append('date', selectedDate);
       if (selectedBranch) query.append('branch', selectedBranch);
 
       const res = await fetch(`/api/admin/bookings/for-cewb?${query.toString()}`);
@@ -249,18 +252,12 @@ export default function ConsolidatedEwayBillPage() {
                 Pending LRs with EWB
               </CardTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <DatePicker
-                  value={selectedDate || ''}
-                  onChange={(date) => setSelectedDate(date)}
-                  placeholder="Filter by Date"
-                  className="w-[140px]"
-                />
                 <select 
                   value={selectedBranch}
                   onChange={(e) => setSelectedBranch(e.target.value)}
-                  className="flex h-10 w-[160px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                  className="flex h-10 w-[200px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
                 >
-                  <option value="">All Branches</option>
+                  <option value="">Select Branch to load LRs</option>
                   {branches.map(b => (
                     <option key={b._id} value={b._id}>{b.name}</option>
                   ))}
