@@ -4,7 +4,27 @@ import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ApiLog from '@/models/ApiLog';
+import ConsolidatedEwayBill from '@/models/ConsolidatedEwayBill';
 import { EwayBillService } from '@/services/ewaybillService';
+
+export async function GET(request: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await dbConnect();
+    
+    // Fetch all consolidated E-Way bills, sorted by latest
+    const bills = await ConsolidatedEwayBill.find({}).sort({ createdAt: -1 });
+
+    return NextResponse.json({ data: bills }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error fetching CEWBs:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -21,16 +41,28 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    // Validate request payload
     if (!body || !body.vehicleNo || !body.ewbNoDetails || !Array.isArray(body.ewbNoDetails)) {
       return NextResponse.json({ error: 'Missing required CEWB fields or ewbNoDetails' }, { status: 400 });
     }
 
-    // Call the service
     try {
       const cewbResponse = await EwayBillService.generateConsolidatedEwayBill(body);
 
-      // Log success
+      // Create Database Record
+      const newBill = await ConsolidatedEwayBill.create({
+        cEwbNo: cewbResponse.cEwbNo,
+        vehicleNo: body.vehicleNo,
+        fromPlace: body.fromPlace,
+        fromState: body.fromState,
+        transMode: body.transMode,
+        transDocNo: body.transDocNo,
+        transDocDate: body.transDocDate,
+        ewbNoDetails: body.ewbNoDetails,
+        cEwbDate: cewbResponse.cEwbDate,
+        status: 'Active',
+        createdBy: dbUser._id
+      });
+
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',
@@ -38,10 +70,9 @@ export async function POST(request: Request) {
         responseStatus: 'success',
       });
 
-      return NextResponse.json({ success: true, data: cewbResponse }, { status: 200 });
+      return NextResponse.json({ success: true, data: newBill }, { status: 200 });
 
     } catch (apiError: any) {
-      // Log failure
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',

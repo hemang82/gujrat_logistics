@@ -1,265 +1,150 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FileOutput, Plus, Loader2, Trash2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { Truck, Plus, Trash2, FileOutput, CheckCircle2 } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker';
 
-export default function ConsolidatedEwayBillPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [successData, setSuccessData] = useState<any>(null);
+export default function CEWBListPage() {
+  const [bills, setBills] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Form states
-  const [vehicleNo, setVehicleNo] = useState('');
-  const [fromPlace, setFromPlace] = useState('');
-  const [fromState, setFromState] = useState('');
-  const [transMode, setTransMode] = useState('1'); // 1 = Road
-  const [transDocNo, setTransDocNo] = useState('');
-  const [transDocDate, setTransDocDate] = useState('');
-  
-  // EWB list
-  const [ewbList, setEwbList] = useState([{ ewbNo: '' }]);
-
-  const handleAddEwb = () => {
-    setEwbList([...ewbList, { ewbNo: '' }]);
-  };
-
-  const handleRemoveEwb = (index: number) => {
-    const newList = [...ewbList];
-    newList.splice(index, 1);
-    setEwbList(newList);
-  };
-
-  const handleEwbChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (value && !/^\d+$/.test(value)) return;
-    
-    const newList = [...ewbList];
-    newList[index].ewbNo = value;
-    setEwbList(newList);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Basic validations
-    if (!vehicleNo) return toast.error("Vehicle Number is required");
-    
-    // Filter empty EWBs
-    const validEwbs = ewbList.filter(item => item.ewbNo && item.ewbNo.length === 12);
-    if (validEwbs.length < 2) {
-      return toast.error("Please add at least 2 valid 12-digit E-Way Bill numbers to consolidate.");
-    }
-
-    const payload = {
-      userGstin: "05AAABB0639G1Z8", // Use from env or master in real app
-      vehicleNo,
-      fromPlace,
-      fromState, // e.g. 24 for Gujarat, need State Code
-      transDocNo,
-      transDocDate: transDocDate ? transDocDate.split('-').reverse().join('/') : '', // Format DD/MM/YYYY
-      transMode,
-      ewbNoDetails: validEwbs.map(item => ({ ewbNo: parseInt(item.ewbNo) }))
-    };
-
+  const fetchBills = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/admin/ewaybills/consolidate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
+      const res = await fetch('/api/admin/ewaybills/consolidate');
       const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate Consolidated EWB");
-      }
-      
-      toast.success("Consolidated E-Way Bill generated successfully!");
-      setSuccessData(data.data);
-      
+      if (!res.ok) throw new Error(data.error);
+      setBills(data.data || []);
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || 'Failed to fetch CEWBs');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (successData) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bill Generated</h1>
-        <Card className="max-w-2xl border-emerald-100 bg-emerald-50/30">
-          <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Successfully Generated!</h2>
-            <div className="bg-white p-4 rounded-xl border border-gray-100 w-full max-w-sm shadow-sm space-y-2">
-              <p className="text-sm text-gray-500 font-medium uppercase tracking-wider">Master CEWB Number</p>
-              <p className="text-3xl font-bold text-brand-primary font-mono tracking-widest">{successData.cEwbNo}</p>
-            </div>
-            <p className="text-sm text-gray-600">Generated on: {successData.cEwbDate}</p>
-            <div className="pt-4 flex gap-4 w-full">
-              <Button className="w-full" variant="outline" onClick={() => setSuccessData(null)}>Generate Another</Button>
-              <Button className="w-full" onClick={() => window.print()}>Print CEWB</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchBills();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this Master EWB?')) return;
+    try {
+      const res = await fetch(`/api/admin/ewaybills/consolidate/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      toast.success('Deleted successfully');
+      fetchBills();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bill (CEWB)</h1>
-          <p className="text-sm text-gray-500 mt-1">Group multiple e-way bills for a single transport journey.</p>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bills (CEWB)</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage and generate master e-way bills for multiple parcels.</p>
         </div>
+        <Link href="/admin/ewaybills/consolidated/new">
+          <Button className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Generate New CEWB
+          </Button>
+        </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        
-        {/* Left Column - Transporter & Vehicle Info */}
-        <div className="xl:col-span-2 space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <Truck className="w-5 h-5 text-brand-primary" />
-                Transport Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Vehicle Number <span className="text-red-500">*</span></Label>
-                  <Input 
-                    placeholder="e.g. GJ01AB1234" 
-                    value={vehicleNo}
-                    onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mode of Transport</Label>
-                  <select 
-                    value={transMode}
-                    onChange={(e) => setTransMode(e.target.value)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                  >
-                    <option value="1">Road</option>
-                    <option value="2">Rail</option>
-                    <option value="3">Air</option>
-                    <option value="4">Ship</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>From Place</Label>
-                  <Input 
-                    placeholder="e.g. Ahmedabad" 
-                    value={fromPlace}
-                    onChange={(e) => setFromPlace(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>From State (Code)</Label>
-                  <Input 
-                    placeholder="e.g. 24" 
-                    value={fromState}
-                    onChange={(e) => setFromState(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transporter Doc / LR Number</Label>
-                  <Input 
-                    placeholder="e.g. LR-1002" 
-                    value={transDocNo}
-                    onChange={(e) => setTransDocNo(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transporter Doc Date</Label>
-                  <DatePicker 
-                    value={transDocDate}
-                    onChange={(d) => setTransDocDate(d)}
-                    placeholder="Select date"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - EWB List */}
-        <div className="space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <CardTitle className="text-lg font-bold">E-Way Bills</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <p className="text-xs text-gray-500 mb-2">Enter 12-digit E-Way bill numbers to group into the CEWB.</p>
-              
-              {ewbList.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm w-6 text-center">{index + 1}.</span>
-                  <Input 
-                    placeholder="123456789012" 
-                    value={item.ewbNo}
-                    onChange={(e) => handleEwbChange(index, e.target.value)}
-                    maxLength={12}
-                    className="font-mono tracking-widest text-sm"
-                  />
-                  {ewbList.length > 1 && (
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveEwb(index)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full border-dashed flex items-center justify-center gap-2 mt-2 text-brand-primary"
-                onClick={handleAddEwb}
-              >
-                <Plus className="w-4 h-4" />
-                Add Another E-Way Bill
-              </Button>
-            </CardContent>
-          </Card>
-          
-          <Button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 text-base py-6 shadow-md"
-          >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                Generating CEWB...
-              </span>
-            ) : (
-              <>
-                <FileOutput className="w-5 h-5" />
-                Generate Master EWB
-              </>
-            )}
-          </Button>
-        </div>
-
-      </form>
+      <Card className="border-gray-200 shadow-sm">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-500 font-medium">
+                <tr>
+                  <th className="px-6 py-4">CEWB NO</th>
+                  <th className="px-6 py-4">DATE</th>
+                  <th className="px-6 py-4">VEHICLE NO</th>
+                  <th className="px-6 py-4">FROM</th>
+                  <th className="px-6 py-4">TOTAL EWBS</th>
+                  <th className="px-6 py-4">STATUS</th>
+                  <th className="px-6 py-4 text-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
+                      Loading master bills...
+                    </td>
+                  </tr>
+                ) : bills.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                      <FileOutput className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                      <p>No Consolidated E-Way Bills found.</p>
+                      <Link href="/admin/ewaybills/consolidated/new">
+                        <Button variant="link" className="text-brand-primary mt-2">Generate your first CEWB</Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ) : (
+                  bills.map((bill) => (
+                    <tr key={bill._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 font-mono font-medium text-brand-primary">
+                        {bill.cEwbNo}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {bill.cEwbDate || new Date(bill.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-800 font-semibold text-xs uppercase tracking-wider">
+                          {bill.vehicleNo}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 font-bold text-xs">
+                          {bill.ewbNoDetails?.length || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {bill.status === 'Active' ? (
+                          <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase">
+                            Cancelled
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => handleDelete(bill._id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
