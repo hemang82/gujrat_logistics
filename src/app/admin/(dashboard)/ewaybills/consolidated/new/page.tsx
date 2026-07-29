@@ -169,189 +169,197 @@ export default function ConsolidatedEwayBillPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         
-        {/* Left Column - Transport Details */}
-        <div className="xl:col-span-1 space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <CardTitle className="text-lg font-bold flex items-center gap-2">
-                <Truck className="w-5 h-5 text-brand-primary" />
-                Transport Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <Label>Vehicle Number <span className="text-red-500">*</span></Label>
-                  <Input 
-                    placeholder="e.g. GJ01AB1234" 
-                    value={vehicleNo}
-                    onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mode of Transport</Label>
-                  <select 
-                    value={transMode}
-                    onChange={(e) => setTransMode(e.target.value)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                  >
-                    <option value="1">Road</option>
-                    <option value="2">Rail</option>
-                    <option value="3">Air</option>
-                    <option value="4">Ship</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>From Place</Label>
-                  <Input 
-                    placeholder="e.g. Ahmedabad" 
-                    value={fromPlace}
-                    onChange={(e) => setFromPlace(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>From State (Code)</Label>
-                  <Input 
-                    placeholder="e.g. 24" 
-                    value={fromState}
-                    onChange={(e) => setFromState(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transporter Doc / LR No</Label>
-                  <Input 
-                    placeholder="e.g. LR-1002" 
-                    value={transDocNo}
-                    onChange={(e) => setTransDocNo(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Transporter Doc Date</Label>
-                  <DatePicker 
-                    value={transDocDate}
-                    onChange={(d) => setTransDocDate(d)}
-                    placeholder="Select date"
-                    className="w-full"
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  disabled={isLoading || selectedBookingIds.size === 0}
-                  className="w-full flex items-center justify-center gap-2 text-base py-6 shadow-md mt-4"
+        {/* Top Row - Transport Details */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Truck className="w-5 h-5 text-brand-primary" />
+              Transport Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label>Vehicle Number <span className="text-red-500">*</span></Label>
+                <Input 
+                  placeholder="e.g. GJ01AB1234" 
+                  value={vehicleNo}
+                  onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Mode of Transport</Label>
+                <select 
+                  value={transMode}
+                  onChange={(e) => setTransMode(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <FileOutput className="w-5 h-5" />
-                  )}
-                  Generate ({selectedBookingIds.size} selected)
-                </Button>
-            </CardContent>
-          </Card>
-        </div>
+                  <option value="1">Road</option>
+                  <option value="2">Rail</option>
+                  <option value="3">Air</option>
+                  <option value="4">Ship</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>From Place</Label>
+                <Input 
+                  placeholder="e.g. Ahmedabad" 
+                  value={fromPlace}
+                  onChange={(e) => setFromPlace(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>From State (Code)</Label>
+                <Input 
+                  placeholder="e.g. 24" 
+                  value={fromState}
+                  onChange={(e) => setFromState(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Transporter Doc / LR No</Label>
+                <Input 
+                  placeholder="e.g. LR-1002" 
+                  value={transDocNo}
+                  onChange={(e) => setTransDocNo(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Transporter Doc Date</Label>
+                <DatePicker 
+                  value={transDocDate}
+                  onChange={(d) => setTransDocDate(d)}
+                  placeholder="Select date"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Right Column - LRs Table */}
-        <div className="xl:col-span-2 space-y-6">
-          <Card className="border-gray-200">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <ListFilter className="w-5 h-5 text-brand-primary" />
-                  Pending LRs with EWB
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <DatePicker
-                    value={selectedDate || ''}
-                    onChange={(date) => setSelectedDate(date)}
-                    placeholder="Filter by Date"
-                    className="w-[140px]"
-                  />
-                  <select 
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    className="flex h-10 w-[160px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
-                  >
-                    <option value="">All Branches</option>
-                    {branches.map(b => (
-                      <option key={b._id} value={b._id}>{b.branchName}</option>
-                    ))}
-                  </select>
-                </div>
+        {/* Bottom Row - LRs Table */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <ListFilter className="w-5 h-5 text-brand-primary" />
+                Pending LRs with EWB
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <DatePicker
+                  value={selectedDate || ''}
+                  onChange={(date) => setSelectedDate(date)}
+                  placeholder="Filter by Date"
+                  className="w-[140px]"
+                />
+                <select 
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  className="flex h-10 w-[160px] items-center rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary"
+                >
+                  <option value="">All Branches</option>
+                  {branches.map(b => (
+                    <option key={b._id} value={b._id}>{b.branchName}</option>
+                  ))}
+                </select>
               </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-medium">
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 font-medium">
+                  <tr>
+                    <th className="px-4 py-3 w-10 text-center">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                        checked={bookings.length > 0 && selectedBookingIds.size === bookings.length}
+                        onChange={toggleAll}
+                        disabled={bookings.length === 0}
+                      />
+                    </th>
+                    <th className="px-4 py-3">LR NUMBER</th>
+                    <th className="px-4 py-3">CONSIGNOR</th>
+                    <th className="px-4 py-3">DESTINATION</th>
+                    <th className="px-4 py-3">ITEM / WEIGHT</th>
+                    <th className="px-4 py-3">E-WAY BILL NO</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {isFetchingLRs ? (
                     <tr>
-                      <th className="px-4 py-3 w-10 text-center">
-                        <input 
-                          type="checkbox" 
-                          className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
-                          checked={bookings.length > 0 && selectedBookingIds.size === bookings.length}
-                          onChange={toggleAll}
-                          disabled={bookings.length === 0}
-                        />
-                      </th>
-                      <th className="px-4 py-3">LR NUMBER</th>
-                      <th className="px-4 py-3">CONSIGNOR</th>
-                      <th className="px-4 py-3">DESTINATION</th>
-                      <th className="px-4 py-3">E-WAY BILL NO</th>
+                      <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
+                        Fetching LRs...
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {isFetchingLRs ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
-                          Fetching LRs...
+                  ) : bookings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                        No pending LRs with E-Way Bill found for this filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    bookings.map((booking) => (
+                      <tr 
+                        key={booking._id} 
+                        className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedBookingIds.has(booking._id) ? 'bg-blue-50/30' : ''}`}
+                        onClick={() => toggleSelection(booking._id)}
+                      >
+                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input 
+                            type="checkbox" 
+                            className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                            checked={selectedBookingIds.has(booking._id)}
+                            onChange={() => toggleSelection(booking._id)}
+                          />
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-brand-primary">
+                          {booking.lrNumber}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {booking.consignor?.name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">
+                          {booking.destinationBranch?.branchName || 'N/A'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-xs">
+                          {booking.material?.itemName || 'N/A'} <br/>
+                          <span className="text-gray-400">({booking.material?.chargedWeight || 0} kg)</span>
+                        </td>
+                        <td className="px-4 py-3 font-mono font-medium tracking-widest text-emerald-700">
+                          {booking.ewayBillNo}
                         </td>
                       </tr>
-                    ) : bookings.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
-                          No pending LRs with E-Way Bill found for this filter.
-                        </td>
-                      </tr>
-                    ) : (
-                      bookings.map((booking) => (
-                        <tr 
-                          key={booking._id} 
-                          className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedBookingIds.has(booking._id) ? 'bg-blue-50/30' : ''}`}
-                          onClick={() => toggleSelection(booking._id)}
-                        >
-                          <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                            <input 
-                              type="checkbox" 
-                              className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
-                              checked={selectedBookingIds.has(booking._id)}
-                              onChange={() => toggleSelection(booking._id)}
-                            />
-                          </td>
-                          <td className="px-4 py-3 font-semibold text-brand-primary">
-                            {booking.lrNumber}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {booking.consignor?.name}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {booking.destinationBranch?.branchName || 'N/A'}
-                          </td>
-                          <td className="px-4 py-3 font-mono font-medium tracking-widest text-emerald-700">
-                            {booking.ewayBillNo}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* Table Footer with Submit Button */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-sm font-medium text-gray-600">
+                {selectedBookingIds.size} of {bookings.length} LRs selected
+              </span>
+              <Button 
+                type="submit" 
+                disabled={isLoading || selectedBookingIds.size === 0}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-5 text-base shadow-md"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <FileOutput className="w-5 h-5" />
+                )}
+                Generate Master EWB
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
       </form>
     </div>
