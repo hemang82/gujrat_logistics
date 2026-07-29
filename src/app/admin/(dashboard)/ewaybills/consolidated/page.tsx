@@ -124,9 +124,11 @@ export default function CEWBListPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
-                            <Eye className="w-4 h-4" />
-                          </Button>
+                          <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
                           <Button 
                             variant="ghost" 
                             size="icon" 
