@@ -74,24 +74,24 @@ export default function ApiLogsPage() {
     switch (status) {
       case 'success':
         return (
-          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase tracking-wider">
-            <CheckCircle2 className="w-3 h-3" />
-            Success
-          </span>
+          <div className="w-max inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase tracking-wider">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Success</span>
+          </div>
         );
       case 'cached':
         return (
-          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-blue-700 text-[11px] font-semibold uppercase tracking-wider">
-            <Database className="w-3 h-3" />
-            Cached
-          </span>
+          <div className="w-max inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-[11px] font-semibold uppercase tracking-wider">
+            <Database className="w-3.5 h-3.5" />
+            <span>Cached</span>
+          </div>
         );
       case 'failed':
         return (
-          <span className="inline-flex w-fit items-center gap-1 px-2 py-0.5 rounded bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase tracking-wider">
-            <XCircle className="w-3 h-3" />
-            Failed
-          </span>
+          <div className="w-max inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase tracking-wider">
+            <XCircle className="w-3.5 h-3.5" />
+            <span>Failed</span>
+          </div>
         );
       default:
         return <span className="text-gray-500 text-xs">{status}</span>;
