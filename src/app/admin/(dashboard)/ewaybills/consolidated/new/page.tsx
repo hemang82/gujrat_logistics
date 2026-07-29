@@ -262,7 +262,7 @@ export default function ConsolidatedEwayBillPage() {
                 >
                   <option value="">All Branches</option>
                   {branches.map(b => (
-                    <option key={b._id} value={b._id}>{b.branchName}</option>
+                    <option key={b._id} value={b._id}>{b.name}</option>
                   ))}
                 </select>
               </div>
@@ -325,7 +325,7 @@ export default function ConsolidatedEwayBillPage() {
                           {booking.consignor?.name}
                         </td>
                         <td className="px-4 py-3 text-gray-600">
-                          {booking.destinationBranch?.branchName || 'N/A'}
+                          {booking.destinationBranch?.name || 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
                           {booking.material?.itemName || 'N/A'} <br/>

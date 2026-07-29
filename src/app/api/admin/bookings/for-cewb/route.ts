@@ -35,8 +35,8 @@ export async function GET(request: Request) {
     await dbConnect();
 
     const bookings = await Booking.find(filter)
-      .populate('bookingBranch', 'branchName')
-      .populate('destinationBranch', 'branchName')
+      .populate('bookingBranch', 'name code')
+      .populate('destinationBranch', 'name code')
       .select('lrNumber bookingDate consignor consignee ewayBillNo material.itemName bookingBranch destinationBranch')
       .sort({ bookingDate: -1 });
 
