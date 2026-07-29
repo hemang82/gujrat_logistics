@@ -40,6 +40,15 @@ const consolidatedEwayBillSchema = new mongoose.Schema({
   cEwbDate: {
     type: String
   },
+  validUpto: {
+    type: Date
+  },
+  extensionHistory: [{
+    extendedAt: { type: Date, default: Date.now },
+    oldValidUpto: { type: Date },
+    newValidUpto: { type: Date },
+    reason: { type: String }
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

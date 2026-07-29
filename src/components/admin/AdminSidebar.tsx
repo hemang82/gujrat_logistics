@@ -166,13 +166,10 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     <div className={`w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 print:hidden transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
       {/* Logo */}
       <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2" onClick={() => onClose && onClose()}>
-          <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center">
-            <Truck className="w-6 h-6 text-white" />
+        <Link href="/" className="flex items-center" onClick={() => onClose && onClose()}>
+          <div className="h-10 w-40 relative flex items-center justify-start">
+            <img src="/main_logo.svg" alt="Gujarat Logistic Logo" className="w-full h-full object-contain origin-left" />
           </div>
-          <span className="font-bold text-xl tracking-tight text-brand-text-primary">
-            Gujarat <span className="text-brand-primary">Logistic</span>
-          </span>
         </Link>
         {onClose && (
           <button onClick={onClose} className="lg:hidden text-gray-500 hover:text-gray-700">

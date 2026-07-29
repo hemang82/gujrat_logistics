@@ -9,8 +9,8 @@ export function Footer() {
           {/* Brand */}
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center group overflow-hidden w-fit">
-              <div className="h-16 w-56 bg-white rounded-xl shadow-sm relative flex items-center justify-center">
-                <img src="/images/logo.png" alt="Trust Logistic Logo" className="w-full h-full object-contain scale-[1.3]" />
+              <div className="h-16 w-56 relative flex items-center justify-start overflow-hidden">
+                <img src="/main_logo.svg" alt="Gujarat Logistic Logo" className="w-full h-full object-contain origin-left" />
               </div>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">

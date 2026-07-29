@@ -16,8 +16,34 @@ export async function GET(request: Request) {
 
     await dbConnect();
     
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+
+    const query: any = {};
+
+    if (search) {
+      query.$or = [
+        { cEwbNo: { $regex: search, $options: 'i' } },
+        { vehicleNo: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
     // Fetch all consolidated E-Way bills, sorted by latest
-    const bills = await ConsolidatedEwayBill.find({}).sort({ createdAt: -1 });
+    const bills = await ConsolidatedEwayBill.find(query).sort({ createdAt: -1 });
 
     return NextResponse.json({ data: bills }, { status: 200 });
   } catch (error: any) {
@@ -46,6 +72,8 @@ export async function POST(request: Request) {
     }
 
     try {
+      console.log('CEWB Generation Payload Received:', body);
+      console.log('Challan No Extracted:', body.challanNo, body.trip_no);
       const cewbResponse = await EwayBillService.generateConsolidatedEwayBill(body);
 
       // Create Database Record
@@ -60,6 +88,7 @@ export async function POST(request: Request) {
           ewbNo: parseInt(item.eway_bill_no, 10)
         })),
         cEwbDate: cewbResponse.cEwbDate,
+        validUpto: body.validUpto ? new Date(body.validUpto) : null,
         status: 'Active',
         createdBy: dbUser._id
       });

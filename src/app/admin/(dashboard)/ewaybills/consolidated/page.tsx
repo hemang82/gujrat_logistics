@@ -4,17 +4,35 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileOutput, Plus, Loader2, Trash2, Eye } from 'lucide-react';
+import { FileOutput, Plus, Loader2, Trash2, Eye, CalendarClock, Printer, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export default function CEWBListPage() {
   const [bills, setBills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [extendModalOpen, setExtendModalOpen] = useState(false);
+  const [selectedCEWB, setSelectedCEWB] = useState<any>(null);
+  const [newValidUpto, setNewValidUpto] = useState('');
+  const [extendReason, setExtendReason] = useState('');
+  const [isExtending, setIsExtending] = useState(false);
 
   const fetchBills = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/admin/ewaybills/consolidate');
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('search', searchQuery);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const res = await fetch(`/api/admin/ewaybills/consolidate?${params.toString()}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setBills(data.data || []);
@@ -27,7 +45,7 @@ export default function CEWBListPage() {
 
   useEffect(() => {
     fetchBills();
-  }, []);
+  }, [searchQuery, startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this Master EWB?')) return;
@@ -38,6 +56,28 @@ export default function CEWBListPage() {
       fetchBills();
     } catch (err: any) {
       toast.error(err.message);
+    }
+  };
+
+  const handleExtend = async () => {
+    if (!selectedCEWB || !newValidUpto) return toast.error('Please select a new validity date');
+    try {
+      setIsExtending(true);
+      const res = await fetch(`/api/admin/ewaybills/consolidate/${selectedCEWB._id}/extend`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newValidUpto, reason: extendReason })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success('CEWB validity extended successfully');
+      setExtendModalOpen(false);
+      fetchBills();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to extend CEWB');
+    } finally {
+      setIsExtending(false);
     }
   };
 
@@ -57,6 +97,47 @@ export default function CEWBListPage() {
       </div>
 
       <Card className="border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input 
+                placeholder="Search CEWB No or Vehicle..." 
+                className="pl-9 h-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <DatePicker 
+                className="h-10 w-40" 
+                placeholder="Start Date"
+                value={startDate}
+                onChange={(date) => setStartDate(date)}
+              />
+              <span className="text-gray-400">to</span>
+              <DatePicker 
+                className="h-10 w-40" 
+                placeholder="End Date"
+                value={endDate}
+                onChange={(date) => setEndDate(date)}
+              />
+              {(searchQuery || startDate || endDate) && (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="h-10 text-gray-500"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -65,7 +146,7 @@ export default function CEWBListPage() {
                   <th className="px-6 py-4">CEWB NO</th>
                   <th className="px-6 py-4">DATE</th>
                   <th className="px-6 py-4">VEHICLE NO</th>
-                  <th className="px-6 py-4">CHALLAN REF</th>
+                  <th className="px-6 py-4">VALID UPTO</th>
                   <th className="px-6 py-4">FROM</th>
                   <th className="px-6 py-4">TOTAL EWBS</th>
                   <th className="px-6 py-4">STATUS</th>
@@ -104,8 +185,27 @@ export default function CEWBListPage() {
                           {bill.vehicleNo}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-500 text-xs font-mono font-medium">
-                        {bill.challanNo || '-'}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">
+                            {bill.validUpto ? new Date(bill.validUpto).toLocaleDateString() : '-'}
+                          </span>
+                          {bill.validUpto && (() => {
+                            const validUpto = new Date(bill.validUpto);
+                            validUpto.setHours(0,0,0,0);
+                            const today = new Date();
+                            today.setHours(0,0,0,0);
+                            const diffDays = Math.ceil((validUpto.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            
+                            if (diffDays < 0) {
+                              return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wider">Expired</span>;
+                            } else if (diffDays === 0) {
+                              return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 uppercase tracking-wider">Expires Today</span>;
+                            } else {
+                              return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase tracking-wider">{diffDays} Days Left</span>;
+                            }
+                          })()}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-gray-600">
                         {bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}
@@ -128,9 +228,27 @@ export default function CEWBListPage() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+                            onClick={() => {
+                              setSelectedCEWB(bill);
+                              setNewValidUpto('');
+                              setExtendReason('');
+                              setExtendModalOpen(true);
+                            }}
+                          >
+                            <CalendarClock className="w-4 h-4 mr-1" /> Extend
+                          </Button>
                           <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
                               <Eye className="w-4 h-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/admin/ewaybills/consolidated/${bill._id}?print=true`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
+                              <Printer className="w-4 h-4" />
                             </Button>
                           </Link>
                           <Button 
@@ -151,6 +269,47 @@ export default function CEWBListPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Extend Modal */}
+      <Dialog open={extendModalOpen} onOpenChange={setExtendModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Extend CEWB Validity</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">CEWB NO</Label>
+              <p className="font-mono font-medium text-lg text-brand-primary">{selectedCEWB?.cEwbNo}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">New Validity Date</Label>
+              <DatePicker 
+                className="h-10 w-full" 
+                value={newValidUpto}
+                onChange={(date: string) => setNewValidUpto(date)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Reason for Extension</Label>
+              <Input 
+                placeholder="e.g. Vehicle Breakdown" 
+                className="h-10"
+                value={extendReason}
+                onChange={(e) => setExtendReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExtendModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleExtend} disabled={isExtending || !newValidUpto}>
+              {isExtending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Extend CEWB
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

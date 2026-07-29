@@ -29,6 +29,7 @@ export default function ConsolidatedEwayBillPage() {
   const [fromPlace, setFromPlace] = useState('');
   const [fromState, setFromState] = useState('');
   const [transMode, setTransMode] = useState('Road'); 
+  const [validUpto, setValidUpto] = useState('');
 
   const fetchChallanLRs = async () => {
     if (!challanNo) return toast.error("Please enter a Challan Number");
@@ -100,6 +101,7 @@ export default function ConsolidatedEwayBillPage() {
       transportation_mode: transMode,
       from_place: fromPlace,
       from_state: fromState,
+      validUpto: validUpto || undefined,
       eway_bill_list: selectedEwbs
     };
 
@@ -250,6 +252,14 @@ export default function ConsolidatedEwayBillPage() {
                   placeholder="e.g. UTTARAKHAND" 
                   value={fromState}
                   onChange={(e) => setFromState(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Validity End Date</Label>
+                <DatePicker 
+                  value={validUpto}
+                  onChange={(date: string) => setValidUpto(date)}
                   className="h-10"
                 />
               </div>

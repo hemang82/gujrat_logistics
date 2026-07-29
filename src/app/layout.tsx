@@ -9,6 +9,9 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Gujarat Logistic",
   description: "Connecting Gujarat, Delivering Trust",
+  icons: {
+    icon: '/logo_icon.svg',
+  }
 };
 
 export default function RootLayout({
