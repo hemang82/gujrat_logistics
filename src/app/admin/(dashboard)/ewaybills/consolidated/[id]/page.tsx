@@ -147,7 +147,7 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Vehicle Number</Label>
                   {isEditing ? (
-                    <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())} />
+                    <Input value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value.toUpperCase())} className="h-10" />
                   ) : (
                     <p className="font-semibold text-lg">{bill.vehicleNo}</p>
                   )}
@@ -156,7 +156,7 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Mode of Transport</Label>
                   {isEditing ? (
-                    <select value={transMode} onChange={(e) => setTransMode(e.target.value)} className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary">
+                    <select value={transMode} onChange={(e) => setTransMode(e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary">
                       <option value="Road">Road</option>
                       <option value="Rail">Rail</option>
                       <option value="Air">Air</option>
@@ -172,7 +172,7 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">From Place</Label>
                   {isEditing ? (
-                    <Input value={fromPlace} onChange={(e) => setFromPlace(e.target.value)} />
+                    <Input value={fromPlace} onChange={(e) => setFromPlace(e.target.value)} className="h-10" />
                   ) : (
                     <p className="font-semibold text-lg">{bill.fromPlace || 'N/A'}</p>
                   )}
@@ -181,7 +181,7 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">From State</Label>
                   {isEditing ? (
-                    <Input value={fromState} onChange={(e) => setFromState(e.target.value)} />
+                    <Input value={fromState} onChange={(e) => setFromState(e.target.value)} className="h-10" />
                   ) : (
                     <p className="font-medium">{bill.fromState || 'N/A'}</p>
                   )}

@@ -163,12 +163,12 @@ export default function ConsolidatedEwayBillPage() {
       {/* Challan Selection Row */}
       <Card className="border-brand-primary/20 bg-brand-primary/5 shadow-sm">
         <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
-          <Label className="font-semibold text-brand-primary whitespace-nowrap text-base">Load from Challan:</Label>
+          <Label className="text-xs uppercase tracking-wider text-brand-primary font-bold whitespace-nowrap">Load from Challan</Label>
           <Input 
             placeholder="Enter Challan No (e.g. CH-1001)" 
             value={challanNo}
             onChange={(e) => setChallanNo(e.target.value.toUpperCase())}
-            className="max-w-xs bg-white border-brand-primary/30 focus-visible:ring-brand-primary"
+            className="max-w-xs bg-white border-brand-primary/30 focus-visible:ring-brand-primary h-10"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -180,7 +180,7 @@ export default function ConsolidatedEwayBillPage() {
             type="button" 
             onClick={fetchChallanLRs} 
             disabled={isFetchingLRs}
-            className="shadow-sm"
+            className="shadow-sm h-10 px-6"
           >
             {isFetchingLRs ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             Fetch Details & LRs
@@ -201,31 +201,32 @@ export default function ConsolidatedEwayBillPage() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label>Vehicle Number <span className="text-red-500">*</span></Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Vehicle Number <span className="text-red-500">*</span></Label>
                 <Input 
                   placeholder="e.g. GJ01AB1234" 
                   value={vehicleNo}
                   onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
+                  className="h-10"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label>Vehicle Type</Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Vehicle Type</Label>
                 <select 
                   value={vehicleType}
                   onChange={(e) => setVehicleType(e.target.value)}
-                  className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
                 >
                   <option value="Regular">Regular</option>
                   <option value="ODC">ODC (Over Dimensional Cargo)</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Mode of Transport</Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Mode of Transport</Label>
                 <select 
                   value={transMode}
                   onChange={(e) => setTransMode(e.target.value)}
-                  className="flex h-8 w-full items-center justify-between rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors focus:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
                 >
                   <option value="Road">Road</option>
                   <option value="Rail">Rail</option>
@@ -234,19 +235,21 @@ export default function ConsolidatedEwayBillPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>From Place</Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">From Place</Label>
                 <Input 
                   placeholder="e.g. Dehradun" 
                   value={fromPlace}
                   onChange={(e) => setFromPlace(e.target.value)}
+                  className="h-10"
                 />
               </div>
               <div className="space-y-2">
-                <Label>From State (Name/Code)</Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">From State (Name/Code)</Label>
                 <Input 
                   placeholder="e.g. UTTARAKHAND" 
                   value={fromState}
                   onChange={(e) => setFromState(e.target.value)}
+                  className="h-10"
                 />
               </div>
             </div>
