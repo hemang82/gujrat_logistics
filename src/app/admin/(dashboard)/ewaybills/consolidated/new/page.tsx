@@ -25,11 +25,10 @@ export default function ConsolidatedEwayBillPage() {
 
   // Form states
   const [vehicleNo, setVehicleNo] = useState('');
+  const [vehicleType, setVehicleType] = useState('Regular');
   const [fromPlace, setFromPlace] = useState('');
   const [fromState, setFromState] = useState('');
-  const [transMode, setTransMode] = useState('1'); // 1 = Road
-  const [transDocNo, setTransDocNo] = useState('');
-  const [transDocDate, setTransDocDate] = useState('');
+  const [transMode, setTransMode] = useState('Road'); 
 
   const fetchChallanLRs = async () => {
     if (!challanNo) return toast.error("Please enter a Challan Number");
@@ -89,18 +88,18 @@ export default function ConsolidatedEwayBillPage() {
     // Get selected EWBs
     const selectedEwbs = bookings
       .filter(b => selectedBookingIds.has(b._id) && b.ewayBillNo)
-      .map(b => ({ ewbNo: parseInt(b.ewayBillNo) }));
+      .map(b => ({ eway_bill_no: b.ewayBillNo }));
 
     const payload = {
-      challanNo, // Added challan reference
-      userGstin: "05AAABB0639G1Z8", // Example format
-      vehicleNo,
-      fromPlace,
-      fromState,
-      transDocNo,
-      transDocDate: transDocDate ? transDocDate.split('-').reverse().join('/') : '', 
-      transMode,
-      ewbNoDetails: selectedEwbs
+      userGstin: "05AAABC0181E1ZE", // Updated from user input
+      transporter_id: "05AAABB0639G1Z8", // Updated from user input
+      trip_no: challanNo || "TRIP1001",
+      vehicle_number: vehicleNo,
+      vehicle_type: vehicleType,
+      transportation_mode: transMode,
+      from_place: fromPlace,
+      from_state: fromState,
+      eway_bill_list: selectedEwbs
     };
 
     try {
@@ -211,49 +210,43 @@ export default function ConsolidatedEwayBillPage() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Vehicle Type</Label>
+                <select 
+                  value={vehicleType}
+                  onChange={(e) => setVehicleType(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+                >
+                  <option value="Regular">Regular</option>
+                  <option value="ODC">ODC (Over Dimensional Cargo)</option>
+                </select>
+              </div>
+              <div className="space-y-2">
                 <Label>Mode of Transport</Label>
                 <select 
                   value={transMode}
                   onChange={(e) => setTransMode(e.target.value)}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
                 >
-                  <option value="1">Road</option>
-                  <option value="2">Rail</option>
-                  <option value="3">Air</option>
-                  <option value="4">Ship</option>
+                  <option value="Road">Road</option>
+                  <option value="Rail">Rail</option>
+                  <option value="Air">Air</option>
+                  <option value="Ship">Ship</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <Label>From Place</Label>
                 <Input 
-                  placeholder="e.g. Ahmedabad" 
+                  placeholder="e.g. Dehradun" 
                   value={fromPlace}
                   onChange={(e) => setFromPlace(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label>From State (Code)</Label>
+                <Label>From State (Name/Code)</Label>
                 <Input 
-                  placeholder="e.g. 24" 
+                  placeholder="e.g. UTTARAKHAND" 
                   value={fromState}
                   onChange={(e) => setFromState(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Transporter Doc / LR No</Label>
-                <Input 
-                  placeholder="e.g. LR-1002" 
-                  value={transDocNo}
-                  onChange={(e) => setTransDocNo(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Transporter Doc Date</Label>
-                <DatePicker 
-                  value={transDocDate}
-                  onChange={(d) => setTransDocDate(d)}
-                  placeholder="Select date"
-                  className="w-full"
                 />
               </div>
             </div>

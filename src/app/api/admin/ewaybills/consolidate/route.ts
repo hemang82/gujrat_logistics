@@ -41,8 +41,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    if (!body || !body.vehicleNo || !body.ewbNoDetails || !Array.isArray(body.ewbNoDetails)) {
-      return NextResponse.json({ error: 'Missing required CEWB fields or ewbNoDetails' }, { status: 400 });
+    if (!body || !body.vehicle_number || !body.eway_bill_list || !Array.isArray(body.eway_bill_list)) {
+      return NextResponse.json({ error: 'Missing required CEWB fields or eway_bill_list' }, { status: 400 });
     }
 
     try {
@@ -51,14 +51,12 @@ export async function POST(request: Request) {
       // Create Database Record
       const newBill = await ConsolidatedEwayBill.create({
         cEwbNo: cewbResponse.cEwbNo,
-        challanNo: body.challanNo || '',
-        vehicleNo: body.vehicleNo,
-        fromPlace: body.fromPlace,
-        fromState: body.fromState,
-        transMode: body.transMode,
-        transDocNo: body.transDocNo,
-        transDocDate: body.transDocDate,
-        ewbNoDetails: body.ewbNoDetails,
+        challanNo: body.trip_no || '',
+        vehicleNo: body.vehicle_number,
+        fromPlace: body.from_place,
+        fromState: body.from_state,
+        transMode: body.transportation_mode,
+        ewbNoDetails: body.eway_bill_list,
         cEwbDate: cewbResponse.cEwbDate,
         status: 'Active',
         createdBy: dbUser._id
