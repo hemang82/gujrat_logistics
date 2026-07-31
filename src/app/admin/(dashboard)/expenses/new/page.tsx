@@ -50,7 +50,7 @@ export default function NewExpensePage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.amount || Number(formData.amount) <= 0) newErrors.amount = "Please enter a valid amount";
-    if (!formData.date) newErrors.date = "Date is required";
+    if (!formData.date) newErrors.date = "Please enter Date";
     if (!formData.vehicle) newErrors.vehicle = "Please select a vehicle";
     
     setErrors(newErrors);

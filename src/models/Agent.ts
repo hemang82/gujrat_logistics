@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import { AGENT_TYPES } from '@/config/constants';
 
 export interface IAgent extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   name: string;
   address?: string;
   phone?: string;
@@ -16,6 +17,7 @@ export interface IAgent extends Document {
 
 const AgentSchema = new Schema<IAgent>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true, unique: true },
     address: { type: String },
     phone: { type: String },

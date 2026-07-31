@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Printer, Edit2, Save, X, Truck, List, CalendarClock, History, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import QRCode from 'react-qr-code';
 
 export default function CEWBDetailsPage() {
   const params = useParams();
@@ -67,7 +68,7 @@ export default function CEWBDetailsPage() {
   }, [id]);
 
   const handleUpdate = async () => {
-    if (!vehicleNo) return toast.error("Vehicle Number is required");
+    if (!vehicleNo) return toast.error("Please enter Vehicle Number");
     
     try {
       setIsSaving(true);
@@ -122,8 +123,20 @@ export default function CEWBDetailsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 print:space-y-4">
+      {/* Premium Print Header containing QR */}
+      <div className="hidden print:flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold uppercase tracking-widest text-black">Master E-Way Bill</h1>
+          <p className="text-lg font-mono font-bold mt-2 text-black">CEWB NO: {bill.cEwbNo}</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Generated On: {new Date(bill.createdAt).toLocaleDateString()}</p>
+        </div>
+        <div className="bg-white p-2 border border-gray-200 rounded">
+          <QRCode value={bill.cEwbNo} size={80} level="M" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link href="/admin/ewaybills/consolidated">
             <Button variant="outline" size="icon" className="h-9 w-9">
@@ -136,6 +149,10 @@ export default function CEWBDetailsPage() {
           </div>
         </div>
         <div className="flex gap-3 mt-4 sm:mt-0">
+          {/* Show QR code on screen too in a small button or just placed nicely */}
+          <div className="hidden sm:flex items-center justify-center p-1 bg-white border rounded shadow-sm mr-2">
+             <QRCode value={bill.cEwbNo} size={40} level="L" />
+          </div>
           <Button variant="outline" className="flex items-center gap-2 font-medium" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> Print
           </Button>

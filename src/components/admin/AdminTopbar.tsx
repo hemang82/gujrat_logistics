@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, User, Menu } from 'lucide-react';
+import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { useUserStore } from '@/store/useUserStore';
 
@@ -19,6 +20,20 @@ export function AdminTopbar({ user, onMenuClick }: { user: any, onMenuClick?: ()
             <Menu className="w-6 h-6" />
           </button>
         )}
+        
+        {/* Mobile Panel Indicator */}
+        <div className="lg:hidden">
+          <div className={`px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm
+            ${activeUser?.role === 'superadmin' ? 'bg-amber-50 border-amber-200 text-amber-700' : 
+              activeUser?.role === 'logistic' ? 'bg-blue-50 border-blue-200 text-blue-700' : 
+              'bg-green-50 border-green-200 text-green-700'}
+          `}>
+            {activeUser?.role === 'superadmin' && <span>👑 Super Admin</span>}
+            {activeUser?.role === 'logistic' && <span>🏢 Logistic</span>}
+            {activeUser?.role === 'branch_user' && <span>📍 Branch</span>}
+          </div>
+        </div>
+
         <div className="w-64 sm:w-96 relative hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input 
@@ -32,7 +47,7 @@ export function AdminTopbar({ user, onMenuClick }: { user: any, onMenuClick?: ()
       <div className="flex-1"></div>
 
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
+        <Link href="/admin/profile" className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-colors">
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold text-brand-text-primary">{activeUser?.name || 'Admin User'}</p>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
@@ -49,7 +64,7 @@ export function AdminTopbar({ user, onMenuClick }: { user: any, onMenuClick?: ()
           <div className="w-10 h-10 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">
             {activeUser?.name ? activeUser.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );

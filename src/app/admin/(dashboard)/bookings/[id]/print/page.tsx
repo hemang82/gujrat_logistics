@@ -21,7 +21,7 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
             <Truck className="w-7 h-7 text-white print:text-brand-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-brand-text-primary uppercase tracking-wide m-0 leading-tight">GUJARAT LOGISTIC</h1>
+            <h1 className="text-xl font-bold text-brand-text-primary uppercase tracking-wide m-0 leading-tight">TRUST LOGISTIC</h1>
             <p className="text-[10px] text-gray-500 font-medium m-0">Fast, Safe & Reliable Transport Services</p>
             <p className="text-[10px] text-gray-400 m-0">H.O: Ahmedabad, Gujarat, India</p>
           </div>
@@ -174,7 +174,7 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
         <div className="flex gap-12 text-[10px] font-bold text-gray-700 uppercase text-center pr-4 pb-1">
           <div className="border-t border-gray-400 pt-1 w-24">Receiver Sign</div>
           <div className="border-t border-gray-400 pt-1 w-24">Driver Sign</div>
-          <div className="border-t border-gray-400 pt-1 w-32">For, Gujarat Logistic</div>
+          <div className="border-t border-gray-400 pt-1 w-32">For, Trust Logistic</div>
         </div>
       </div>
     </div>

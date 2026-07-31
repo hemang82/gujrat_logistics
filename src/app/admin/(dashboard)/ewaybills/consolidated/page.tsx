@@ -98,30 +98,34 @@ export default function CEWBListPage() {
 
       <Card className="border-gray-200 shadow-sm">
         <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-col xl:flex-row gap-4">
+            <div className="relative flex-1 w-full xl:max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input 
                 placeholder="Search CEWB No or Vehicle..." 
-                className="pl-9 h-10"
+                className="pl-9 h-10 w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <DatePicker 
-                className="h-10 w-40" 
-                placeholder="Start Date"
-                value={startDate}
-                onChange={(date) => setStartDate(date)}
-              />
-              <span className="text-gray-400">to</span>
-              <DatePicker 
-                className="h-10 w-40" 
-                placeholder="End Date"
-                value={endDate}
-                onChange={(date) => setEndDate(date)}
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full xl:w-auto">
+              <div className="w-full sm:w-auto">
+                <DatePicker 
+                  className="h-10 w-full sm:w-40" 
+                  placeholder="Start Date"
+                  value={startDate}
+                  onChange={(date) => setStartDate(date)}
+                />
+              </div>
+              <span className="text-gray-400 hidden sm:inline-block">to</span>
+              <div className="w-full sm:w-auto">
+                <DatePicker 
+                  className="h-10 w-full sm:w-40" 
+                  placeholder="End Date"
+                  value={endDate}
+                  onChange={(date) => setEndDate(date)}
+                />
+              </div>
               {(searchQuery || startDate || endDate) && (
                 <Button 
                   variant="ghost" 
@@ -130,7 +134,7 @@ export default function CEWBListPage() {
                     setStartDate('');
                     setEndDate('');
                   }}
-                  className="h-10 text-gray-500"
+                  className="h-10 text-gray-500 w-full sm:w-auto mt-2 sm:mt-0"
                 >
                   Clear
                 </Button>
@@ -140,8 +144,8 @@ export default function CEWBListPage() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-500 font-medium">
+            <table className="w-full text-sm text-left border-collapse">
+              <thead className="hidden lg:table-header-group bg-gray-50/50 border-b border-gray-100 text-gray-500 font-medium">
                 <tr className="text-xs uppercase tracking-wider text-gray-600 font-semibold">
                   <th className="px-6 py-4">CEWB NO</th>
                   <th className="px-6 py-4">DATE</th>
@@ -153,7 +157,7 @@ export default function CEWBListPage() {
                   <th className="px-6 py-4 text-right">ACTIONS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="flex flex-col lg:table-row-group divide-y lg:divide-y-0 divide-gray-100">
                 {isLoading ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
@@ -173,21 +177,25 @@ export default function CEWBListPage() {
                   </tr>
                 ) : (
                   bills.map((bill) => (
-                    <tr key={bill._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-mono font-medium text-brand-primary">
-                        {bill.cEwbNo}
+                    <tr key={bill._id} className="flex flex-col lg:table-row hover:bg-gray-50 transition-colors py-2 lg:py-0 border-b lg:border-b border-gray-100 last:border-0">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">CEWB NO</span>
+                        <span className="font-mono font-medium text-brand-primary text-right lg:text-left">{bill.cEwbNo}</span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {bill.cEwbDate || new Date(bill.createdAt).toLocaleDateString()}
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">DATE</span>
+                        <span className="text-right lg:text-left">{bill.cEwbDate || new Date(bill.createdAt).toLocaleDateString()}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-800 font-semibold text-xs uppercase tracking-wider">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">VEHICLE NO</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded bg-gray-100 text-gray-800 font-semibold text-xs uppercase tracking-wider text-right lg:text-left">
                           {bill.vehicleNo}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">VALID UPTO</span>
+                        <div className="flex items-center gap-2 justify-end lg:justify-start">
+                          <span className="text-gray-600 text-right lg:text-left">
                             {bill.validUpto ? new Date(bill.validUpto).toLocaleDateString() : '-'}
                           </span>
                           {bill.validUpto && (() => {
@@ -207,31 +215,37 @@ export default function CEWBListPage() {
                           })()}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">FROM</span>
+                        <span className="text-right lg:text-left">{bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}</span>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 font-bold text-xs">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">TOTAL EWBS</span>
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 font-bold text-xs shrink-0">
                           {bill.ewbNoDetails?.length || 0}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        {bill.status === 'Active' ? (
-                          <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase">
-                            Cancelled
-                          </span>
-                        )}
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">STATUS</span>
+                        <div className="flex justify-end lg:justify-start">
+                          {bill.status === 'Active' ? (
+                            <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-semibold uppercase">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex w-max items-center px-2 py-0.5 rounded bg-red-50 border border-red-100 text-red-700 text-[11px] font-semibold uppercase">
+                              Cancelled
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">ACTIONS</span>
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+                            className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs px-2 sm:px-3"
                             onClick={() => {
                               setSelectedCEWB(bill);
                               setNewValidUpto('');
@@ -239,7 +253,7 @@ export default function CEWBListPage() {
                               setExtendModalOpen(true);
                             }}
                           >
-                            <CalendarClock className="w-4 h-4 mr-1" /> Extend
+                            <CalendarClock className="w-4 h-4 mr-1 hidden sm:inline-block" /> Extend
                           </Button>
                           <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
@@ -254,7 +268,7 @@ export default function CEWBListPage() {
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                            className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
                             onClick={() => handleDelete(bill._id)}
                           >
                             <Trash2 className="w-4 h-4" />

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
 
@@ -24,6 +24,23 @@ function NewBookingForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [grNo, setGrNo] = useState('');
   const user = useUserStore((state) => state.user);
+
+  // Superadmin Logistic Selection
+  const [logistics, setLogistics] = useState<any[]>([]);
+  const [selectedLogisticId, setSelectedLogisticId] = useState('');
+
+  useEffect(() => {
+    if (user?.role === 'superadmin') {
+      fetch('/api/admin/logistics')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.data) {
+            setLogistics(data.data);
+          }
+        })
+        .catch(err => console.error('Error fetching logistics:', err));
+    }
+  }, [user]);
 
   // Autocomplete suggestion states
   const [consignorSuggestions, setConsignorSuggestions] = useState<any[]>([]);
@@ -112,7 +129,8 @@ function NewBookingForm() {
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin/branches?limit=100')
+    const url = selectedLogisticId ? `/api/admin/branches?limit=100&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=100';
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data && data.branches && data.branches.length > 0) {
@@ -128,8 +146,9 @@ function NewBookingForm() {
 
   useEffect(() => {
     if (!isManual) {
+      const url = selectedLogisticId ? `/api/admin/bookings?logisticId=${selectedLogisticId}` : '/api/admin/bookings';
       // Fetch bookings to determine next LR No for Auto LR Mode
-      fetch('/api/admin/bookings')
+      fetch(url)
         .then(res => res.json())
         .then(data => {
           if (data && data.length > 0) {
@@ -211,7 +230,10 @@ function NewBookingForm() {
 
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consignorName)}`);
+        const url = selectedLogisticId 
+          ? `/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consignorName)}&logisticId=${selectedLogisticId}`
+          : `/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consignorName)}`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setConsignorSuggestions(data);
@@ -233,7 +255,10 @@ function NewBookingForm() {
 
     const delayDebounceFn = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consigneeName)}`);
+        const url = selectedLogisticId 
+          ? `/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consigneeName)}&logisticId=${selectedLogisticId}`
+          : `/api/admin/bookings/suggest-customers?q=${encodeURIComponent(formData.consigneeName)}`;
+        const res = await fetch(url);
         if (res.ok) {
           const data = await res.json();
           setConsigneeSuggestions(data);
@@ -685,15 +710,16 @@ function NewBookingForm() {
     const newErrors: Record<string, string> = {};
 
     // --- Common required fields (both modes) ---
-    if (!formData.bookingBranch) newErrors.bookingBranch = "Booking Branch is required";
-    if (!formData.destinationBranch) newErrors.destinationBranch = "Destination Branch is required";
-    if (!formData.consignorName) newErrors.consignorName = "Consignor Name is required";
-    if (!formData.consigneeName) newErrors.consigneeName = "Consignee Name is required";
-    if (!formData.bookingDate) newErrors.bookingDate = "Booking Date is required";
+    if (user?.role === 'superadmin' && !selectedLogisticId) newErrors.selectedLogisticId = "Select a Logistic Company";
+    if (!formData.bookingBranch) newErrors.bookingBranch = "Please enter Booking Branch";
+    if (!formData.destinationBranch) newErrors.destinationBranch = "Please enter Destination Branch";
+    if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
+    if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
+    if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
 
     // --- LR No (manual mode: must enter, auto mode: auto-generated) ---
     if (isManual) {
-      if (!formData.grNo) newErrors.grNo = "LR No is required";
+      if (!formData.grNo) newErrors.grNo = "Please enter LR No";
     } else {
       if (!formData.grNo && !grNo) newErrors.grNo = "LR No could not be generated. Please refresh.";
     }
@@ -786,6 +812,11 @@ function NewBookingForm() {
     };
 
     try {
+      // If superadmin, add logisticId to payload to assign it correctly
+      if (user?.role === 'superadmin' && selectedLogisticId) {
+        (payload as any).logisticId = selectedLogisticId;
+      }
+
       const response = await fetch('/api/admin/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -859,6 +890,46 @@ function NewBookingForm() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      
+        {/* Superadmin Logistic Selection */}
+        {user?.role === 'superadmin' && (
+          <Card className="border border-blue-200 shadow-sm rounded-xl overflow-visible mb-6 bg-blue-50/50">
+            <CardHeader className="border-b border-blue-100 py-3 px-4">
+              <CardTitle className="text-sm font-bold text-blue-800 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                Super Admin: Select Logistic Company
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="max-w-md">
+                <Label className="text-xs font-semibold text-gray-700 uppercase mb-2 block">Logistic Company <span className="text-red-500">*</span></Label>
+                <select 
+                  className={`flex h-10 w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary ${errors.selectedLogisticId ? 'border-red-500' : 'border-gray-200'}`}
+                  value={selectedLogisticId}
+                  onChange={(e) => {
+                    setSelectedLogisticId(e.target.value);
+                    setFormData(prev => ({ ...prev, bookingBranch: '', destinationBranch: '' }));
+                    setDestinationBranchSearch('');
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.selectedLogisticId;
+                      return newErrors;
+                    });
+                  }}
+                  required
+                >
+                  <option value="" disabled>Select a company to create LR for</option>
+                  {logistics.map(log => (
+                    <option key={log._id} value={log._id}>{log.name}</option>
+                  ))}
+                </select>
+                {errors.selectedLogisticId && (
+                  <p className="text-xs text-red-500 mt-1">{errors.selectedLogisticId}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Section 1: Booking & Route Details */}
         <Card className="border border-gray-100 shadow-sm rounded-xl relative z-20 !overflow-visible">
@@ -877,7 +948,7 @@ function NewBookingForm() {
                 </div>
                 <div className="space-y-1 relative pb-4">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
-                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
+                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Please enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
                   {renderError('grNo')}
                 </div>
                 <div className="space-y-1 flex flex-col justify-start">

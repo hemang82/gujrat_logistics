@@ -10,7 +10,7 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center group overflow-hidden w-fit">
               <div className="h-16 w-56 relative flex items-center justify-start overflow-hidden">
-                <img src="/main_logo.svg" alt="Gujarat Logistic Logo" className="w-full h-full object-contain origin-left" />
+                <img src="/main_logo.svg" alt="Trust Logistic Logo" className="w-full h-full object-contain origin-left" />
               </div>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed">

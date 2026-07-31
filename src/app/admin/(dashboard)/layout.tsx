@@ -4,8 +4,8 @@ import { authOptions } from '@/lib/auth';
 import { AdminLayoutWrapper } from '@/components/admin/AdminLayoutWrapper';
 
 export const metadata = {
-  title: 'Admin Portal - Gujarat Logistic',
-  description: 'Internal Management System for Gujarat Logistic',
+  title: 'Admin Portal - Trust Logistic',
+  description: 'Internal Management System for Trust Logistic',
 };
 
 export default async function AdminLayout({

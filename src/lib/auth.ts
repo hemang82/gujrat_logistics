@@ -38,6 +38,7 @@ export const authOptions: NextAuthOptions = {
           name: user.name,
           email: user.email,
           role: user.role,
+          logisticId: user.logisticId ? user.logisticId.toString() : '',
           branch: user.branch ? user.branch.toString() : '',
           bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
           ewbApiAccess: user.ewbApiAccess || false,
@@ -50,6 +51,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.logisticId = (user as any).logisticId;
         token.branch = (user as any).branch;
         token.bookingBranch = (user as any).bookingBranch;
         token.ewbApiAccess = (user as any).ewbApiAccess;
@@ -57,14 +59,13 @@ export const authOptions: NextAuthOptions = {
         // Fetch fresh branch/bookingBranch details from the database on refresh
         try {
           await connectToDatabase();
-          const dbUser = await User.findById(token.id).select('branch bookingBranch role ewbApiAccess');
+          const dbUser = await User.findById(token.id).select('logisticId branch bookingBranch role ewbApiAccess');
           if (dbUser) {
+            token.logisticId = dbUser.logisticId ? dbUser.logisticId.toString() : '';
             token.branch = dbUser.branch ? dbUser.branch.toString() : '';
             token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
             token.role = dbUser.role;
             token.ewbApiAccess = dbUser.ewbApiAccess || false;
-            token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
-            token.role = dbUser.role;
           }
         } catch (err) {
           console.error("Error updating token in jwt callback:", err);
@@ -76,6 +77,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
+        (session.user as any).logisticId = token.logisticId;
         (session.user as any).branch = token.branch;
         (session.user as any).bookingBranch = token.bookingBranch;
         (session.user as any).ewbApiAccess = token.ewbApiAccess;

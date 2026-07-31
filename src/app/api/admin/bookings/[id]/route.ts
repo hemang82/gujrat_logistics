@@ -7,6 +7,7 @@ import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import { resolveBranchId } from '@/lib/resolveBranch';
+import { getLogisticQuery } from '@/lib/apiAuth';
 
 export async function PATCH(
   request: Request,
@@ -33,9 +34,9 @@ export async function PATCH(
 
     await connectToDatabase();
 
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) });
     if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
     }
 
     booking.status = status;
@@ -75,12 +76,12 @@ export async function GET(
     const { id } = resolvedParams;
 
     await connectToDatabase();
-    const booking = await Booking.findById(id)
+    const booking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) })
       .populate('branch', 'code name')
       .populate('bookingBranch', 'code name')
       .populate('destinationBranch', 'code name')
       .lean();
-    if (!booking) return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    if (!booking) return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
 
     return NextResponse.json(booking);
   } catch (error: any) {
@@ -115,9 +116,9 @@ export async function PUT(
     if (payload.bookingBranch) payload.bookingBranch = await resolveBranchId(payload.bookingBranch);
     if (payload.destinationBranch) payload.destinationBranch = await resolveBranchId(payload.destinationBranch);
 
-    const existingBooking = await Booking.findById(id);
+    const existingBooking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) });
     if (!existingBooking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
     }
 
     if (payload.lrNumber && payload.lrNumber !== existingBooking.lrNumber) {
@@ -161,8 +162,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      id,
+    const updatedBooking = await Booking.findOneAndUpdate(
+      { _id: id, ...(await getLogisticQuery()) },
       { $set: payload },
       { new: true, runValidators: true }
     );
@@ -199,12 +200,12 @@ export async function DELETE(
     const { id } = resolvedParams;
 
     await connectToDatabase();
-    const booking = await Booking.findById(id);
+    const booking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) });
     if (!booking) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
     }
 
-    const deletedBooking = await Booking.findByIdAndUpdate(id, { 
+    const deletedBooking = await Booking.findOneAndUpdate({ _id: id, ...(await getLogisticQuery()) }, { 
       isDeleted: true,
       lrNumber: `${booking.lrNumber}_deleted_${Date.now()}`
     }, { new: true });

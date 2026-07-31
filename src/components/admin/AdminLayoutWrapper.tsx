@@ -23,6 +23,7 @@ export function AdminLayoutWrapper({
         name: user.name || '',
         email: user.email || '',
         role: user.role || '',
+        logisticId: user.logisticId || '',
         branch: user.branch || 'ASL',
         bookingBranch: user.bookingBranch || 'ASLALI',
         ewbApiAccess: user.ewbApiAccess || false,
@@ -44,9 +45,10 @@ export function AdminLayoutWrapper({
             name: liveUser.name || user?.name || '',
             email: liveUser.email || user?.email || '',
             role: liveUser.role || user?.role || '',
+            logisticId: liveUser.logisticId || user?.logisticId || '',
             branch: liveUser.branch || 'ASL',
             bookingBranch: liveUser.bookingBranch || 'ASLALI',
-            ewbApiAccess: liveUser.ewbApiAccess || user?.ewbApiAccess || false,
+            ewbApiAccess: liveUser.ewbApiAccess ?? user?.ewbApiAccess ?? false,
           });
         }
       })

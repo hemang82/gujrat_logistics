@@ -18,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const { amountPaid } = body;
 
     if (amountPaid === undefined || amountPaid < 0) {
-      return NextResponse.json({ error: 'Valid amountPaid is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter Valid amountPaid' }, { status: 400 });
     }
 
     const invoice = await Invoice.findById(id);

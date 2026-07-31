@@ -682,7 +682,7 @@ export default function EditBookingPage() {
                 </div>
                 <div className="space-y-1 relative pb-4">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
-                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
+                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Please enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
                   {renderError('grNo')}
                 </div>
                 <div className="space-y-1 flex flex-col justify-start">

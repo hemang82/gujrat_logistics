@@ -45,7 +45,7 @@ export async function POST(req: Request) {
     const { type, name } = body;
 
     if (!name || !name.trim()) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter Name' }, { status: 400 });
     }
 
     const Model = type === 'packaging' ? PackagingMaster : ItemDescriptionMaster;

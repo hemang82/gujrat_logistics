@@ -58,7 +58,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
               <Truck className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">GUJARAT LOGISTIC</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">TRUST LOGISTIC</h1>
               <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
               <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               <p className="text-xs font-bold text-gray-700 mt-1">GSTIN: 24AAAAA1234A1Z5</p>
@@ -148,7 +148,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
              
              <h4 className="font-bold text-xs uppercase text-gray-500 mb-2 mt-4 border-t border-gray-200 pt-4">Bank Details</h4>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">Bank:</span> HDFC Bank</p>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C Name:</span> Gujarat Logistic</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C Name:</span> Trust Logistic</p>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C No:</span> 50200012345678</p>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">IFSC:</span> HDFC0001234</p>
           </div>
@@ -193,7 +193,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         <div className="flex justify-end pt-12 border-t border-gray-100 mt-10">
           <div className="text-center w-64">
             <div className="w-full mx-auto border-b border-gray-400 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For Gujarat Logistic</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For Trust Logistic</p>
             <p className="text-xs text-gray-400 mt-1">Authorized Signatory</p>
           </div>
         </div>

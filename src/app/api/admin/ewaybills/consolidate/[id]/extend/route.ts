@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { newValidUpto, reason } = await request.json();
 
     if (!newValidUpto) {
-      return NextResponse.json({ error: 'New validity date is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter New validity date' }, { status: 400 });
     }
 
     const bill = await ConsolidatedEwayBill.findById(id);

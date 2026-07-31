@@ -57,13 +57,13 @@ export default function NewDriverPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.name) newErrors.name = 'Driver Name is required';
-    if (!formData.status) newErrors.status = 'Status is required';
-    if (!formData.licenseNumber) newErrors.licenseNumber = 'License Number is required';
+    if (!formData.name) newErrors.name = 'Please enter Driver Name';
+    if (!formData.status) newErrors.status = 'Please enter Status';
+    if (!formData.licenseNumber) newErrors.licenseNumber = 'Please enter License Number';
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (!formData.phone) {
-      newErrors.phone = 'Primary Phone is required';
+      newErrors.phone = 'Please enter Primary Phone';
     } else if (!phoneRegex.test(formData.phone)) {
       newErrors.phone = 'Invalid 10-digit number';
     }

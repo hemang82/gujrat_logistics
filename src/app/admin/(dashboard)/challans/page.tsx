@@ -12,9 +12,12 @@ import {
   ChevronLeft, ChevronRight, FileText, CheckCircle2, AlertCircle, XCircle 
 } from 'lucide-react';
 import ListActions from '@/components/admin/ListActions';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function ChallansListPage() {
   const router = useRouter();
+  const user = useUserStore((state) => state.user);
+  const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic';
   
   const [challans, setChallans] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -72,11 +75,13 @@ export default function ChallansListPage() {
           <h1 className="text-xl font-extrabold text-gray-800 tracking-tight">Lorry Challan / Lorry Hires</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage truck loading dispatch sheets and lorry hiring agreements</p>
         </div>
-        <Link href="/admin/challans/new">
-          <Button className="h-10 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-lg flex items-center gap-1.5 font-bold shadow-sm px-4">
-            <Plus className="w-4 h-4" /> Create Challan
-          </Button>
-        </Link>
+        {canCreate && (
+          <Link href="/admin/challans/new">
+            <Button className="h-10 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-lg flex items-center gap-1.5 font-bold shadow-sm px-4">
+              <Plus className="w-4 h-4" /> Create Challan
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Filter and Search Bar */}

@@ -20,14 +20,19 @@ import {
   FileText,
   Database,
   Box,
-  Activity
+  Activity,
+  Building2
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUserStore } from '@/store/useUserStore';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, onClose?: () => void }) {
   const pathname = usePathname();
+  const { user } = useUserStore();
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState(false);
 
   // Helper to determine if a route is active
   const isRouteActive = (href: string, exact = false, excludePaths: string[] = []) => {
@@ -88,9 +93,19 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
   }, [pathname, isAccountsActive]);
 
-  const navItems = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, isDropdown: false },
-    { 
+  const navItems: any[] = [];
+
+  navItems.push({ name: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, isDropdown: false });
+
+  if (user?.role === 'superadmin') {
+    navItems.push({ name: 'Logistics', href: '/admin/logistics', icon: <Building2 className="w-5 h-5" />, isDropdown: false });
+  } else {
+    if (user?.role === 'logistic') {
+      navItems.push({ name: 'Branch Logins', href: '/admin/users', icon: <Contact className="w-5 h-5" />, isDropdown: false });
+    }
+
+    // For logistic and branch_user
+    navItems.push({ 
       name: 'Booking', 
       icon: <PackageSearch className="w-5 h-5" />, 
       isDropdown: true,
@@ -103,8 +118,9 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false },
         { name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false },
       ]
-    },
-    { 
+    });
+    
+    navItems.push({ 
       name: 'Delivery', 
       icon: <Box className="w-5 h-5" />, 
       isDropdown: true,
@@ -116,66 +132,105 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'Delivery Entry', href: '/admin/delivery/delivery-entry', exact: false },
         { name: 'Cash Collection', href: '/admin/delivery/cash-collection', exact: false },
       ]
-    },
-    { 
-      name: 'Master', 
-      icon: <Database className="w-5 h-5" />, 
-      isDropdown: true,
-      isOpen: isMasterOpen,
-      setIsOpen: setIsMasterOpen,
-      isActive: isMasterActive,
-      children: [
-        { name: 'Branches', href: '/admin/branches', exact: false },
-        { name: 'Clients', href: '/admin/clients', exact: false },
-        { name: 'Agents', href: '/admin/agents', exact: false },
-        { name: 'PKG & Items', href: '/admin/masters', exact: false },
-      ]
-    },
-    { 
-      name: 'Trucks', 
-      icon: <Truck className="w-5 h-5" />, 
-      isDropdown: true,
-      isOpen: isFleetOpen,
-      setIsOpen: setIsFleetOpen,
-      isActive: isFleetActive,
-      children: [
-        { name: 'Dashboard', href: '/admin/fleet', exact: true },
-        { name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false },
-        { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
-        { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
-        { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
-      ]
-    },
-    { 
-      name: 'Accounts', 
-      icon: <Wallet className="w-5 h-5" />, 
-      isDropdown: true,
-      isOpen: isAccountsOpen,
-      setIsOpen: setIsAccountsOpen,
-      isActive: isAccountsActive,
-      children: [
-        { name: 'Branch Ledger', href: '/admin/accounts/branch-ledger', exact: false },
-      ]
-    },
-    { name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false },
-    { name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false },
-    { name: 'API Logs', href: '/admin/api-logs', icon: <Activity className="w-5 h-5" />, isDropdown: false },
-  ];
+    });
+
+    if (user?.role === 'logistic') {
+      navItems.push({ 
+        name: 'Master', 
+        icon: <Database className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isMasterOpen,
+        setIsOpen: setIsMasterOpen,
+        isActive: isMasterActive,
+        children: [
+          { name: 'Branches', href: '/admin/branches', exact: false },
+          { name: 'Clients', href: '/admin/clients', exact: false },
+          { name: 'Agents', href: '/admin/agents', exact: false },
+          { name: 'PKG & Items', href: '/admin/masters', exact: false },
+        ]
+      });
+
+      navItems.push({ 
+        name: 'Trucks', 
+        icon: <Truck className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isFleetOpen,
+        setIsOpen: setIsFleetOpen,
+        isActive: isFleetActive,
+        children: [
+          { name: 'Dashboard', href: '/admin/fleet', exact: true },
+          ...(user?.ewbApiAccess ? [{ name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false }] : []),
+          { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
+          { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
+          { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
+        ]
+      });
+
+      navItems.push({ 
+        name: 'Accounts', 
+        icon: <Wallet className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isAccountsOpen,
+        setIsOpen: setIsAccountsOpen,
+        isActive: isAccountsActive,
+        children: [
+          { name: 'Branch Ledger', href: '/admin/accounts/branch-ledger', exact: false },
+        ]
+      });
+    } else {
+      // branch_user
+      navItems.push({ 
+        name: 'Master', 
+        icon: <Database className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isMasterOpen,
+        setIsOpen: setIsMasterOpen,
+        isActive: isMasterActive,
+        children: [
+          { name: 'Clients', href: '/admin/clients', exact: false },
+          { name: 'PKG & Items', href: '/admin/masters', exact: false },
+        ]
+      });
+    }
+  }
+
+  if (user?.role === 'superadmin' || user?.role === 'logistic') {
+    navItems.push({ name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false });
+  }
+
+  if (user?.role === 'superadmin') {
+    navItems.push({ name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false });
+    navItems.push({ name: 'API Logs', href: '/admin/api-logs', icon: <Activity className="w-5 h-5" />, isDropdown: false });
+  }
 
   return (
     <div className={`w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 print:hidden transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-        <Link href="/" className="flex items-center" onClick={() => onClose && onClose()}>
-          <div className="h-10 w-40 relative flex items-center justify-start">
-            <img src="/main_logo.svg" alt="Gujarat Logistic Logo" className="w-full h-full object-contain origin-left" />
-          </div>
-        </Link>
-        {onClose && (
-          <button onClick={onClose} className="lg:hidden text-gray-500 hover:text-gray-700">
-            <X className="w-6 h-6" />
-          </button>
-        )}
+      {/* Logo and Panel Indicator */}
+      <div className="p-5 border-b border-gray-100 flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <Link href="/admin/dashboard" className="flex items-center" onClick={() => onClose && onClose()}>
+            <div className="h-10 w-40 relative flex items-center justify-start">
+              <img src="/main_logo.svg" alt="Trust Logistic Logo" className="w-full h-full object-contain origin-left" />
+            </div>
+          </Link>
+          {onClose && (
+            <button onClick={onClose} className="lg:hidden text-gray-500 hover:text-gray-700">
+              <X className="w-6 h-6" />
+            </button>
+          )}
+        </div>
+        
+        {/* Panel Indicator Badge */}
+        <div className={`px-3 py-2 rounded-lg border text-xs font-bold uppercase tracking-wider flex items-center gap-2 justify-center shadow-sm
+          ${user?.role === 'superadmin' ? 'bg-amber-50 border-amber-200 text-amber-700' : 
+            user?.role === 'logistic' ? 'bg-blue-50 border-blue-200 text-blue-700' : 
+            'bg-green-50 border-green-200 text-green-700'}
+        `}>
+          {user?.role === 'superadmin' && <span>👑 Super Admin Panel</span>}
+          {user?.role === 'logistic' && <span>🏢 Logistic Panel</span>}
+          {user?.role === 'branch_user' && <span>📍 Branch Panel</span>}
+          {!user?.role && <span>Loading Panel...</span>}
+        </div>
       </div>
 
       {/* Navigation */}
@@ -259,12 +314,22 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         <Button 
           variant="ghost" 
           className="w-full flex items-center justify-start gap-3 text-red-500 hover:text-red-600 hover:bg-red-50 h-12 rounded-xl font-medium px-4"
-          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          onClick={() => setIsLogoutDialogOpen(true)}
         >
           <LogOut className="w-5 h-5" />
           Logout
         </Button>
       </div>
+
+      <ConfirmDialog 
+        isOpen={isLogoutDialogOpen}
+        onClose={() => setIsLogoutDialogOpen(false)}
+        onConfirm={() => signOut({ callbackUrl: '/admin/login' })}
+        title="Confirm Logout"
+        description="Are you sure you want to log out of your workspace? You will need to sign in again to access the dashboard."
+        confirmText="Log Out"
+        variant="danger"
+      />
     </div>
   );
 }

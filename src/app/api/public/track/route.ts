@@ -8,7 +8,7 @@ export async function GET(req: Request) {
     const lrNumber = searchParams.get('lrNumber');
 
     if (!lrNumber) {
-      return NextResponse.json({ error: 'LR Number is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter LR Number' }, { status: 400 });
     }
 
     await connectToDatabase();

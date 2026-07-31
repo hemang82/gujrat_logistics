@@ -5,6 +5,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  logisticId?: string;
   branch: string;
   bookingBranch: string;
   ewbApiAccess?: boolean;

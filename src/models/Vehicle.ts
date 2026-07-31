@@ -1,6 +1,7 @@
 import mongoose, { Schema, Model } from 'mongoose';
 
 export interface IVehicle {
+  logisticId?: mongoose.Types.ObjectId;
   _id?: any;
   vehicleNumber: string;
   type: string; // e.g., 'Open', 'Container', 'Trailer', 'LCV'
@@ -24,6 +25,7 @@ export interface IVehicle {
 
 const VehicleSchema = new Schema<IVehicle>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     vehicleNumber: { type: String, required: true, unique: true },
     type: { type: String, required: true },
     capacity: { type: String, required: true },

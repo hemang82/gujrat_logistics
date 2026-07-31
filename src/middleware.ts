@@ -7,6 +7,11 @@ export async function middleware(req: NextRequest) {
   const isAuth = !!token;
   const isAuthPage = req.nextUrl.pathname.startsWith("/admin/login");
   const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
+  const isHomePage = req.nextUrl.pathname === "/";
+
+  if (isHomePage && isAuth) {
+    return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+  }
 
   if (isAuthPage) {
     if (isAuth) {
@@ -30,5 +35,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/", "/admin/:path*"],
 };

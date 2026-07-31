@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IItemDescriptionMaster extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   name: string;
   isActive: boolean;
   usageCount: number;
@@ -10,6 +11,7 @@ export interface IItemDescriptionMaster extends Document {
 
 const ItemDescriptionMasterSchema = new Schema<IItemDescriptionMaster>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true, trim: true, unique: true },
     isActive: { type: Boolean, default: true },
     usageCount: { type: Number, default: 1 },

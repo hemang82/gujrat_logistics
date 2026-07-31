@@ -6,6 +6,7 @@ import Booking from '@/models/Booking';
 import Challan from '@/models/Challan';
 import Vehicle from '@/models/Vehicle';
 import Branch from '@/models/Branch';
+import ConsolidatedEwayBill from '@/models/ConsolidatedEwayBill';
 
 export async function GET(request: Request) {
   try {
@@ -38,6 +39,16 @@ export async function GET(request: Request) {
 
       if (challan.status === 'delivered') {
         return NextResponse.json({ error: 'This Challan is already delivered. You cannot generate a Master CEWB for it.' }, { status: 400 });
+      }
+
+      // Check if CEWB already exists for this challan
+      const existingCEWB = await ConsolidatedEwayBill.findOne({ challanNo: challan.challanNumber });
+      if (existingCEWB) {
+        return NextResponse.json({ 
+          error: 'ALREADY_EXISTS',
+          cewbNo: existingCEWB.cEwbNo,
+          message: `A Master E-Way Bill (${existingCEWB.cEwbNo}) has already been generated for Challan ${challan.challanNumber}.`
+        }, { status: 400 });
       }
 
       return NextResponse.json({ 

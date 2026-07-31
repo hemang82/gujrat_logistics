@@ -99,7 +99,7 @@ export default function BranchLedgerPage() {
       return;
     }
     if (!voucherForm.description.trim()) {
-      toast.error('Description is required');
+      toast.error('Please enter Description');
       return;
     }
 

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IExpense extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   expenseType: 'fuel' | 'toll' | 'maintenance' | 'driver_bhatta' | 'rto_challan' | 'other';
   amount: number;
   date: Date;
@@ -17,6 +18,7 @@ export interface IExpense extends Document {
 
 const ExpenseSchema = new Schema<IExpense>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     expenseType: {
       type: String,
       enum: ['fuel', 'toll', 'maintenance', 'driver_bhatta', 'rto_challan', 'other'],

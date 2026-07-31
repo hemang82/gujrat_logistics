@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IBranchCashTransaction extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   branch: mongoose.Types.ObjectId | any;
   date: Date;
   type: 'credit' | 'debit';
@@ -15,6 +16,7 @@ export interface IBranchCashTransaction extends Document {
 
 const BranchCashTransactionSchema = new Schema<IBranchCashTransaction>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     branch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
     date: { type: Date, default: Date.now },
     type: { type: String, enum: ['credit', 'debit'], required: true },

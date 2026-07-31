@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Branch from '@/models/Branch';
 
+
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
@@ -22,6 +23,14 @@ export async function GET(request: Request) {
     const limit = parseInt(searchParams.get('limit') || '15', 10);
 
     const query: any = { isDeleted: { $ne: true } };
+    
+    // Multi-tenant: If the user is a logistic admin, only show their branches
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      // If branch user somehow hits this, limit to their logistic company
+      query.logisticId = (session.user as any).logisticId;
+    }
 
     if (search) {
       query.$or = [
@@ -72,24 +81,34 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    if (!body.name || !body.code || !body.state) {
-      return NextResponse.json({ error: 'Name, Code, and State are required fields' }, { status: 400 });
+    if (!body.name) {
+      return NextResponse.json({ error: 'Name is a required field' }, { status: 400 });
     }
+    
+    // Auto generate code if not provided
+    const code = body.code || body.name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
 
-    // Check unique branch code
-    const existingBranch = await Branch.findOne({ code: body.code.toUpperCase() });
+    const logisticId = (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+
+    // Check unique branch code FOR THIS LOGISTIC COMPANY
+    const existingBranch = await Branch.findOne({ code: code, logisticId: logisticId });
     if (existingBranch) {
-      return NextResponse.json({ error: `Branch Code "${body.code.toUpperCase()}" already exists` }, { status: 400 });
+      return NextResponse.json({ error: `Branch Code "${code}" already exists in your company` }, { status: 400 });
     }
 
     if (body.agent === "") delete body.agent;
 
     const newBranch = new Branch({
       ...body,
-      code: body.code.toUpperCase()
+      state: body.state || 'Gujarat',
+      code: code,
+      logisticId: (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId
     });
 
     await newBranch.save();
+
+
+
     return NextResponse.json(newBranch, { status: 201 });
   } catch (error: any) {
     console.error('Error creating branch:', error);

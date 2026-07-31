@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IBooking extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   lrNumber: string;
   branch?: mongoose.Types.ObjectId | any;
   bookingBranch?: mongoose.Types.ObjectId | any;
@@ -50,6 +51,7 @@ export interface IBooking extends Document {
 
 const BookingSchema = new Schema<IBooking>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     bookingType: {
       type: String,
       enum: ['auto', 'manual'],

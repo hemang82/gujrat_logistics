@@ -10,6 +10,7 @@ export interface IBranch extends Document {
   email?: string;
   address?: string;
   gstNumber?: string;
+  logisticId?: mongoose.Types.ObjectId | any;
   agent?: mongoose.Types.ObjectId | any;
   bookingInward?: 'B' | 'I' | 'B/I';
   commiBasis?: string;
@@ -28,7 +29,7 @@ export interface IBranch extends Document {
 const BranchSchema = new Schema<IBranch>(
   {
     name: { type: String, required: true },
-    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    code: { type: String, required: true, uppercase: true, trim: true },
     state: { type: String, required: true },
     pincode: { type: String },
     distance: { type: Number, default: 0 },
@@ -36,6 +37,7 @@ const BranchSchema = new Schema<IBranch>(
     email: { type: String },
     address: { type: String },
     gstNumber: { type: String },
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     agent: { type: Schema.Types.ObjectId, ref: 'Agent' },
     bookingInward: { type: String, enum: ['B', 'I', 'B/I'], default: 'B/I' },
     commiBasis: { type: String },
@@ -52,6 +54,8 @@ const BranchSchema = new Schema<IBranch>(
   },
   { timestamps: true }
 );
+
+BranchSchema.index({ code: 1, logisticId: 1 }, { unique: true });
 
 const Branch: Model<IBranch> = mongoose.models.Branch || mongoose.model<IBranch>('Branch', BranchSchema);
 export default Branch;

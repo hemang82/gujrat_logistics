@@ -14,10 +14,10 @@ export async function GET(request: Request) {
 
     await dbConnect();
 
-    // Verify Admin permission if needed (only admins should see logs)
+    // Verify Admin permission if needed (admins and superadmins should see logs)
     const dbUser = await User.findById(session.user.id);
-    if (!dbUser || dbUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Access Denied. Only admins can view API logs.' }, { status: 403 });
+    if (!dbUser || !['admin', 'superadmin'].includes(dbUser.role)) {
+      return NextResponse.json({ error: 'Access Denied. Only admins and superadmins can view API logs.' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -73,7 +73,11 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('userId', 'name email role')
+      .populate({
+        path: 'userId',
+        select: 'name email role logisticId',
+        populate: { path: 'logisticId', select: 'name' }
+      })
       .lean();
 
     return NextResponse.json({

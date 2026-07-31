@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface ILorryHire extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   voucherNo: string;
   date: Date;
   fromBranch: mongoose.Types.ObjectId | any;
@@ -22,6 +23,7 @@ export interface ILorryHire extends Document {
 
 const LorryHireSchema = new Schema<ILorryHire>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     voucherNo: { type: String, required: true, unique: true },
     date: { type: Date, default: Date.now },
     fromBranch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },

@@ -5,10 +5,10 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
-import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { addCashTransaction } from '@/lib/ledgerUtils';
+import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
 export async function GET(req: Request) {
   try {
@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
 
-    let query: any = { isDeleted: { $ne: true } };
+    let query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(req)) };
 
     if (search) {
       const cleanSearch = search.trim().replace(/^lr-/i, '');
@@ -112,9 +112,11 @@ export async function POST(req: Request) {
     // Auto-generate LR number starting from 10001 if not provided
     // Use database max to avoid race conditions / duplicate errors
     let finalLrNumber = data.lrNumber;
+    const logisticQuery = await getLogisticQuery() || {};
+    
     if (!finalLrNumber) {
-      // Find the highest existing numeric LR number
-      const allBookings = await Booking.find({ lrNumber: { $exists: true } }, { lrNumber: 1 });
+      // Find the highest existing numeric LR number for this logistic
+      const allBookings = await Booking.find({ lrNumber: { $exists: true }, ...logisticQuery }, { lrNumber: 1 });
       let maxNum = 10000;
       allBookings.forEach((b: any) => {
         if (b.lrNumber) {
@@ -125,9 +127,9 @@ export async function POST(req: Request) {
       finalLrNumber = (maxNum + 1).toString();
     } else {
       // If frontend sent a number, verify it's not taken — if taken, auto-increment
-      const existingBooking = await Booking.findOne({ lrNumber: String(data.lrNumber) });
+      const existingBooking = await Booking.findOne({ lrNumber: String(data.lrNumber), ...logisticQuery });
       if (existingBooking) {
-        const allBookings = await Booking.find({ lrNumber: { $exists: true } }, { lrNumber: 1 });
+        const allBookings = await Booking.find({ lrNumber: { $exists: true }, ...logisticQuery }, { lrNumber: 1 });
         let maxNum = 10000;
         allBookings.forEach((b: any) => {
           if (b.lrNumber) {
@@ -152,6 +154,7 @@ export async function POST(req: Request) {
     const newBooking = new Booking({
       ...data,
       lrNumber: finalLrNumber,
+      logisticId: await getLogisticIdForCreate(),
       createdBy: session?.user?.id,
       status: 'pending',
       trackingHistory

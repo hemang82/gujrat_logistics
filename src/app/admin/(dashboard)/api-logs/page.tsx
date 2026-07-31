@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Clock, CheckCircle2, XCircle, RefreshCcw, Database } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, RefreshCcw, Database, Building2 } from 'lucide-react';
 
 interface ApiLog {
   _id: string;
@@ -11,6 +11,9 @@ interface ApiLog {
     name: string;
     email: string;
     role: string;
+    logisticId?: {
+      name: string;
+    };
   };
   apiType: string;
   requestData: string;
@@ -202,9 +205,18 @@ export default function ApiLogsPage() {
                       </td>
                       <td className="px-6 py-4">
                         {log.userId ? (
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-0.5">
                             <span className="font-medium text-gray-900">{log.userId.name || 'Unknown User'}</span>
-                            <span className="text-xs text-gray-500 capitalize">{log.userId.role || 'Staff'}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-medium bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded capitalize">{log.userId.role || 'Staff'}</span>
+                              {log.userId.logisticId && (
+                                <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                                  <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                  <Building2 className="w-3 h-3 text-gray-400" />
+                                  {log.userId.logisticId.name}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <span className="font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded text-xs">System Background</span>

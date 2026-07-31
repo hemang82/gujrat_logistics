@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Gujarat Logistic",
+  title: "Trust Logistic",
   description: "Connecting Gujarat, Delivering Trust",
   icons: {
     icon: '/logo_icon.svg',
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`min-h-full flex flex-col ${plusJakartaSans.className}`}>
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

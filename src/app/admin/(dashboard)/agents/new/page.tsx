@@ -115,11 +115,11 @@ export default function NewAgentPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Agent Name is required';
-    if (!formData.agentType) newErrors.agentType = 'Agent Type is required';
+    if (!formData.name.trim()) newErrors.name = 'Please enter Agent Name';
+    if (!formData.agentType) newErrors.agentType = 'Please enter Agent Type';
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Contact Number is required';
+      newErrors.phone = 'Please enter Contact Number';
     } else if (formData.phone.length !== 10) {
       newErrors.phone = 'Phone must be exactly 10 digits';
     }

@@ -40,7 +40,7 @@ export function Navbar() {
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center group overflow-hidden">
           <div className="h-14 w-48 relative flex items-center justify-start">
-            <img src="/main_logo.svg" alt="Gujarat Logistic Logo" className="w-full h-full object-contain origin-left" />
+            <img src="/main_logo.svg" alt="Trust Logistic Logo" className="w-full h-full object-contain origin-left" />
           </div>
         </Link>
 

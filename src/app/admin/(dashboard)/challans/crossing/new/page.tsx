@@ -946,7 +946,7 @@ export default function AddCrossingPage() {
               <Label className="text-xs font-bold text-gray-600 uppercase">Remark</Label>
               <Input 
                 name="remark"
-                placeholder="Enter memo remarks..."
+                placeholder="Please enter memo remarks..."
                 value={formData.remark}
                 onChange={handleChange}
                 className="h-10 text-sm rounded-lg"

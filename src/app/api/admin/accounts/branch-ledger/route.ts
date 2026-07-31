@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const dateStr = searchParams.get('date');
 
     if (!branchId) {
-      return NextResponse.json({ error: 'Branch ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter Branch ID' }, { status: 400 });
     }
 
     const resolvedBranchId = await resolveBranchId(branchId);

@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Truck, FileOutput, CheckCircle2, ListFilter, Loader2 } from 'lucide-react';
+import { Truck, FileOutput, CheckCircle2, ListFilter, Loader2, AlertCircle } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
-import { SearchSelect } from '@/components/ui/search-select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 
 export default function ConsolidatedEwayBillPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +17,12 @@ export default function ConsolidatedEwayBillPage() {
 
   // Filters
   const [challanNo, setChallanNo] = useState<string>('');
+  const [challanSuggestions, setChallanSuggestions] = useState<any[]>([]);
+  const [showChallanDropdown, setShowChallanDropdown] = useState(false);
+  const [challanHighlightIndex, setChallanHighlightIndex] = useState(-1);
+  
+  // Existing CEWB Modal
+  const [existingCewbModal, setExistingCewbModal] = useState<{isOpen: boolean, message: string, cewbNo: string}>({isOpen: false, message: '', cewbNo: ''});
 
   // LRs
   const [bookings, setBookings] = useState<any[]>([]);
@@ -29,7 +35,87 @@ export default function ConsolidatedEwayBillPage() {
   const [fromPlace, setFromPlace] = useState('');
   const [fromState, setFromState] = useState('');
   const [transMode, setTransMode] = useState('Road'); 
+  const [approxDistance, setApproxDistance] = useState('');
   const [validUpto, setValidUpto] = useState('');
+  const [vehicleError, setVehicleError] = useState('');
+
+  // Fetch Suggestions
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (challanNo && showChallanDropdown) {
+        fetch(`/api/admin/challans?status=pending&limit=15&search=${challanNo}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.data) {
+              setChallanSuggestions(data.data);
+            }
+          })
+          .catch(err => console.error(err));
+      } else {
+        setChallanSuggestions([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [challanNo, showChallanDropdown]);
+
+  // Auto-calculate Validity Date
+  useEffect(() => {
+    if (approxDistance && !isNaN(Number(approxDistance))) {
+      const dist = Number(approxDistance);
+      const isODC = vehicleType === 'ODC';
+      // Rule: 1 day per 200 km for regular, 20 km for ODC
+      const kmPerDay = isODC ? 20 : 200;
+      const days = Math.ceil(dist / kmPerDay) || 1;
+      
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + days);
+      setValidUpto(futureDate.toISOString());
+    }
+  }, [approxDistance, vehicleType]);
+
+  useEffect(() => {
+    setChallanHighlightIndex(-1);
+  }, [challanSuggestions]);
+
+  const handleChallanKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = challanSuggestions[0];
+      if (firstMatch && challanNo) {
+        const hasMatch = firstMatch.challanNumber.toLowerCase().startsWith(challanNo.toLowerCase());
+        if (hasMatch) {
+          setChallanNo(firstMatch.challanNumber);
+          setShowChallanDropdown(false);
+          setChallanHighlightIndex(-1);
+          if (firstMatch.challanNumber.toLowerCase() !== challanNo.toLowerCase()) {
+            e.preventDefault();
+          }
+          return;
+        }
+      }
+    }
+
+    if (!showChallanDropdown || challanSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setChallanHighlightIndex(prev => prev < challanSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setChallanHighlightIndex(prev => prev > 0 ? prev - 1 : challanSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      if (challanHighlightIndex >= 0 && challanHighlightIndex < challanSuggestions.length) {
+        e.preventDefault();
+        const selected = challanSuggestions[challanHighlightIndex];
+        setChallanNo(selected.challanNumber);
+        setShowChallanDropdown(false);
+        setChallanHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowChallanDropdown(false);
+      setChallanHighlightIndex(-1);
+    }
+  };
 
   const fetchChallanLRs = async () => {
     if (!challanNo) return toast.error("Please enter a Challan Number");
@@ -38,7 +124,13 @@ export default function ConsolidatedEwayBillPage() {
       
       const res = await fetch(`/api/admin/bookings/for-cewb?challanNo=${challanNo}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        if (data.error === 'ALREADY_EXISTS') {
+          setExistingCewbModal({ isOpen: true, message: data.message, cewbNo: data.cewbNo });
+          return;
+        }
+        throw new Error(data.error);
+      }
 
       setBookings(data.data || []);
       
@@ -79,11 +171,20 @@ export default function ConsolidatedEwayBillPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setVehicleError('');
     
-    if (!vehicleNo) return toast.error("Vehicle Number is required");
+    if (!vehicleNo) return toast.error("Please enter Vehicle Number");
     
-    if (selectedBookingIds.size < 2) {
-      return toast.error("Please select at least 2 pending LRs to consolidate.");
+    // Premium Vehicle Validation
+    const vehicleRegex = /^[A-Z]{2}[0-9]{1,2}[A-Z]{1,2}[0-9]{4}$/i;
+    if (!vehicleRegex.test(vehicleNo)) {
+      setVehicleError('Invalid Vehicle Format. Ex: GJ01AB1234');
+      toast.error("Invalid Vehicle Number Format");
+      return;
+    }
+    
+    if (selectedBookingIds.size < 1) {
+      return toast.error("Please select at least 1 pending LR to consolidate.");
     }
 
     // Get selected EWBs
@@ -92,9 +193,9 @@ export default function ConsolidatedEwayBillPage() {
       .map(b => ({ eway_bill_no: b.ewayBillNo }));
 
     const payload = {
-      challanNo: challanNo, // Added explicitly for DB saving
-      userGstin: "05AAABC0181E1ZE", // Updated from user input
-      transporter_id: "05AAABB0639G1Z8", // Updated from user input
+      challanNo: challanNo,
+      userGstin: "05AAABC0181E1ZE",
+      transporter_id: "05AAABB0639G1Z8",
       trip_no: challanNo || "TRIP1001",
       vehicle_number: vehicleNo,
       vehicle_type: vehicleType,
@@ -167,18 +268,57 @@ export default function ConsolidatedEwayBillPage() {
       <Card className="border-brand-primary/20 bg-brand-primary/5 shadow-sm">
         <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
           <Label className="text-xs uppercase tracking-wider text-brand-primary font-bold whitespace-nowrap">Load from Challan</Label>
-          <Input 
-            placeholder="Enter Challan No (e.g. CH-1001)" 
-            value={challanNo}
-            onChange={(e) => setChallanNo(e.target.value.toUpperCase())}
-            className="max-w-xs bg-white border-brand-primary/30 focus-visible:ring-brand-primary h-10"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                fetchChallanLRs();
-              }
-            }}
-          />
+          <div className="relative max-w-xs w-full">
+            <Input 
+              placeholder="Please enter Challan No (e.g. CH-1001)" 
+              value={challanNo}
+              onChange={(e) => {
+                setChallanNo(e.target.value.toUpperCase());
+                setShowChallanDropdown(true);
+              }}
+              onFocus={() => setShowChallanDropdown(true)}
+              onBlur={() => setTimeout(() => setShowChallanDropdown(false), 200)}
+              className="w-full bg-white border-brand-primary/30 focus-visible:ring-brand-primary h-10"
+              onKeyDown={(e) => {
+                handleChallanKeyDown(e);
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!showChallanDropdown || challanHighlightIndex < 0) {
+                    fetchChallanLRs();
+                  }
+                }
+              }}
+            />
+            {showChallanDropdown && challanSuggestions.length > 0 && (
+              <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden py-1 max-h-60 overflow-y-auto">
+                {challanSuggestions.map((suggestion, index) => (
+                  <li 
+                    key={suggestion._id}
+                    className={`px-3 py-2 cursor-pointer transition-colors text-sm ${
+                      index === challanHighlightIndex ? 'bg-brand-primary text-white' : 'hover:bg-brand-primary/10 text-gray-700'
+                    }`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setChallanNo(suggestion.challanNumber);
+                      setShowChallanDropdown(false);
+                    }}
+                  >
+                    <div className="flex flex-col">
+                      {challanNo && suggestion.challanNumber.toLowerCase().startsWith(challanNo.toLowerCase()) ? (
+                        <div className="font-semibold">
+                          <span className="opacity-40">{suggestion.challanNumber.slice(0, challanNo.length)}</span>
+                          <span>{suggestion.challanNumber.slice(challanNo.length)}</span>
+                        </div>
+                      ) : (
+                        <div className="font-semibold">{suggestion.challanNumber}</div>
+                      )}
+                      {suggestion.truckNo && <span className="text-xs opacity-75">{suggestion.truckNo}</span>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <Button 
             type="button" 
             onClick={fetchChallanLRs} 
@@ -208,10 +348,14 @@ export default function ConsolidatedEwayBillPage() {
                 <Input 
                   placeholder="e.g. GJ01AB1234" 
                   value={vehicleNo}
-                  onChange={(e) => setVehicleNo(e.target.value.toUpperCase())}
-                  className="h-10"
+                  onChange={(e) => {
+                    setVehicleNo(e.target.value.toUpperCase());
+                    setVehicleError('');
+                  }}
+                  className={`h-10 ${vehicleError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                   required
                 />
+                {vehicleError && <p className="text-xs text-red-500 font-medium mt-1">{vehicleError}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Vehicle Type</Label>
@@ -256,11 +400,21 @@ export default function ConsolidatedEwayBillPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Validity End Date</Label>
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Approx Distance (KM)</Label>
+                <Input 
+                  type="number"
+                  placeholder="e.g. 450" 
+                  value={approxDistance}
+                  onChange={(e) => setApproxDistance(e.target.value)}
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Validity End Date (Auto-calculated)</Label>
                 <DatePicker 
                   value={validUpto}
                   onChange={(date: string) => setValidUpto(date)}
-                  className="h-10"
+                  className="h-10 w-full"
                 />
               </div>
             </div>
@@ -371,6 +525,28 @@ export default function ConsolidatedEwayBillPage() {
         </Card>
 
       </form>
+
+      {/* Existing CEWB Modal */}
+      <Dialog open={existingCewbModal.isOpen} onOpenChange={(open) => setExistingCewbModal(prev => ({...prev, isOpen: open}))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              CEWB Already Exists
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-gray-700">
+              {existingCewbModal.message}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-start">
+            <Link href={`/admin/ewaybills/consolidated`} className="w-full">
+              <Button type="button" className="w-full">
+                Go to CEWB List
+              </Button>
+            </Link>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

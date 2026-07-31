@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IDriverTransaction extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   driver: mongoose.Types.ObjectId;
   date: Date;
   type: 'advance_given' | 'expense_reported' | 'salary_paid' | 'settled';
@@ -12,6 +13,7 @@ export interface IDriverTransaction extends Document {
 
 const DriverTransactionSchema = new Schema<IDriverTransaction>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     driver: { type: Schema.Types.ObjectId, ref: 'Driver', required: true },
     date: { type: Date, required: true, default: Date.now },
     type: { 

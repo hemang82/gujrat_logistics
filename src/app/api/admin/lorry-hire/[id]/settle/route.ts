@@ -16,7 +16,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { amount, date } = await request.json();
     
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-      return NextResponse.json({ error: 'Valid payment amount is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Please enter Valid payment amount' }, { status: 400 });
     }
 
     const { id } = await params;

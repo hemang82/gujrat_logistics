@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import { getLogisticQuery } from '@/lib/apiAuth';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     Vehicle.init();
     Driver.init();
     
-    const vehicle = await Vehicle.findById(id).populate('assignedDriver', 'name phone').lean();
+    const vehicle = await Vehicle.findOne({ _id: id, ...(await getLogisticQuery()) }).populate('assignedDriver', 'name phone').lean();
     if (!vehicle) return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
 
     return NextResponse.json(vehicle);
@@ -41,10 +42,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data.assignedDriver = null; // Use null to explicitly unset in update, or delete it and $unset later
     }
 
-    const oldVehicle = await Vehicle.findById(id);
-    if (!oldVehicle) return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+    const oldVehicle = await Vehicle.findOne({ _id: id, ...(await getLogisticQuery()) });
+    if (!oldVehicle) return NextResponse.json({ error: 'Vehicle not found or unauthorized' }, { status: 404 });
 
-    const vehicle = await Vehicle.findByIdAndUpdate(id, data, { new: true });
+    const vehicle = await Vehicle.findOneAndUpdate({ _id: id, ...(await getLogisticQuery()) }, data, { new: true });
 
     // Handle driver assignment changes
     if (oldVehicle.assignedDriver?.toString() !== data.assignedDriver) {
@@ -96,8 +97,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     Vehicle.init();
     Driver.init();
 
-    const vehicle = await Vehicle.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
-    if (!vehicle) return NextResponse.json({ error: 'Vehicle not found' }, { status: 404 });
+    const vehicle = await Vehicle.findOneAndUpdate({ _id: id, ...(await getLogisticQuery()) }, { isDeleted: true }, { new: true });
+    if (!vehicle) return NextResponse.json({ error: 'Vehicle not found or unauthorized' }, { status: 404 });
 
     // Unlink the driver
     if (vehicle.assignedDriver) {

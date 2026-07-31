@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
 export async function GET(request: Request) {
   try {
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     
-    const query: any = { isDeleted: { $ne: true } };
+    const query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(request)) };
     if (search) {
       query.$or = [
         { vehicleNumber: { $regex: search, $options: 'i' } },
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
       delete data.assignedDriver;
     }
 
+    data.logisticId = await getLogisticIdForCreate();
     const vehicle = await Vehicle.create(data);
 
     if (data.assignedDriver) {

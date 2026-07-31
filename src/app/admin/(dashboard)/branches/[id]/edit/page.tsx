@@ -437,12 +437,12 @@ export default function EditBranchPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = "Branch Name is required";
-    if (!formData.code.trim()) newErrors.code = "Branch Code is required";
+    if (!formData.name.trim()) newErrors.name = "Please enter Branch Name";
+    if (!formData.code.trim()) newErrors.code = "Please enter Branch Code";
     if (!formData.state) newErrors.state = "Please select a State";
     
     if (!formData.phone.trim()) {
-      newErrors.phone = "Contact Number is required";
+      newErrors.phone = "Please enter Contact Number";
     } else if (formData.phone.length !== 10) {
       newErrors.phone = "Phone must be exactly 10 digits";
     }

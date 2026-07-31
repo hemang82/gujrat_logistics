@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IChallan extends Document {
+  logisticId?: mongoose.Types.ObjectId;
   challanNumber: string;
   branch: mongoose.Types.ObjectId | any;
   challanDate: Date;
@@ -24,6 +25,7 @@ export interface IChallan extends Document {
 
 const ChallanSchema = new Schema<IChallan>(
   {
+    logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
     challanNumber: { type: String, required: true, unique: true },
     branch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
     challanDate: { type: Date, default: Date.now },

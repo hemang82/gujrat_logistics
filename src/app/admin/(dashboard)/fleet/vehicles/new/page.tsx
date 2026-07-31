@@ -57,10 +57,10 @@ export default function NewVehiclePage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.vehicleNumber) newErrors.vehicleNumber = 'Vehicle Number is required';
-    if (!formData.type) newErrors.type = 'Vehicle Type is required';
-    if (!formData.capacity) newErrors.capacity = 'Capacity is required';
-    if (!formData.status) newErrors.status = 'Status is required';
+    if (!formData.vehicleNumber) newErrors.vehicleNumber = 'Please enter Vehicle Number';
+    if (!formData.type) newErrors.type = 'Please enter Vehicle Type';
+    if (!formData.capacity) newErrors.capacity = 'Please enter Capacity';
+    if (!formData.status) newErrors.status = 'Please enter Status';
 
     const phoneRegex = /^[6-9]\d{9}$/;
     if (formData.ownerPhone && !phoneRegex.test(formData.ownerPhone)) {
@@ -195,7 +195,7 @@ export default function NewVehiclePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-gray-600 font-medium">RC Number</Label>
-                <Input name="rcNumber" placeholder="Enter RC number" value={formData.rcNumber} onChange={handleChange} className="h-12 bg-white rounded-xl focus-visible:ring-1 border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary transition-all shadow-sm" />
+                <Input name="rcNumber" placeholder="Please enter RC number" value={formData.rcNumber} onChange={handleChange} className="h-12 bg-white rounded-xl focus-visible:ring-1 border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary transition-all shadow-sm" />
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-600 font-medium">RC Expiry Date</Label>

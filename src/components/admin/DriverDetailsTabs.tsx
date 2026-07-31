@@ -12,6 +12,7 @@ export default function DriverDetailsTabs({
   transactions: any[], 
   profileContent: React.ReactNode 
 }) {
+  
   const [activeTab, setActiveTab] = useState<'profile' | 'ledger'>('profile');
 
   return (
@@ -38,4 +39,6 @@ export default function DriverDetailsTabs({
       )}
     </div>
   );
+
 }
+ 

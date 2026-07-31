@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Client from '@/models/Client';
 import Invoice from '@/models/Invoice';
+import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
 export async function GET(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     
-    const query: any = { isDeleted: false };
+    const query: any = { isDeleted: false, ...(await getLogisticQuery(request)) };
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
 
     const client = await Client.create({
       ...data,
+      logisticId: await getLogisticIdForCreate(),
       createdBy: (session.user as any).id
     });
 

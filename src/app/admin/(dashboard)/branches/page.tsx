@@ -17,7 +17,7 @@ export default async function BranchesPage({
 }: {
   searchParams: Promise<{ search?: string; state?: string; page?: string }>;
 }) {
-  await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
   await connectToDatabase();
 
   const resolvedParams = await searchParams;
@@ -28,6 +28,12 @@ export default async function BranchesPage({
 
   // Build query
   const query: any = { isDeleted: { $ne: true } };
+
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
 
   if (search) {
     query.$or = [

@@ -99,7 +99,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
                 <Truck className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">GUJARAT LOGISTIC</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">TRUST LOGISTIC</h1>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
                 <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               </div>
@@ -272,7 +272,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
 
           <div className="text-center w-full sm:w-auto">
             <div className="w-40 mx-auto border-b border-gray-300 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">For Gujarat Logistic</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">For Trust Logistic</p>
           </div>
         </div>
 
