@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
+import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { addCashTransaction } from '@/lib/ledgerUtils';
@@ -115,9 +116,9 @@ export async function POST(req: Request) {
     const logisticQuery = await getLogisticQuery() || {};
     
     if (!finalLrNumber) {
-      // Find the highest existing numeric LR number for this logistic
-      const allBookings = await Booking.find({ lrNumber: { $exists: true }, ...logisticQuery }, { lrNumber: 1 });
-      let maxNum = 10000;
+      // Find the highest existing numeric LR number for this branch
+      const allBookings = await Booking.find({ lrNumber: { $exists: true }, branch: data.branch, ...logisticQuery }, { lrNumber: 1 });
+      let maxNum = 1000;
       allBookings.forEach((b: any) => {
         if (b.lrNumber) {
           const num = parseInt(String(b.lrNumber).replace(/\D/g, ''), 10);
@@ -127,10 +128,10 @@ export async function POST(req: Request) {
       finalLrNumber = (maxNum + 1).toString();
     } else {
       // If frontend sent a number, verify it's not taken — if taken, auto-increment
-      const existingBooking = await Booking.findOne({ lrNumber: String(data.lrNumber), ...logisticQuery });
+      const existingBooking = await Booking.findOne({ lrNumber: String(data.lrNumber), branch: data.branch, ...logisticQuery });
       if (existingBooking) {
-        const allBookings = await Booking.find({ lrNumber: { $exists: true }, ...logisticQuery }, { lrNumber: 1 });
-        let maxNum = 10000;
+        const allBookings = await Booking.find({ lrNumber: { $exists: true }, branch: data.branch, ...logisticQuery }, { lrNumber: 1 });
+        let maxNum = 1000;
         allBookings.forEach((b: any) => {
           if (b.lrNumber) {
             const num = parseInt(String(b.lrNumber).replace(/\D/g, ''), 10);

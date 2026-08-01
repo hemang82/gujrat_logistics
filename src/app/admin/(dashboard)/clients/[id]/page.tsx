@@ -21,8 +21,16 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     notFound();
   }
 
+  let query: any = { client: id, isDeleted: { $ne: true } };
+  const session = await getServerSession(authOptions);
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+
   // Fetch all invoices for this client
-  const invoices = await Invoice.find({ client: id, isDeleted: { $ne: true } })
+  const invoices = await Invoice.find(query)
     .populate('bookings', 'lrNumber bookingDate pickupLocation deliveryLocation')
     .sort({ invoiceDate: 1 }) // Chronological
     .lean();

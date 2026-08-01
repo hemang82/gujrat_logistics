@@ -28,6 +28,12 @@ export async function GET(request: Request) {
 
     const query: any = { isDeleted: false };
 
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
     const bookingCrossing = searchParams.get('bookingCrossing') || '';
 
     if (status) {

@@ -13,6 +13,7 @@ export interface IAgent extends Document {
   isActive: boolean;
   isDeleted: boolean;
   createdBy?: mongoose.Types.ObjectId;
+  branch?: mongoose.Types.ObjectId | any;
 }
 
 const AgentSchema = new Schema<IAgent>(
@@ -28,6 +29,7 @@ const AgentSchema = new Schema<IAgent>(
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
   },
   { timestamps: true }
 );

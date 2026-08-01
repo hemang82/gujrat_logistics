@@ -100,6 +100,13 @@ export default function NewUserPage() {
     setBranchSearch(value);
     if (!value) {
       setFormData(prev => ({ ...prev, branchId: '' }));
+      setBranchSuggestions(branches);
+    } else {
+      const filtered = branches.filter(b => 
+        b.name.toLowerCase().includes(value.toLowerCase()) || 
+        b.code.toLowerCase().includes(value.toLowerCase())
+      );
+      setBranchSuggestions(filtered);
     }
   };
   

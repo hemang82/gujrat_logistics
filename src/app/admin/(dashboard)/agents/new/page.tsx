@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUserStore } from '@/store/useUserStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,11 +16,36 @@ export default function NewAgentPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Autocomplete states for Agent Type
   const [typeSearch, setTypeSearch] = useState('Transporter');
   const [typeSuggestions, setTypeSuggestions] = useState<string[]>([]);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [typeHighlightIndex, setTypeHighlightIndex] = useState(-1);
+
+  const { user } = useUserStore();
+  const [branches, setBranches] = useState<any[]>([]);
+
+  const [branchSearch, setBranchSearch] = useState('');
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  const filteredBranches = branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()));
+
+  useEffect(() => {
+    if (user?.role === 'logistic' || user?.role === 'superadmin') {
+      const fetchBranches = async () => {
+        try {
+          const res = await fetch('/api/admin/branches');
+          if (res.ok) {
+            const data = await res.json();
+            setBranches(data.branches || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch branches', error);
+        }
+      };
+      fetchBranches();
+    }
+  }, [user]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -28,7 +54,8 @@ export default function NewAgentPage() {
     email: '',
     openingBalance: '0',
     agentType: 'Transporter',
-    gstNumber: ''
+    gstNumber: '',
+    branch: ''
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -112,6 +139,59 @@ export default function NewAgentPage() {
     }
   };
 
+  const handleBranchSearchChange = (value: string) => {
+    setBranchSearch(value);
+    setShowBranchDropdown(true);
+    setBranchHighlightIndex(-1);
+    if (!value) {
+      setFormData(prev => ({ ...prev, branch: '' }));
+    }
+    if (errors.branch) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy.branch;
+        return copy;
+      });
+    }
+  };
+
+  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = filteredBranches[0];
+      if (firstMatch && branchSearch) {
+        if (firstMatch.name.toLowerCase().startsWith(branchSearch.toLowerCase())) {
+          setFormData(prev => ({ ...prev, branch: firstMatch._id }));
+          setBranchSearch(firstMatch.name);
+          setShowBranchDropdown(false);
+          setBranchHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showBranchDropdown || filteredBranches.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev < filteredBranches.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev > 0 ? prev - 1 : filteredBranches.length - 1);
+    } else if (e.key === 'Enter') {
+      if (branchHighlightIndex >= 0 && branchHighlightIndex < filteredBranches.length) {
+        e.preventDefault();
+        const selected = filteredBranches[branchHighlightIndex];
+        setFormData(prev => ({ ...prev, branch: selected._id }));
+        setBranchSearch(selected.name);
+        setShowBranchDropdown(false);
+        setBranchHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowBranchDropdown(false);
+      setBranchHighlightIndex(-1);
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -129,6 +209,10 @@ export default function NewAgentPage() {
       if (!emailRegex.test(formData.email)) {
         newErrors.email = 'Invalid email address format';
       }
+    }
+
+    if ((user?.role === 'logistic' || user?.role === 'superadmin') && !formData.branch) {
+      newErrors.branch = 'Please assign a branch';
     }
 
     setErrors(newErrors);
@@ -203,6 +287,53 @@ export default function NewAgentPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
+            {(user?.role === 'logistic' || user?.role === 'superadmin') && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                <div className="space-y-1 relative md:col-span-3">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Assign Branch <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {branchSearch && filteredBranches.length > 0 && filteredBranches[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{filteredBranches[0].name.slice(0, branchSearch.length)}</span>
+                        <span>{filteredBranches[0].name.slice(branchSearch.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      value={branchSearch}
+                      onChange={(e) => handleBranchSearchChange(e.target.value)}
+                      onFocus={() => setShowBranchDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                      onKeyDown={handleBranchKeyDown}
+                      placeholder="Search Branch..."
+                      className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    />
+                    {showBranchDropdown && filteredBranches.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                        {filteredBranches.map((suggestion, index) => (
+                          <div
+                            key={suggestion._id}
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, branch: suggestion._id }));
+                              setBranchSearch(suggestion.name);
+                              setShowBranchDropdown(false);
+                              setBranchHighlightIndex(-1);
+                            }}
+                            className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                                ? 'bg-brand-primary/10 text-brand-primary'
+                                : 'hover:bg-gray-50 text-gray-800'
+                              }`}
+                          >
+                            <span className="font-bold">{suggestion.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {renderError('branch')}
+                </div>
+              </div>
+            )}
+
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
@@ -298,6 +429,9 @@ export default function NewAgentPage() {
                   className="h-10 text-sm rounded-lg border-gray-200 uppercase"
                 />
               </div>
+              
+
+              
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Opening Balance</Label>
                 <Input

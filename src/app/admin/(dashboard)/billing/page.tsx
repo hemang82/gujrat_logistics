@@ -9,8 +9,16 @@ import BillingManager from '@/components/admin/BillingManager';
 export const dynamic = 'force-dynamic';
 
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ search?: string }> }) {
-  await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
   await connectToDatabase();
+
+  const baseQuery: any = {};
+  if (session && (session.user as any).role === 'logistic') {
+    baseQuery.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    baseQuery.logisticId = (session.user as any).logisticId;
+  }
+
   Client.init();
 
   const resolvedParams = await searchParams;
@@ -20,7 +28,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   // To know if a booking is invoiced, we check if it exists in any Invoice.bookings array.
   // A simpler way: we can fetch ALL Invoices, gather their booking IDs, and exclude them.
   // Or just find Invoices and pull out their booking IDs.
-  const invoices = await Invoice.find({ isDeleted: { $ne: true } })
+  const invoices = await Invoice.find({ ...baseQuery, isDeleted: { $ne: true } })
     .populate('bookings', 'lrNumber')
     .sort({ invoiceDate: -1 })
     .lean();
@@ -30,12 +38,13 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
   // Query for Bookings that are NOT invoiced yet
   // Usually you only bill "delivered" bookings, or "in_transit".
   // Let's allow billing any active booking that hasn't been billed.
-  const bookingQuery: any = {
+  let bookingQuery: any = {
     isDeleted: { $ne: true },
     _id: { $nin: invoicedBookingIds }
   };
 
   if (search) {
+    bookingQuery = { ...baseQuery, ...bookingQuery };
     bookingQuery.$or = [
       { lrNumber: { $regex: search, $options: 'i' } },
       { 'consignor.name': { $regex: search, $options: 'i' } },
@@ -47,7 +56,7 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
     .sort({ bookingDate: -1 })
     .lean();
 
-  const clients = await Client.find({ isDeleted: false }).sort({ name: 1 }).lean();
+  const clients = await Client.find({ ...baseQuery, isDeleted: false }).sort({ name: 1 }).lean();
 
   return (
     <div className="space-y-6">

@@ -39,6 +39,12 @@ export async function GET(request: Request) {
     
     let query: any = { isDeleted: { $ne: true } };
 
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
     if (search) {
       query.voucherNo = { $regex: search, $options: 'i' };
     }

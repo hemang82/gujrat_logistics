@@ -28,6 +28,32 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid Branch ID or Code' }, { status: 400 });
     }
 
+    // Get Branch current balance and verify ownership
+    const branch = await Branch.findById(resolvedBranchId).lean();
+    if (!branch) {
+      return NextResponse.json({ error: 'Branch not found' }, { status: 404 });
+    }
+
+    const userRole = (session.user as any).role;
+    const userId = (session.user as any).id;
+    const userLogisticId = (session.user as any).logisticId;
+    const userBranch = (session.user as any).branch;
+
+    if (userRole === 'superadmin' || userRole === 'admin') {
+      // Admins can access any branch
+    } else if (userRole === 'logistic') {
+      if (branch.logisticId?.toString() !== userId) {
+        return NextResponse.json({ error: 'Unauthorized branch access' }, { status: 403 });
+      }
+    } else if (userRole === 'branch_user' || userRole === 'branch') {
+      // Branch user can ONLY access their own branch
+      if (branch._id.toString() !== userBranch && branch.code !== userBranch) {
+        return NextResponse.json({ error: 'Unauthorized branch access' }, { status: 403 });
+      }
+    } else {
+      return NextResponse.json({ error: 'Unauthorized role' }, { status: 403 });
+    }
+
     const query: any = { branch: resolvedBranchId, isDeleted: false };
 
     // Default to today if no date is provided
@@ -49,8 +75,7 @@ export async function GET(request: Request) {
       .sort({ date: 1 })
       .lean();
 
-    // Get Branch current balance
-    const branch = await Branch.findById(resolvedBranchId).lean();
+    // Branch is already fetched above
     
     // Calculate totals for the day
     let totalIn = 0;
@@ -85,6 +110,9 @@ export async function GET(request: Request) {
       if (lastTxnBeforeToday) {
         openingBalance = lastTxnBeforeToday.balanceAfter;
         closingBalance = openingBalance;
+      } else {
+        openingBalance = branch?.currentCashBalance || 0;
+        closingBalance = branch?.currentCashBalance || 0;
       }
     }
 

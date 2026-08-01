@@ -76,11 +76,14 @@ export default function ChallansListPage() {
           <p className="text-xs text-gray-500 mt-0.5">Manage truck loading dispatch sheets and lorry hiring agreements</p>
         </div>
         {canCreate && (
-          <Link href="/admin/challans/new">
-            <Button className="h-10 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-lg flex items-center gap-1.5 font-bold shadow-sm px-4">
-              <Plus className="w-4 h-4" /> Create Challan
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Link href="/admin/challans/new" className="w-full sm:w-auto">
+              <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+                <Plus className="w-5 h-5" />
+                Create Challan
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 

@@ -57,6 +57,10 @@ const consolidatedEwayBillSchema = new mongoose.Schema({
   logisticId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+  branch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Branch'
   }
 }, { timestamps: true });
 

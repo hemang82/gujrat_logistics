@@ -14,11 +14,27 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const dateStr = searchParams.get('date') || '';
+    const destBranch = searchParams.get('destBranch') || '';
 
     await connectToDatabase();
 
     // Build query (Same as the list page)
-    const query: any = {};
+    const query: any = { isDeleted: { $ne: true } };
+
+    const userRole = (session.user as any).role;
+    if (userRole === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
+    if (userRole === 'branch_user' || userRole === 'branch') {
+      const userBranch = (session.user as any).branch || (session.user as any).bookingBranch;
+      if (userBranch) {
+        query.bookingBranch = userBranch;
+      }
+    }
+
     if (search) {
       query.$or = [
         { lrNumber: { $regex: search, $options: 'i' } },
@@ -36,8 +52,17 @@ export async function GET(request: Request) {
       query.bookingDate = { $gte: startOfDay, $lte: endOfDay };
     }
 
+    if (destBranch) {
+      query.destinationBranch = destBranch;
+    }
+
     // Fetch all matching records (No limit for export)
     const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
+
+    const format = searchParams.get('format');
+    if (format === 'json') {
+      return NextResponse.json({ bookings });
+    }
 
     // Generate CSV
     const header = [

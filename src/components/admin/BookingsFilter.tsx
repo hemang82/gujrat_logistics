@@ -4,26 +4,41 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { Search, Calendar as CalendarIcon, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
-export default function BookingsFilter() {
+interface Branch {
+  _id: string;
+  name: string;
+  code: string;
+}
+
+export default function BookingsFilter({ branches = [] }: { branches?: Branch[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
   const currentSearch = searchParams.get('search') || '';
   const currentDate = searchParams.get('date') || '';
+  const currentDestBranch = searchParams.get('destBranch') || '';
 
   const [searchValue, setSearchValue] = useState(currentSearch);
+  const [destBranch, setDestBranch] = useState(currentDestBranch);
+  
+  const branchOptions = [
+    { label: 'All Destinations', value: '' },
+    ...branches.map(b => ({ label: b.name, value: b._id }))
+  ];
 
   // Sync state if URL changes externally
   useEffect(() => {
     setSearchValue(currentSearch);
-  }, [currentSearch]);
+    setDestBranch(currentDestBranch);
+  }, [currentSearch, currentDestBranch]);
 
   const handleUpdate = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -34,6 +49,12 @@ export default function BookingsFilter() {
     }
     params.delete('page');
     router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleBranchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const val = e.target.value;
+    setDestBranch(val);
+    handleUpdate('destBranch', val);
   };
 
   const handleClearSearch = () => {
@@ -49,13 +70,13 @@ export default function BookingsFilter() {
     <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full md:w-auto">
       
       {/* Search Filter */}
-      <div className="relative w-full md:w-72">
+      <div className="relative w-full md:w-64">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
         <Input 
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
           placeholder="Search LR Number or Name..." 
-          className="pl-9 pr-9 h-10 bg-white rounded-xl border-gray-200 shadow-sm focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm"
+          className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               handleUpdate('search', searchValue);
@@ -76,6 +97,18 @@ export default function BookingsFilter() {
           </button>
         )}
       </div>
+
+      {/* Destination Branch Filter */}
+      <div className="w-full md:w-56 relative z-[60]">
+        <BranchAutocomplete
+          name="destBranch"
+          value={destBranch}
+          onChange={handleBranchChange}
+          options={branchOptions}
+          placeholder="Destination Branch"
+          className="!rounded-lg"
+        />
+      </div>
       
       {/* Date Filter (Shadcn Calendar) */}
       <div className="relative w-full md:w-auto flex items-center">
@@ -84,7 +117,7 @@ export default function BookingsFilter() {
             <Button
               variant={"outline"}
               className={cn(
-                "h-10 w-full md:w-[240px] justify-start text-left font-normal bg-white rounded-xl border-gray-200 shadow-sm focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm",
+                "h-10 w-full md:w-[240px] justify-start text-left font-normal bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm",
                 !currentDate && "text-gray-500"
               )}
             />

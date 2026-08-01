@@ -25,6 +25,11 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     const query: any = { isDeleted: { $ne: true }, status: statusParam };
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
 
     if (search) {
       const searchRegex = new RegExp(search, 'i');

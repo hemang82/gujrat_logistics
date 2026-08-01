@@ -20,7 +20,17 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
   const search = resolvedParams?.search || '';
   const statusFilter = resolvedParams?.status || '';
   
+  const session = await getServerSession(authOptions);
   const query: any = { isDeleted: { $ne: true } };
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+  
+  if (session && ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch')) {
+    query.branch = (session.user as any).branchId || (session.user as any).branch;
+  }
   if (statusFilter) {
     query.status = statusFilter;
   }
@@ -31,7 +41,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
     ];
   }
 
-  const vehicles = await Vehicle.find(query).populate('assignedDriver', 'name phone').sort({ createdAt: -1 }).lean();
+  const vehicles = await Vehicle.find(query).populate('assignedDriver', 'name phone').populate('branch', 'name').sort({ createdAt: -1 }).lean();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -104,6 +114,9 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                     <tr className="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-100">
                       <th className="font-semibold p-4">Vehicle Details</th>
                       <th className="font-semibold p-4">Type & Capacity</th>
+                      {(session?.user as any)?.role === 'logistic' && (
+                        <th className="font-semibold p-4">Branch</th>
+                      )}
                       <th className="font-semibold p-4">Current Status</th>
                       <th className="font-semibold p-4">Assigned Driver</th>
                       <th className="font-semibold p-4">Doc Expiry</th>
@@ -123,6 +136,15 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                             <p className="font-semibold text-gray-700">{v.type}</p>
                             <p className="text-xs text-gray-500 font-medium">{v.capacity}</p>
                           </td>
+                          {(session?.user as any)?.role === 'logistic' && (
+                            <td className="p-4">
+                              {v.branch ? (
+                                <span className="text-sm font-semibold text-gray-800">{v.branch.name}</span>
+                              ) : (
+                                <span className="text-xs font-semibold px-2 py-1 bg-gray-100 text-gray-500 rounded border border-gray-200">Unassigned</span>
+                              )}
+                            </td>
+                          )}
                           <td className="p-4">
                             {getStatusBadge(v.status)}
                           </td>
@@ -192,6 +214,13 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                             </p>
                           </div>
                         </div>
+
+                        {(session?.user as any)?.role === 'logistic' && (
+                          <div className="mb-2 px-2.5">
+                            <p className="text-xs text-gray-500 mb-0.5 uppercase font-bold tracking-wider">Branch</p>
+                            <p className="text-sm font-semibold text-gray-800">{v.branch?.name || <span className="text-gray-400 font-medium">Unassigned</span>}</p>
+                          </div>
+                        )}
 
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50/50 rounded-lg p-2.5 border border-gray-50 mb-2">

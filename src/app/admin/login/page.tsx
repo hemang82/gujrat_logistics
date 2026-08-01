@@ -168,7 +168,7 @@ export default function AdminLogin() {
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="w-full h-14 rounded-xl text-base font-bold bg-gradient-to-r from-brand-primary to-[#0f4c3a] hover:from-brand-primary hover:to-brand-primary text-white shadow-lg shadow-brand-primary/25 transition-all mt-8"
+              className="w-full h-14 rounded-xl text-base font-bold border-none bg-gradient-to-r from-brand-primary to-[#0f4c3a] hover:from-brand-primary hover:to-brand-primary text-white shadow-lg shadow-brand-primary/25 transition-all mt-8"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">

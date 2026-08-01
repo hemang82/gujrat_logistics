@@ -26,7 +26,9 @@ export default function ProfilePage() {
     gstNumber: '',
     transporterId: '',
     panNumber: '',
-    ewbApiAccess: false
+    ewbApiAccess: false,
+    branchName: '',
+    branchCode: ''
   });
 
   useEffect(() => {
@@ -45,7 +47,9 @@ export default function ProfilePage() {
             gstNumber: data.user.gstNumber || '',
             transporterId: data.user.transporterId || '',
             panNumber: data.user.panNumber || '',
-            ewbApiAccess: !!data.user.ewbApiAccess
+            ewbApiAccess: !!data.user.ewbApiAccess,
+            branchName: data.user.branch?.name || '',
+            branchCode: data.user.branch?.code || ''
           });
         }
       })
@@ -141,18 +145,44 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="w-full pb-10 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-            <User className="w-6 h-6 text-brand-primary" /> My Profile
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your account settings and preferences</p>
+      <div className="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            variant="outline"
+            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg md:text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+              <User className="w-5 h-5 text-brand-primary" /> My Profile
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">Manage your account settings and preferences</p>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {(formData.role === 'logistic' || formData.role === 'branch_user' || formData.role === 'branch') && (
+          <div className={`flex items-center gap-3 p-4 rounded-xl border ${formData.ewbApiAccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'} w-full shadow-sm`}>
+            {formData.ewbApiAccess ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-500" />}
+            <div>
+              <h4 className="font-bold text-sm">E-Way Bill API Access: {formData.ewbApiAccess ? 'ENABLED' : 'DISABLED'}</h4>
+              <p className="text-xs opacity-80 mt-0.5">
+                {formData.ewbApiAccess 
+                  ? 'You have active permission to generate and manage E-Way bills directly from the system.' 
+                  : 'You do not have permission to use the E-Way Bill API. Contact Super Admin to enable this feature.'}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl h-full">
           <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
@@ -163,6 +193,29 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="p-5 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              
+              {(formData.role === 'branch_user' || formData.role === 'branch') && (
+                <>
+                  <div className="space-y-1.5 md:col-span-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Name</Label>
+                    <Input 
+                      name="branchName" 
+                      value={formData.branchName} 
+                      disabled
+                      className="h-10 text-sm rounded-lg bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium" 
+                    />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-1">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                    <Input 
+                      name="branchCode" 
+                      value={formData.branchCode} 
+                      disabled
+                      className="h-10 text-sm rounded-lg bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium uppercase tracking-wider" 
+                    />
+                  </div>
+                </>
+              )}
               
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Full Name <span className="text-red-500">*</span></Label>
@@ -249,7 +302,7 @@ export default function ProfilePage() {
         </div>
 
         {formData.role === 'logistic' && (
-          <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl w-full">
+          <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl w-full mb-6">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
               <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-brand-primary" />
@@ -258,19 +311,6 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="p-5">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="space-y-1.5 md:col-span-3 mb-2">
-                  <div className={`flex items-center gap-3 p-4 rounded-xl border ${formData.ewbApiAccess ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
-                    {formData.ewbApiAccess ? <CheckCircle2 className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-500" />}
-                    <div>
-                      <h4 className="font-bold text-sm">E-Way Bill API Access: {formData.ewbApiAccess ? 'ENABLED' : 'DISABLED'}</h4>
-                      <p className="text-xs opacity-80 mt-0.5">
-                        {formData.ewbApiAccess 
-                          ? 'You have active permission to generate and manage E-Way bills directly from the system.' 
-                          : 'You do not have permission to use the E-Way Bill API. Contact Super Admin to enable this feature.'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Transporter ID (TRANSIN)</Label>

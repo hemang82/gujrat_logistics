@@ -16,6 +16,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const agent = await Agent.findOne({ _id: id, isDeleted: false }).lean();
     if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
+    const userRole = (session.user as any).role;
+    const userBranch = (session.user as any).branch;
+    if ((userRole === 'branch' || userRole === 'branch_user') && agent.branch?.toString() !== userBranch) {
+      return NextResponse.json({ error: 'Unauthorized branch access' }, { status: 403 });
+    }
+
     return NextResponse.json(agent);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -32,8 +38,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     await connectToDatabase();
     Agent.init();
 
+    const userRole = (session.user as any).role;
+    const userBranch = (session.user as any).branch;
+
+    const existingAgent = await Agent.findById(id);
+    if (!existingAgent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+    
+    if ((userRole === 'branch' || userRole === 'branch_user')) {
+      if (existingAgent.branch?.toString() !== userBranch) {
+        return NextResponse.json({ error: 'Unauthorized branch access' }, { status: 403 });
+      }
+      delete data.branch; // Branch users cannot change the branch
+    }
+
     const agent = await Agent.findByIdAndUpdate(id, data, { new: true });
-    if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
     return NextResponse.json(agent);
   } catch (error: any) {
@@ -53,8 +71,17 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await connectToDatabase();
     Agent.init();
 
+    const userRole = (session.user as any).role;
+    const userBranch = (session.user as any).branch;
+
+    const existingAgent = await Agent.findById(id);
+    if (!existingAgent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+    
+    if ((userRole === 'branch' || userRole === 'branch_user') && existingAgent.branch?.toString() !== userBranch) {
+      return NextResponse.json({ error: 'Unauthorized branch access' }, { status: 403 });
+    }
+
     const agent = await Agent.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
-    if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
     return NextResponse.json({ message: 'Agent deleted successfully' });
   } catch (error: any) {

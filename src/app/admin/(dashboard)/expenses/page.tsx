@@ -35,6 +35,16 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
   
   // Build query
   const query: any = { isDeleted: { $ne: true } };
+  const session = await getServerSession(authOptions);
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+  
+  if (session && ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch')) {
+    query.branch = (session.user as any).branchId || (session.user as any).branch;
+  }
   
   if (type) {
     query.expenseType = type;
@@ -63,6 +73,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     .populate('vehicle', 'vehicleNumber type')
     .populate('driver', 'name')
     .populate('booking', 'lrNumber')
+    .populate('branch', 'name')
     .sort({ date: -1 })
     .skip(skip)
     .limit(limit)
@@ -186,6 +197,9 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                   <th className="font-semibold p-4">Date</th>
                   <th className="font-semibold p-4">Type</th>
                   <th className="font-semibold p-4">Vehicle</th>
+                  {(session?.user as any)?.role === 'logistic' && (
+                    <th className="font-semibold p-4">Branch</th>
+                  )}
                   <th className="font-semibold p-4">Driver / LR</th>
                   <th className="font-semibold p-4">Amount</th>
                   <th className="font-semibold p-4">Payment</th>
@@ -216,6 +230,15 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                       <td className="p-4 text-sm font-semibold text-brand-text-primary">
                         {expense.vehicle?.vehicleNumber || 'N/A'}
                       </td>
+                      {(session?.user as any)?.role === 'logistic' && (
+                        <td className="p-4">
+                          {expense.branch ? (
+                            <span className="font-semibold text-gray-800 text-sm">{expense.branch.name}</span>
+                          ) : (
+                            <span className="text-[11px] font-semibold px-2 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-200">Unassigned</span>
+                          )}
+                        </td>
+                      )}
                       <td className="p-4 text-sm text-gray-600">
                         {expense.driver && <span className="block">{expense.driver.name}</span>}
                         {expense.booking && <span className="block text-xs text-brand-primary">{expense.booking.lrNumber}</span>}
@@ -258,6 +281,12 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                     </span>
                     <span className="font-bold text-gray-800 text-sm">₹{expense.amount.toLocaleString('en-IN')}</span>
                   </div>
+                  {(session?.user as any)?.role === 'logistic' && (
+                    <div className="mb-2">
+                      <p className="text-[10px] text-gray-500 mb-0.5 uppercase font-bold tracking-wider">Branch</p>
+                      <p className="text-sm font-semibold text-gray-800">{expense.branch?.name || <span className="text-gray-400 font-medium text-xs">Unassigned</span>}</p>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="font-semibold text-brand-text-primary text-sm">{expense.vehicle?.vehicleNumber || 'N/A'}</span>
                     <span className="text-xs text-gray-400 flex items-center gap-1">

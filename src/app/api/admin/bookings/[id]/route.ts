@@ -6,6 +6,7 @@ import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
+import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { getLogisticQuery } from '@/lib/apiAuth';
 
@@ -76,6 +77,9 @@ export async function GET(
     const { id } = resolvedParams;
 
     await connectToDatabase();
+    Booking.init();
+    Branch.init();
+
     const booking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) })
       .populate('branch', 'code name')
       .populate('bookingBranch', 'code name')

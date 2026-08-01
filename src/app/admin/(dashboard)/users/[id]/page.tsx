@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -34,7 +35,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     // Fetch branches and user data
     Promise.all([
       fetch('/api/admin/branches?limit=100').then(res => res.json()),
-      fetch(`/api/admin/users/${params.id}`).then(res => res.json())
+      fetch(`/api/admin/users/${resolvedParams.id}`).then(res => res.json())
     ])
     .then(([branchesData, userData]) => {
       if (branchesData.branches) {
@@ -201,7 +202,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         payload.password = formData.password;
       }
 
-      const response = await fetch(`/api/admin/users/${params.id}`, {
+      const response = await fetch(`/api/admin/users/${resolvedParams.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

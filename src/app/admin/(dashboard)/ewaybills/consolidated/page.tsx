@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
+import { SearchSelect } from '@/components/ui/search-select';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function CEWBListPage() {
   const [bills, setBills] = useState<any[]>([]);
@@ -17,6 +19,18 @@ export default function CEWBListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [branches, setBranches] = useState<any[]>([]);
+  
+  // Autocomplete states
+  const [branchSearch, setBranchSearch] = useState('');
+  const [branchSuggestions, setBranchSuggestions] = useState<any[]>([]);
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  const { user } = useUserStore();
+  const isAdmin = user?.role === 'superadmin' || user?.role === 'logistic';
+  const canEdit = user?.role !== 'logistic';
 
   const [extendModalOpen, setExtendModalOpen] = useState(false);
   const [selectedCEWB, setSelectedCEWB] = useState<any>(null);
@@ -31,6 +45,7 @@ export default function CEWBListPage() {
       if (searchQuery) params.append('search', searchQuery);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
+      if (selectedBranch) params.append('branchId', selectedBranch);
 
       const res = await fetch(`/api/admin/ewaybills/consolidate?${params.toString()}`);
       const data = await res.json();
@@ -43,9 +58,76 @@ export default function CEWBListPage() {
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch('/api/admin/branches?limit=100');
+      const data = await res.json();
+      if (res.ok) {
+        setBranches(data.branches || []);
+        setBranchSuggestions(data.branches || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch branches');
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin) fetchBranches();
+  }, [isAdmin]);
+
+  const handleBranchSearchChange = (value: string) => {
+    setBranchSearch(value);
+    if (!value) {
+      setSelectedBranch('');
+      setBranchSuggestions(branches);
+    } else {
+      const filtered = branches.filter(b => 
+        b.name.toLowerCase().includes(value.toLowerCase()) || 
+        b.code.toLowerCase().includes(value.toLowerCase())
+      );
+      setBranchSuggestions(filtered);
+    }
+  };
+
+  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = branchSuggestions[0];
+      if (firstMatch && branchSearch) {
+        if (firstMatch.name.toLowerCase().startsWith(branchSearch.toLowerCase())) {
+          e.preventDefault();
+          setSelectedBranch(firstMatch._id);
+          setBranchSearch(`${firstMatch.name} (${firstMatch.code})`);
+          setShowBranchDropdown(false);
+          setBranchHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showBranchDropdown || branchSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev < branchSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev > 0 ? prev - 1 : branchSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (branchHighlightIndex >= 0 && branchHighlightIndex < branchSuggestions.length) {
+        const selected = branchSuggestions[branchHighlightIndex];
+        setSelectedBranch(selected._id);
+        setBranchSearch(`${selected.name} (${selected.code})`);
+        setShowBranchDropdown(false);
+      }
+    } else if (e.key === 'Escape') {
+      setShowBranchDropdown(false);
+    }
+  };
+
   useEffect(() => {
     fetchBills();
-  }, [searchQuery, startDate, endDate]);
+  }, [searchQuery, startDate, endDate, selectedBranch]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this Master EWB?')) return;
@@ -88,12 +170,16 @@ export default function CEWBListPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bills (CEWB)</h1>
           <p className="text-sm text-gray-500 mt-1">Manage and generate master e-way bills for multiple parcels.</p>
         </div>
-        <Link href="/admin/ewaybills/consolidated/new">
-          <Button className="flex items-center gap-2 h-10 px-6">
-            <Plus className="w-4 h-4" />
-            Generate New CEWB
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {canEdit && (
+            <Link href="/admin/ewaybills/consolidated/new" className="w-full sm:w-auto">
+              <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+                <Plus className="w-5 h-5" />
+                Generate New CEWB
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <Card className="border-gray-200 shadow-sm">
@@ -109,6 +195,50 @@ export default function CEWBListPage() {
               />
             </div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full xl:w-auto">
+              {isAdmin && (
+                <div className="w-full sm:w-48 relative">
+                  {branchSearch && branchSuggestions.length > 0 && branchSuggestions[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{branchSuggestions[0].name.slice(0, branchSearch.length)}</span>
+                      <span>{branchSuggestions[0].name.slice(branchSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    name="branch"
+                    value={branchSearch}
+                    onChange={(e) => handleBranchSearchChange(e.target.value)}
+                    onFocus={() => {
+                      setBranchSuggestions(branchSearch ? branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase())) : branches);
+                      setShowBranchDropdown(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                    onKeyDown={handleBranchKeyDown}
+                    placeholder="All Branches"
+                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                  />
+                  {showBranchDropdown && branchSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {branchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion._id}
+                          onMouseDown={() => {
+                            setSelectedBranch(suggestion._id);
+                            setBranchSearch(`${suggestion.name} (${suggestion.code})`);
+                            setShowBranchDropdown(false);
+                            setBranchHighlightIndex(-1);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          <span>{suggestion.name} ({suggestion.code})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="w-full sm:w-auto">
                 <DatePicker 
                   className="h-10 w-full sm:w-40" 
@@ -126,13 +256,15 @@ export default function CEWBListPage() {
                   onChange={(date) => setEndDate(date)}
                 />
               </div>
-              {(searchQuery || startDate || endDate) && (
+              {(searchQuery || startDate || endDate || selectedBranch) && (
                 <Button 
                   variant="ghost" 
                   onClick={() => {
                     setSearchQuery('');
                     setStartDate('');
                     setEndDate('');
+                    setSelectedBranch('');
+                    setBranchSearch('');
                   }}
                   className="h-10 text-gray-500 w-full sm:w-auto mt-2 sm:mt-0"
                 >
@@ -170,9 +302,11 @@ export default function CEWBListPage() {
                     <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                       <FileOutput className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                       <p>No Consolidated E-Way Bills found.</p>
-                      <Link href="/admin/ewaybills/consolidated/new">
-                        <Button variant="link" className="text-brand-primary mt-2">Generate your first CEWB</Button>
-                      </Link>
+                      {canEdit && (
+                        <Link href="/admin/ewaybills/consolidated/new">
+                          <Button variant="link" className="text-brand-primary mt-2">Generate your first CEWB</Button>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -242,19 +376,21 @@ export default function CEWBListPage() {
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">ACTIONS</span>
                         <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs px-2 sm:px-3"
-                            onClick={() => {
-                              setSelectedCEWB(bill);
-                              setNewValidUpto('');
-                              setExtendReason('');
-                              setExtendModalOpen(true);
-                            }}
-                          >
-                            <CalendarClock className="w-4 h-4 mr-1 hidden sm:inline-block" /> Extend
-                          </Button>
+                          {canEdit && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs px-2 sm:px-3"
+                              onClick={() => {
+                                setSelectedCEWB(bill);
+                                setNewValidUpto('');
+                                setExtendReason('');
+                                setExtendModalOpen(true);
+                              }}
+                            >
+                              <CalendarClock className="w-4 h-4 mr-1 hidden sm:inline-block" /> Extend
+                            </Button>
+                          )}
                           <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
                               <Eye className="w-4 h-4" />
@@ -265,14 +401,16 @@ export default function CEWBListPage() {
                               <Printer className="w-4 h-4" />
                             </Button>
                           </Link>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => handleDelete(bill._id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          {user.role !== 'logistic' && canEdit && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => handleDelete(bill._id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>

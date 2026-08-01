@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Driver from '@/models/Driver';
 import Vehicle from '@/models/Vehicle';
+import { getLogisticQuery } from '@/lib/apiAuth';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -16,8 +17,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     Driver.init();
     Vehicle.init();
 
-    
-    const driver = await Driver.findById(id).populate('assignedVehicle', 'vehicleNumber type').lean();
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+    }
+
+    const driver = await Driver.findOne(query).populate('assignedVehicle', 'vehicleNumber type').lean();
     if (!driver) return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
 
     return NextResponse.json(driver);
@@ -41,12 +47,30 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (data.assignedVehicle === "") {
       data.assignedVehicle = null;
     }
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+      // Also prevent branch users from changing branch manually
+      delete data.branch;
+    } else if (data.branch === "") {
+      data.branch = null;
+    }
 
+    const oldDriver = await Driver.findOne(query);
+    if (!oldDriver) return NextResponse.json({ error: 'Driver not found or unauthorized' }, { status: 404 });
 
-    const oldDriver = await Driver.findById(id);
-    if (!oldDriver) return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
+    // Handle unset for empty strings
+    const updatePayload: any = { ...data };
+    if (data.branch === null) {
+      delete updatePayload.branch;
+    }
 
-    const driver = await Driver.findByIdAndUpdate(id, data, { new: true });
+    const driver = await Driver.findOneAndUpdate(query, updatePayload, { new: true });
+
+    if (data.branch === null) {
+        await Driver.findByIdAndUpdate(id, { $unset: { branch: 1 } });
+    }
 
     // Handle vehicle assignment changes
     if (oldDriver.assignedVehicle?.toString() !== data.assignedVehicle) {
@@ -96,7 +120,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     Driver.init();
     Vehicle.init();
 
-    const driver = await Driver.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+    }
+
+    const driver = await Driver.findOneAndUpdate(query, { isDeleted: true }, { new: true });
     if (!driver) return NextResponse.json({ error: 'Driver not found' }, { status: 404 });
 
     // Unlink the vehicle

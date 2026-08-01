@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 function NewBookingForm() {
   const router = useRouter();
@@ -42,6 +43,18 @@ function NewBookingForm() {
     }
   }, [user]);
 
+  const [branches, setBranches] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('/api/admin/branches')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.branches) {
+          setBranches(data.branches);
+        }
+      })
+      .catch(err => console.error('Error fetching branches:', err));
+  }, []);
+
   // Autocomplete suggestion states
   const [consignorSuggestions, setConsignorSuggestions] = useState<any[]>([]);
   const [consigneeSuggestions, setConsigneeSuggestions] = useState<any[]>([]);
@@ -49,12 +62,6 @@ function NewBookingForm() {
   const [showConsigneeDropdown, setShowConsigneeDropdown] = useState(false);
   const [consignorHighlightIndex, setConsignorHighlightIndex] = useState(-1);
   const [consigneeHighlightIndex, setConsigneeHighlightIndex] = useState(-1);
-
-  // Branch autocomplete states
-  const [destinationBranchSearch, setDestinationBranchSearch] = useState('');
-  const [branchSuggestions, setBranchSuggestions] = useState<any[]>([]);
-  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
-  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
 
   // Packaging & Description autocomplete states
   const [packagingSuggestions, setPackagingSuggestions] = useState<string[]>([]);
@@ -128,65 +135,6 @@ function NewBookingForm() {
 
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
 
-  useEffect(() => {
-    const url = selectedLogisticId ? `/api/admin/branches?limit=100&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=100';
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.branches && data.branches.length > 0) {
-          const list = data.branches.map((b: any) => ({
-            value: b._id,
-            label: `${b.name} (${b.code})`
-          }));
-          setBranchesList(list);
-        }
-      })
-      .catch(err => console.error('Error fetching branches:', err));
-  }, []);
-
-  useEffect(() => {
-    if (!isManual) {
-      const url = selectedLogisticId ? `/api/admin/bookings?logisticId=${selectedLogisticId}` : '/api/admin/bookings';
-      // Fetch bookings to determine next LR No for Auto LR Mode
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            let maxNum = 10000;
-            let foundValid = false;
-            data.forEach((b: any) => {
-              if (b.lrNumber) {
-                const num = parseInt(b.lrNumber.replace(/\D/g, ''), 10);
-                if (!isNaN(num)) {
-                  foundValid = true;
-                  if (num > maxNum) {
-                    maxNum = num;
-                  }
-                }
-              }
-            });
-            setGrNo(foundValid ? (maxNum + 1).toString() : '10001');
-          } else {
-            setGrNo('10001');
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          setGrNo('10001');
-        });
-    }
-  }, [isManual]);
-
-  useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        branch: user.branch || '',
-        bookingBranch: user.bookingBranch || ''
-      }));
-    }
-  }, [user]);
-
   // Form State
   const [formData, setFormData] = useState({
     branch: '',
@@ -216,6 +164,66 @@ function NewBookingForm() {
     biltyCharge: '10.00',
     gstRate: '0',
   });
+
+  useEffect(() => {
+    const url = selectedLogisticId ? `/api/admin/branches?limit=100&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=100';
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.branches && data.branches.length > 0) {
+          const list = data.branches.map((b: any) => ({
+            value: b._id,
+            label: b.name
+          }));
+          setBranchesList(list);
+        }
+      })
+      .catch(err => console.error('Error fetching branches:', err));
+  }, [selectedLogisticId]);
+
+  useEffect(() => {
+    if (!isManual && formData.branch) {
+      const baseUrl = `/api/admin/bookings?branch=${formData.branch}`;
+      const url = selectedLogisticId ? `${baseUrl}&logisticId=${selectedLogisticId}` : baseUrl;
+      // Fetch bookings to determine next LR No for Auto LR Mode
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            let maxNum = 1000;
+            let foundValid = false;
+            data.forEach((b: any) => {
+              if (b.lrNumber) {
+                const num = parseInt(b.lrNumber.replace(/\D/g, ''), 10);
+                if (!isNaN(num)) {
+                  foundValid = true;
+                  if (num > maxNum) {
+                    maxNum = num;
+                  }
+                }
+              }
+            });
+            setGrNo(foundValid ? (maxNum + 1).toString() : '1001');
+          } else {
+            setGrNo('1001');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setGrNo('1001');
+        });
+    }
+  }, [isManual, formData.branch, selectedLogisticId]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        branch: user.branch || '',
+        bookingBranch: user.bookingBranch || ''
+      }));
+    }
+  }, [user]);
 
   const [items, setItems] = useState([
     { packages: '', packaging: '', description: '', weight: '', nw: 'N', rate: '', amount: '' }
@@ -388,79 +396,6 @@ function NewBookingForm() {
     }
   };
 
-  // Filter branch suggestions locally from branchesList
-  useEffect(() => {
-    if (!destinationBranchSearch || destinationBranchSearch.trim().length < 1) {
-      setBranchSuggestions([]);
-      return;
-    }
-    const query = destinationBranchSearch.trim().toLowerCase();
-    const filtered = branchesList.filter(b =>
-      b.label.toLowerCase().includes(query) ||
-      b.value.toLowerCase().includes(query)
-    );
-    setBranchSuggestions(filtered);
-  }, [destinationBranchSearch, branchesList]);
-
-  // Reset highlight index when suggestions change
-  useEffect(() => {
-    setBranchHighlightIndex(-1);
-  }, [branchSuggestions]);
-
-  const handleBranchSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setDestinationBranchSearch(val);
-    if (!val) {
-      setFormData(prev => ({ ...prev, destinationBranch: '' }));
-    }
-  };
-
-  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Tab key autocomplete selection
-    if (e.key === 'Tab') {
-      const firstMatch = branchSuggestions[0];
-      if (firstMatch && destinationBranchSearch) {
-        const hasMatch = firstMatch.label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase());
-        if (hasMatch) {
-          setFormData(prev => ({ ...prev, destinationBranch: firstMatch.value }));
-          setDestinationBranchSearch(firstMatch.label);
-          setShowBranchDropdown(false);
-          setBranchHighlightIndex(-1);
-          if (firstMatch.label.toLowerCase() !== destinationBranchSearch.toLowerCase()) {
-            e.preventDefault();
-          }
-          return;
-        }
-      }
-    }
-
-    if (!showBranchDropdown || branchSuggestions.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setBranchHighlightIndex(prev =>
-        prev < branchSuggestions.length - 1 ? prev + 1 : 0
-      );
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setBranchHighlightIndex(prev =>
-        prev > 0 ? prev - 1 : branchSuggestions.length - 1
-      );
-    } else if (e.key === 'Enter') {
-      if (branchHighlightIndex >= 0 && branchHighlightIndex < branchSuggestions.length) {
-        e.preventDefault();
-        const selected = branchSuggestions[branchHighlightIndex];
-        setFormData(prev => ({ ...prev, destinationBranch: selected.value }));
-        setDestinationBranchSearch(selected.label);
-        setShowBranchDropdown(false);
-        setBranchHighlightIndex(-1);
-      }
-    } else if (e.key === 'Escape') {
-      setShowBranchDropdown(false);
-      setBranchHighlightIndex(-1);
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let { name, value } = e.target;
 
@@ -522,26 +457,21 @@ function NewBookingForm() {
 
   // Auto-save new masters entries after successful booking
   const autoSaveMasters = useCallback(async (bookingItems: typeof items) => {
+    const payloads = [];
     for (const item of bookingItems) {
-      if (item.packaging && item.packaging.trim()) {
-        try {
-          await fetch('/api/admin/masters', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'packaging', name: item.packaging.trim() })
-          });
-        } catch { /* ignore */ }
-      }
-      if (item.description && item.description.trim()) {
-        try {
-          await fetch('/api/admin/masters', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'description', name: item.description.trim() })
-          });
-        } catch { /* ignore */ }
-      }
+      if (item.packaging && item.packaging.trim()) payloads.push({ type: 'packaging', name: item.packaging.trim() });
+      if (item.description && item.description.trim()) payloads.push({ type: 'description', name: item.description.trim() });
     }
+    
+    if (payloads.length === 0) return;
+    
+    try {
+      await fetch('/api/admin/masters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payloads })
+      });
+    } catch { /* ignore */ }
   }, []);
 
   const handleItemChange = (index: number, field: string, value: string) => {
@@ -711,7 +641,7 @@ function NewBookingForm() {
 
     // --- Common required fields (both modes) ---
     if (user?.role === 'superadmin' && !selectedLogisticId) newErrors.selectedLogisticId = "Select a Logistic Company";
-    if (!formData.bookingBranch) newErrors.bookingBranch = "Please enter Booking Branch";
+    if (!formData.branch) newErrors.branch = "Please select a Booking Branch";
     if (!formData.destinationBranch) newErrors.destinationBranch = "Please enter Destination Branch";
     if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
     if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
@@ -746,6 +676,7 @@ function NewBookingForm() {
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
+      console.log("Form Validation Failed! Missing/Invalid fields:", newErrors);
       toast.error('Please fill all required fields before submitting.');
       return false;
     }
@@ -764,7 +695,7 @@ function NewBookingForm() {
       branch: formData.branch,
       lrNumber: isManual ? formData.grNo : (formData.grNo || grNo),
       bookingDate: new Date(formData.bookingDate),
-      bookingBranch: formData.bookingBranch,
+      bookingBranch: formData.branch,
       destinationBranch: formData.destinationBranch,
       rateType: formData.rateType,
       paymentCondition: formData.rateType,
@@ -772,7 +703,7 @@ function NewBookingForm() {
       consignor: {
         name: formData.consignorName,
         phone: formData.consignorPhone || '0000000000',
-        address: formData.bookingBranch,
+        address: formData.branch,
         gstNumber: formData.consignorGst
       },
       consignee: {
@@ -940,11 +871,26 @@ function NewBookingForm() {
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             {isManual ? (
-              /* Manual Mode Row 1 (6 columns) */
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
-                  <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+              /* Manual Mode Row 1 (5 columns) */
+              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch <span className="text-red-500">*</span></Label>
+                  {user?.role === 'branch' ? (
+                    <Input name="branch" value={(() => {
+                      const b = branches.find(b => b._id === formData.branch);
+                      return b ? `${b.name} (${b.code})` : formData.branch;
+                    })()} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  ) : (
+                    <BranchAutocomplete
+                      name="branch"
+                      value={formData.branch}
+                      onChange={handleChange}
+                      options={branchesList}
+                      placeholder="Search or type Branch..."
+                      error={!formData.branch && !!errors.branch}
+                    />
+                  )}
+                  {renderError('branch')}
                 </div>
                 <div className="space-y-1 relative pb-4">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
@@ -952,7 +898,7 @@ function NewBookingForm() {
                   {renderError('grNo')}
                 </div>
                 <div className="space-y-1 flex flex-col justify-start">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date</Label>
+                  <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
                   <DatePicker
                     value={formData.bookingDate}
                     onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
@@ -960,54 +906,17 @@ function NewBookingForm() {
                   />
                   {renderError('bookingDate')}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                  <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
-                </div>
                 <div className="space-y-1 relative">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    {/* Backdrop autocomplete suggestion */}
-                    {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
-                        <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
-                      </div>
-                    )}
-                    <Input
-                      name="destinationBranchSearch"
-                      value={destinationBranchSearch}
-                      onChange={handleBranchSearchChange}
-                      onFocus={() => setShowBranchDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
-                      onKeyDown={handleBranchKeyDown}
-                      placeholder="Search or type Branch..."
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`}
-                    />
-                  </div>
+                  <BranchAutocomplete
+                    name="destinationBranch"
+                    value={formData.destinationBranch}
+                    onChange={handleChange}
+                    options={branchesList}
+                    placeholder="Search or type Branch..."
+                    error={!formData.destinationBranch && !!errors.destinationBranch}
+                  />
                   {renderError('destinationBranch')}
-
-                  {showBranchDropdown && branchSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {branchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.value}
-                          onMouseDown={() => {
-                            setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
-                            setDestinationBranchSearch(suggestion.label);
-                            setShowBranchDropdown(false);
-                            setBranchHighlightIndex(-1);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          <span>{suggestion.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
@@ -1027,7 +936,7 @@ function NewBookingForm() {
             ) : (
               /* Auto Mode (Row 1 & Row 2) */
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
                     <div className="flex gap-2">
@@ -1049,19 +958,30 @@ function NewBookingForm() {
                     <Label className="text-xs font-semibold text-gray-600 uppercase">LR No</Label>
                     <Input name="grNo" value={formData.grNo || grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
-                    <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                    <Input name="bookingBranch" value={formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
+                  <div className="space-y-1 relative">
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch <span className="text-red-500">*</span></Label>
+                    {user?.role === 'branch' ? (
+                      <Input name="branch" value={(() => {
+                        const b = branches.find(b => b._id === formData.branch);
+                        return b ? `${b.name} (${b.code})` : formData.branch;
+                      })()} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                    ) : (
+                      <BranchAutocomplete
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange}
+                        options={branchesList}
+                        placeholder="Search or type Branch..."
+                        error={!formData.branch && !!errors.branch}
+                      />
+                    )}
+                    {renderError('branch')}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
                   <div className="space-y-1 flex flex-col justify-start">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date</Label>
+                    <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
                     <DatePicker
                       value={formData.bookingDate}
                       onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
@@ -1085,48 +1005,15 @@ function NewBookingForm() {
                   </div>
                   <div className="space-y-1 relative">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                    <div className="relative">
-                      {/* Backdrop autocomplete suggestion */}
-                      {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                          <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
-                          <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
-                        </div>
-                      )}
-                      <Input
-                        name="destinationBranchSearch"
-                        value={destinationBranchSearch}
-                        onChange={handleBranchSearchChange}
-                        onFocus={() => setShowBranchDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
-                        onKeyDown={handleBranchKeyDown}
-                        placeholder="Search or type Branch..."
-                        className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`}
-                      />
-                    </div>
+                    <BranchAutocomplete
+                      name="destinationBranch"
+                      value={formData.destinationBranch}
+                      onChange={handleChange}
+                      options={branchesList}
+                      placeholder="Search or type Branch..."
+                      error={!formData.destinationBranch && !!errors.destinationBranch}
+                    />
                     {renderError('destinationBranch')}
-
-                    {showBranchDropdown && branchSuggestions.length > 0 && (
-                      <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                        {branchSuggestions.map((suggestion, index) => (
-                          <div
-                            key={suggestion.value}
-                            onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
-                              setDestinationBranchSearch(suggestion.label);
-                              setShowBranchDropdown(false);
-                              setBranchHighlightIndex(-1);
-                            }}
-                            className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                              ? 'bg-brand-primary/10 text-brand-primary'
-                              : 'hover:bg-gray-50 text-gray-800'
-                              }`}
-                          >
-                            <span>{suggestion.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
@@ -1294,9 +1181,9 @@ function NewBookingForm() {
           <CardContent className="p-4 space-y-3">
             <div className="border border-gray-200 rounded-lg overflow-visible">
               <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider rounded-t-lg">
-                <div className="col-span-1 text-center">Pkgs</div>
+                <div className="col-span-1 text-center">Pkgs <span className="text-red-500">*</span></div>
                 <div className="col-span-2">Packaging</div>
-                <div className="col-span-3">Description</div>
+                <div className="col-span-3">Description <span className="text-red-500">*</span></div>
                 <div className="col-span-2">Weight</div>
                 <div className="col-span-1 text-center">N / W</div>
                 <div className="col-span-1">Rate</div>
@@ -1306,7 +1193,7 @@ function NewBookingForm() {
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
                     <div className="col-span-1 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs</Label>
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
                       <Input
                         value={item.packages}
                         onChange={(e) => handleItemChange(index, 'packages', e.target.value)}
@@ -1354,7 +1241,7 @@ function NewBookingForm() {
                       </div>
                     </div>
                     <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description</Label>
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description <span className="text-red-500">*</span></Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
                         {item.description && activeDescriptionIndex === index && descriptionSuggestions.length > 0 && descriptionSuggestions[0].toLowerCase().startsWith(item.description.toLowerCase()) && (

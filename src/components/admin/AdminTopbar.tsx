@@ -30,7 +30,7 @@ export function AdminTopbar({ user, onMenuClick }: { user: any, onMenuClick?: ()
           `}>
             {activeUser?.role === 'superadmin' && <span>👑 Super Admin</span>}
             {activeUser?.role === 'logistic' && <span>🏢 Logistic</span>}
-            {activeUser?.role === 'branch_user' && <span>📍 Branch</span>}
+            {(activeUser?.role === 'branch_user' || activeUser?.role === 'branch') && <span>📍 Branch</span>}
           </div>
         </div>
 
@@ -51,9 +51,9 @@ export function AdminTopbar({ user, onMenuClick }: { user: any, onMenuClick?: ()
           <div className="text-right hidden md:block">
             <p className="text-sm font-bold text-brand-text-primary">{activeUser?.name || 'Admin User'}</p>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              {activeUser?.bookingBranch && (
+              {(activeUser?.bookingBranchName || activeUser?.branchName || activeUser?.bookingBranch) && (
                 <span className="text-xs bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                  {activeUser.bookingBranch}
+                  {activeUser.bookingBranchName || activeUser.branchName || activeUser.bookingBranch}
                 </span>
               )}
               <span className="text-xs text-gray-400 font-semibold uppercase">

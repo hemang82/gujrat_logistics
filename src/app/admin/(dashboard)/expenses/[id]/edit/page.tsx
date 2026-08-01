@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function EditExpensePage() {
   const router = useRouter();
@@ -22,6 +23,14 @@ export default function EditExpensePage() {
   const [drivers, setDrivers] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
 
+  const { user } = useUserStore();
+  const [branches, setBranches] = useState<any[]>([]);
+  const [branchSearch, setBranchSearch] = useState('');
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  const filteredBranches = branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()));
+
   const [formData, setFormData] = useState({
     expenseType: 'fuel',
     amount: '',
@@ -31,14 +40,33 @@ export default function EditExpensePage() {
     booking: '',
     description: '',
     paymentMethod: 'cash',
-    status: 'paid'
+    status: 'paid',
+    branch: ''
   });
 
   useEffect(() => {
-    fetch('/api/admin/vehicles').then(res => res.json()).then(data => setVehicles(data || []));
-    fetch('/api/admin/drivers').then(res => res.json()).then(data => setDrivers(data || []));
-    fetch('/api/admin/bookings').then(res => res.json()).then(data => setBookings(data || []));
-  }, []);
+    fetch('/api/admin/vehicles')
+      .then(res => res.json())
+      .then(data => setVehicles(Array.isArray(data) ? data : (data.vehicles || [])))
+      .catch(err => console.error('Error loading vehicles', err));
+    fetch('/api/admin/drivers')
+      .then(res => res.json())
+      .then(data => setDrivers(Array.isArray(data) ? data : (data.drivers || [])))
+      .catch(err => console.error('Error loading drivers', err));
+    fetch('/api/admin/bookings')
+      .then(res => res.json())
+      .then(data => setBookings(Array.isArray(data) ? data : (data.bookings || [])))
+      .catch(err => console.error('Error loading bookings', err));
+
+    if (user?.role === 'logistic' || user?.role === 'superadmin') {
+      fetch('/api/admin/branches')
+        .then(res => res.json())
+        .then(data => {
+          if (data.branches) setBranches(data.branches);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!id) return;
@@ -57,8 +85,17 @@ export default function EditExpensePage() {
           booking: data.booking || '',
           description: data.description || '',
           paymentMethod: data.paymentMethod || 'cash',
-          status: data.status || 'paid'
+          status: data.status || 'paid',
+          branch: data.branch?._id || data.branch || ''
         });
+
+        if (data.branch) {
+            fetch(`/api/admin/branches/${data.branch?._id || data.branch}`)
+            .then(res => res.json())
+            .then(bdata => {
+                if (bdata && bdata.name) setBranchSearch(bdata.name);
+            }).catch(console.error);
+        }
       } catch (err) {
         toast.error('Could not load expense details');
       } finally {
@@ -79,11 +116,68 @@ export default function EditExpensePage() {
     }
   };
 
+  const handleBranchSearchChange = (value: string) => {
+    setBranchSearch(value);
+    setShowBranchDropdown(true);
+    setBranchHighlightIndex(-1);
+    if (!value) {
+      setFormData(prev => ({ ...prev, branch: '' }));
+    }
+    if (errors.branch) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy.branch;
+        return copy;
+      });
+    }
+  };
+
+  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = filteredBranches[0];
+      if (firstMatch && branchSearch) {
+        if (firstMatch.name.toLowerCase().startsWith(branchSearch.toLowerCase())) {
+          setFormData(prev => ({ ...prev, branch: firstMatch._id }));
+          setBranchSearch(firstMatch.name);
+          setShowBranchDropdown(false);
+          setBranchHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showBranchDropdown || filteredBranches.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev < filteredBranches.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev > 0 ? prev - 1 : filteredBranches.length - 1);
+    } else if (e.key === 'Enter') {
+      if (branchHighlightIndex >= 0 && branchHighlightIndex < filteredBranches.length) {
+        e.preventDefault();
+        const selected = filteredBranches[branchHighlightIndex];
+        setFormData(prev => ({ ...prev, branch: selected._id }));
+        setBranchSearch(selected.name);
+        setShowBranchDropdown(false);
+        setBranchHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowBranchDropdown(false);
+      setBranchHighlightIndex(-1);
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.amount || Number(formData.amount) <= 0) newErrors.amount = "Please enter a valid amount";
     if (!formData.date) newErrors.date = "Please enter Date";
     if (!formData.vehicle) newErrors.vehicle = "Please select a vehicle";
+
+    if ((user?.role === 'logistic' || user?.role === 'superadmin') && !formData.branch) {
+      newErrors.branch = 'Please assign a branch';
+    }
     
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
@@ -144,12 +238,57 @@ export default function EditExpensePage() {
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
-        <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
+        <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-visible">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-4 rounded-t-2xl">
             <CardTitle className="text-lg text-brand-text-primary">Expense Details</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {(user?.role === 'logistic' || user?.role === 'superadmin') && (
+                <div className="space-y-2 md:col-span-2 relative">
+                  <Label className="text-gray-600 font-medium">Assign Branch <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {branchSearch && filteredBranches.length > 0 && filteredBranches[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{filteredBranches[0].name.slice(0, branchSearch.length)}</span>
+                        <span>{filteredBranches[0].name.slice(branchSearch.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      value={branchSearch}
+                      onChange={(e) => handleBranchSearchChange(e.target.value)}
+                      onFocus={() => setShowBranchDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                      onKeyDown={handleBranchKeyDown}
+                      placeholder="Search Branch..."
+                      className="h-12 text-sm rounded-xl relative z-10 bg-transparent border-gray-200 focus-visible:border-brand-primary focus-visible:ring-brand-primary transition-all shadow-sm"
+                    />
+                    {showBranchDropdown && filteredBranches.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-xl border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                        {filteredBranches.map((suggestion, index) => (
+                          <div
+                            key={suggestion._id}
+                            onMouseDown={() => {
+                              setFormData(prev => ({ ...prev, branch: suggestion._id }));
+                              setBranchSearch(suggestion.name);
+                              setShowBranchDropdown(false);
+                              setBranchHighlightIndex(-1);
+                            }}
+                            className={`flex flex-col px-3 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                                ? 'bg-brand-primary/10 text-brand-primary'
+                                : 'hover:bg-gray-50 text-gray-800'
+                              }`}
+                          >
+                            <span className="font-bold">{suggestion.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <ErrorText field="branch" />
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label className="text-gray-600 font-medium">Expense Category <span className="text-red-500">*</span></Label>
                 <ThemeSelect 
@@ -232,6 +371,9 @@ export default function EditExpensePage() {
                 <Label className="text-gray-600 font-medium">Description / Remarks (Optional)</Label>
                 <textarea name="description" rows={3} placeholder="e.g. Changed 2 front tyres, filled diesel at Surat pump" value={formData.description} onChange={handleChange} className="flex w-full rounded-xl bg-white border border-gray-200 p-3 text-sm shadow-sm resize-none transition-colors focus-visible:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary" />
               </div>
+
+
+
             </div>
 
             <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">

@@ -15,8 +15,21 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
   await connectToDatabase();
+
+  const baseQuery: any = {};
+  if (session && (session.user as any).role === 'logistic') {
+    baseQuery.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    baseQuery.logisticId = (session.user as any).logisticId;
+  }
+
+  // If it's a branch user, restrict their dashboard view to their own branch
+  if (session && (session.user as any).role === 'branch') {
+    baseQuery.bookingBranch = (session.user as any).branch;
+  }
+
 
   Booking.init();
   Vehicle.init();
@@ -31,9 +44,9 @@ export default async function AdminDashboard() {
   const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
   // 1. Bookings Count
-  const totalBookings = await Booking.countDocuments({ isDeleted: { $ne: true } });
-  const currentMonthBookings = await Booking.countDocuments({ isDeleted: { $ne: true }, bookingDate: { $gte: currentMonthStart } });
-  const previousMonthBookings = await Booking.countDocuments({ isDeleted: { $ne: true }, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } });
+  const totalBookings = await Booking.countDocuments({ ...baseQuery, isDeleted: { $ne: true } });
+  const currentMonthBookings = await Booking.countDocuments({ ...baseQuery, isDeleted: { $ne: true }, bookingDate: { $gte: currentMonthStart } });
+  const previousMonthBookings = await Booking.countDocuments({ ...baseQuery, isDeleted: { $ne: true }, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } });
   
   let bookingTrend = '';
   if (previousMonthBookings > 0) {
@@ -45,23 +58,23 @@ export default async function AdminDashboard() {
   }
 
   // 2. Fleet Stats
-  const activeVehicles = await Vehicle.countDocuments({ status: 'on-trip', isDeleted: { $ne: true } });
-  const availableVehicles = await Vehicle.countDocuments({ status: 'available', isDeleted: { $ne: true } });
-  const maintenanceVehicles = await Vehicle.countDocuments({ status: 'maintenance', isDeleted: { $ne: true } });
-  const totalVehicles = await Vehicle.countDocuments({ isDeleted: { $ne: true } });
+  const activeVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'on-trip', isDeleted: { $ne: true } });
+  const availableVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'available', isDeleted: { $ne: true } });
+  const maintenanceVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'maintenance', isDeleted: { $ne: true } });
+  const totalVehicles = await Vehicle.countDocuments({ ...baseQuery, isDeleted: { $ne: true } });
 
   // 3. Drivers
-  const totalDrivers = await Driver.countDocuments({ isDeleted: { $ne: true } });
+  const totalDrivers = await Driver.countDocuments({ ...baseQuery, isDeleted: { $ne: true } });
 
   // 4. Financials (Current Month)
   const currentRevenueAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: currentMonthStart } } },
+    { $match: { ...baseQuery, isDeleted: { $ne: true }, bookingDate: { $gte: currentMonthStart } } },
     { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
   ]);
   const currentRevenue = currentRevenueAgg[0]?.total || 0;
 
   const currentExpenseAgg = await Expense.aggregate([
-    { $match: { isDeleted: { $ne: true }, date: { $gte: currentMonthStart } } },
+    { $match: { ...baseQuery, isDeleted: { $ne: true }, date: { $gte: currentMonthStart } } },
     { $group: { _id: null, total: { $sum: "$amount" } } }
   ]);
   const currentExpense = currentExpenseAgg[0]?.total || 0;
@@ -69,7 +82,7 @@ export default async function AdminDashboard() {
 
   // Previous Month Financials for Trend
   const prevRevenueAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
+    { $match: { ...baseQuery, isDeleted: { $ne: true }, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
     { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
   ]);
   const prevRevenue = prevRevenueAgg[0]?.total || 0;
@@ -94,14 +107,14 @@ export default async function AdminDashboard() {
     
     // Revenue
     const revAgg = await Booking.aggregate([
-      { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: mStart, $lte: mEnd } } },
+      { $match: { ...baseQuery, isDeleted: { $ne: true }, bookingDate: { $gte: mStart, $lte: mEnd } } },
       { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
     ]);
     const rev = revAgg[0]?.total || 0;
 
     // Expenses
     const expAgg = await Expense.aggregate([
-      { $match: { isDeleted: { $ne: true }, date: { $gte: mStart, $lte: mEnd } } },
+      { $match: { ...baseQuery, isDeleted: { $ne: true }, date: { $gte: mStart, $lte: mEnd } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
     const exp = expAgg[0]?.total || 0;
@@ -114,7 +127,7 @@ export default async function AdminDashboard() {
     });
   }
 
-  const recentBookings = await Booking.find({ isDeleted: { $ne: true } })
+  const recentBookings = await Booking.find({ ...baseQuery, isDeleted: { $ne: true } })
     .sort({ bookingDate: -1 })
     .limit(5)
     .populate('consignee', 'name')
@@ -127,8 +140,7 @@ export default async function AdminDashboard() {
   next15Days.setDate(now.getDate() + 15);
   
   const expiringVehicles = await Vehicle.find({
-    isDeleted: { $ne: true },
-    $or: [
+    ...baseQuery, isDeleted: { $ne: true }, $or: [
       { rcExpiry: { $lte: next15Days } },
       { insuranceExpiry: { $lte: next15Days } },
       { fitnessExpiry: { $lte: next15Days } },

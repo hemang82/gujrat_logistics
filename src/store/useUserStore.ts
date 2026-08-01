@@ -7,7 +7,9 @@ interface User {
   role: string;
   logisticId?: string;
   branch: string;
+  branchName?: string;
   bookingBranch: string;
+  bookingBranchName?: string;
   ewbApiAccess?: boolean;
 }
 

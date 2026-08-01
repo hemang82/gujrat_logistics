@@ -10,6 +10,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { UserCircle, FileText, Phone, Trash2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useUserStore } from '@/store/useUserStore';
 import {
   Dialog,
   DialogContent,
@@ -31,16 +32,33 @@ export default function EditDriverPage() {
   const [formData, setFormData] = useState({
     name: '', bloodGroup: '', status: 'available', address: '',
     phone: '', alternatePhone: '',
-    licenseNumber: '', licenseExpiry: '', aadharNumber: '', assignedVehicle: ''
+    licenseNumber: '', licenseExpiry: '', aadharNumber: '', assignedVehicle: '', branch: ''
   });
 
   const [vehicles, setVehicles] = useState<any[]>([]);
+
+  const { user } = useUserStore();
+  const [branches, setBranches] = useState<any[]>([]);
+  const [branchSearch, setBranchSearch] = useState('');
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+
+  const filteredBranches = branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase()));
 
   useEffect(() => {
     fetch('/api/admin/vehicles').then(res => res.json()).then(data => {
       setVehicles(data || []);
     }).catch(err => console.error(err));
-  }, []);
+
+    if (user?.role === 'logistic' || user?.role === 'superadmin') {
+      fetch('/api/admin/branches')
+        .then(res => res.json())
+        .then(data => {
+          if (data.branches) setBranches(data.branches);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [user]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
@@ -65,8 +83,18 @@ export default function EditDriverPage() {
           licenseNumber: data.licenseNumber || '',
           licenseExpiry: formatDate(data.licenseExpiry),
           aadharNumber: data.aadharNumber || '',
-          assignedVehicle: data.assignedVehicle?._id || data.assignedVehicle || ''
+          assignedVehicle: data.assignedVehicle?._id || data.assignedVehicle || '',
+          branch: data.branch?._id || data.branch || ''
         });
+
+        // Also fetch branch name for search box if applicable
+        if (data.branch) {
+            fetch(`/api/admin/branches/${data.branch?._id || data.branch}`)
+            .then(res => res.json())
+            .then(bdata => {
+                if (bdata && bdata.name) setBranchSearch(bdata.name);
+            }).catch(console.error);
+        }
       } catch (err: any) {
         toast.error(err.message);
       } finally {
@@ -101,6 +129,59 @@ export default function EditDriverPage() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleBranchSearchChange = (value: string) => {
+    setBranchSearch(value);
+    setShowBranchDropdown(true);
+    setBranchHighlightIndex(-1);
+    if (!value) {
+      setFormData(prev => ({ ...prev, branch: '' }));
+    }
+    if (errors.branch) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy.branch;
+        return copy;
+      });
+    }
+  };
+
+  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = filteredBranches[0];
+      if (firstMatch && branchSearch) {
+        if (firstMatch.name.toLowerCase().startsWith(branchSearch.toLowerCase())) {
+          setFormData(prev => ({ ...prev, branch: firstMatch._id }));
+          setBranchSearch(firstMatch.name);
+          setShowBranchDropdown(false);
+          setBranchHighlightIndex(-1);
+          return;
+        }
+      }
+    }
+
+    if (!showBranchDropdown || filteredBranches.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev < filteredBranches.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setBranchHighlightIndex(prev => prev > 0 ? prev - 1 : filteredBranches.length - 1);
+    } else if (e.key === 'Enter') {
+      if (branchHighlightIndex >= 0 && branchHighlightIndex < filteredBranches.length) {
+        e.preventDefault();
+        const selected = filteredBranches[branchHighlightIndex];
+        setFormData(prev => ({ ...prev, branch: selected._id }));
+        setBranchSearch(selected.name);
+        setShowBranchDropdown(false);
+        setBranchHighlightIndex(-1);
+      }
+    } else if (e.key === 'Escape') {
+      setShowBranchDropdown(false);
+      setBranchHighlightIndex(-1);
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -117,6 +198,10 @@ export default function EditDriverPage() {
 
     if (formData.alternatePhone && !phoneRegex.test(formData.alternatePhone)) {
       newErrors.alternatePhone = 'Invalid 10-digit number';
+    }
+
+    if ((user?.role === 'logistic' || user?.role === 'superadmin') && !formData.branch) {
+      newErrors.branch = 'Please assign a branch';
     }
 
     setErrors(newErrors);
@@ -205,8 +290,8 @@ export default function EditDriverPage() {
         
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {/* Personal Details */}
-          <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
+          <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-visible">
+            <CardHeader className="bg-gray-50 border-b border-gray-100 py-4 rounded-t-2xl">
               <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-secondary/10 text-brand-secondary text-sm">1</span>
                 Personal Details
@@ -214,6 +299,51 @@ export default function EditDriverPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(user?.role === 'logistic' || user?.role === 'superadmin') && (
+                  <div className="space-y-2 md:col-span-2 relative">
+                    <Label className="text-gray-600 font-medium">Assign Branch <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      {branchSearch && filteredBranches.length > 0 && filteredBranches[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                          <span className="opacity-0">{filteredBranches[0].name.slice(0, branchSearch.length)}</span>
+                          <span>{filteredBranches[0].name.slice(branchSearch.length)}</span>
+                        </div>
+                      )}
+                      <Input
+                        value={branchSearch}
+                        onChange={(e) => handleBranchSearchChange(e.target.value)}
+                        onFocus={() => setShowBranchDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
+                        onKeyDown={handleBranchKeyDown}
+                        placeholder="Search Branch..."
+                        className="h-12 text-sm rounded-xl relative z-10 bg-transparent border-gray-200 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary transition-all shadow-sm"
+                      />
+                      {showBranchDropdown && filteredBranches.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-xl border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                          {filteredBranches.map((suggestion, index) => (
+                            <div
+                              key={suggestion._id}
+                              onMouseDown={() => {
+                                setFormData(prev => ({ ...prev, branch: suggestion._id }));
+                                setBranchSearch(suggestion.name);
+                                setShowBranchDropdown(false);
+                                setBranchHighlightIndex(-1);
+                              }}
+                              className={`flex flex-col px-3 py-2.5 text-sm font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                                  ? 'bg-brand-secondary/10 text-brand-secondary'
+                                  : 'hover:bg-gray-50 text-gray-800'
+                                }`}
+                            >
+                              <span className="font-bold">{suggestion.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <ErrorText field="branch" />
+                  </div>
+                )}
+                
                 <div className="space-y-2 md:col-span-2">
                   <Label className="text-gray-600 font-medium">Full Name <span className="text-red-500">*</span></Label>
                   <Input name="name" placeholder="Driver's Full Name" value={formData.name} onChange={handleChange} className={`h-12 bg-white rounded-xl focus-visible:ring-1 transition-all shadow-sm ${errors.name ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500' : 'border-gray-200 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary'}`} />
@@ -239,14 +369,16 @@ export default function EditDriverPage() {
                   <Label className="text-gray-600 font-medium">Residential Address</Label>
                   <textarea name="address" rows={2} placeholder="Full address" value={formData.address} onChange={handleChange} className="flex w-full rounded-xl bg-white border border-gray-200 p-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:border-brand-secondary focus-visible:ring-brand-secondary transition-all shadow-sm resize-none" />
                 </div>
+                
+
               </div>
             </CardContent>
           </Card>
 
           <div className="space-y-6">
             {/* Contact Details */}
-            <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
+            <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-visible">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 py-4 rounded-t-2xl">
                 <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-secondary/10 text-brand-secondary text-sm">2</span>
                   Contact Information
@@ -269,8 +401,8 @@ export default function EditDriverPage() {
             </Card>
 
             {/* KYC & License */}
-            <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-              <CardHeader className="bg-gray-50 border-b border-gray-100 py-4">
+            <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-visible">
+              <CardHeader className="bg-gray-50 border-b border-gray-100 py-4 rounded-t-2xl">
                 <CardTitle className="text-lg text-brand-text-primary flex items-center gap-2">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-brand-secondary/10 text-brand-secondary text-sm">3</span>
                   License & KYC

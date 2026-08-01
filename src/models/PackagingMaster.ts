@@ -12,7 +12,7 @@ export interface IPackagingMaster extends Document {
 const PackagingMasterSchema = new Schema<IPackagingMaster>(
   {
     logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
-    name: { type: String, required: true, trim: true, unique: true },
+    name: { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
     usageCount: { type: Number, default: 1 },
   },
@@ -20,6 +20,7 @@ const PackagingMasterSchema = new Schema<IPackagingMaster>(
 );
 
 PackagingMasterSchema.index({ name: 'text' });
+PackagingMasterSchema.index({ name: 1, logisticId: 1 }, { unique: true });
 
 const PackagingMaster: Model<IPackagingMaster> =
   mongoose.models.PackagingMaster ||

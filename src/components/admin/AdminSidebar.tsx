@@ -113,7 +113,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       setIsOpen: setIsBookingOpen,
       isActive: isBookingActive,
       children: [
-        { name: 'Lorry Receipt (LR)', href: '/admin/bookings', exact: false },
+        { name: 'LR / Bilti', href: '/admin/bookings', exact: false },
         { name: 'Lorry Challan', href: '/admin/challans', exact: false, excludePaths: ['/admin/challans/crossing'] },
         { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false },
         { name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false },
@@ -151,7 +151,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       });
 
       navItems.push({ 
-        name: 'Trucks', 
+        name: 'Fleet & Vehicles', 
         icon: <Truck className="w-5 h-5" />, 
         isDropdown: true,
         isOpen: isFleetOpen,
@@ -187,8 +187,38 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         setIsOpen: setIsMasterOpen,
         isActive: isMasterActive,
         children: [
+          { name: 'Branches', href: '/admin/branches', exact: false },
           { name: 'Clients', href: '/admin/clients', exact: false },
+          { name: 'Agents', href: '/admin/agents', exact: false },
           { name: 'PKG & Items', href: '/admin/masters', exact: false },
+        ]
+      });
+
+      navItems.push({ 
+        name: 'Fleet & Vehicles', 
+        icon: <Truck className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isFleetOpen,
+        setIsOpen: setIsFleetOpen,
+        isActive: isFleetActive,
+        children: [
+          { name: 'Dashboard', href: '/admin/fleet', exact: true },
+          ...(user?.ewbApiAccess ? [{ name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false }] : []),
+          { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
+          { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
+          { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
+        ]
+      });
+
+      navItems.push({ 
+        name: 'Accounts', 
+        icon: <Wallet className="w-5 h-5" />, 
+        isDropdown: true,
+        isOpen: isAccountsOpen,
+        setIsOpen: setIsAccountsOpen,
+        isActive: isAccountsActive,
+        children: [
+          { name: 'Branch Ledger', href: '/admin/accounts/branch-ledger', exact: false },
         ]
       });
     }
@@ -228,7 +258,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         `}>
           {user?.role === 'superadmin' && <span>👑 Super Admin Panel</span>}
           {user?.role === 'logistic' && <span>🏢 Logistic Panel</span>}
-          {user?.role === 'branch_user' && <span>📍 Branch Panel</span>}
+          {(user?.role === 'branch_user' || user?.role === 'branch') && <span>📍 Branch Panel</span>}
           {!user?.role && <span>Loading Panel...</span>}
         </div>
       </div>

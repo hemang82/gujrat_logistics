@@ -153,11 +153,14 @@ export default function LorryHireList() {
           <h1 className="text-xl font-extrabold text-gray-800 tracking-tight">Lorry Hire Vouchers</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage truck hire and freight payments</p>
         </div>
-        <Link href="/admin/lorry-hire/new">
-          <Button className="h-10 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-lg flex items-center gap-1.5 font-bold shadow-sm px-4">
-            <Plus className="w-4 h-4" /> Create Voucher
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Link href="/admin/lorry-hire/new" className="w-full sm:w-auto">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+              <Plus className="w-5 h-5" />
+              Create Voucher
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

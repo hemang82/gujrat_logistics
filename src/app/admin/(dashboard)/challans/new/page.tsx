@@ -12,6 +12,7 @@ import { SearchSelect } from '@/components/ui/search-select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 export default function AddChallanPage() {
   const router = useRouter();
@@ -73,29 +74,21 @@ export default function AddChallanPage() {
   const truckSuggestions = vehiclesList.filter(v => v.label.toLowerCase().includes(truckNoSearch.toLowerCase()));
 
   const [memoSearch, setMemoSearch] = useState('');
-  const [showMemoDropdown, setShowMemoDropdown] = useState(false);
-  const memoSuggestions = branchesList.filter(b => b.label.toLowerCase().includes(memoSearch.toLowerCase()));
 
   const [driverSearch, setDriverSearch] = useState('');
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
   const driverSuggestions = driversList.filter(d => d.label.toLowerCase().includes(driverSearch.toLowerCase()));
 
   const [lrToBranchSearch, setLrToBranchSearch] = useState('');
-  const [showLrToBranchDropdown, setShowLrToBranchDropdown] = useState(false);
-  const lrToBranchSuggestions = branchesList.filter(b => b.label.toLowerCase().includes(lrToBranchSearch.toLowerCase()));
 
   const [agentHighlightIndex, setAgentHighlightIndex] = useState(-1);
   const [truckHighlightIndex, setTruckHighlightIndex] = useState(-1);
-  const [memoHighlightIndex, setMemoHighlightIndex] = useState(-1);
   const [driverHighlightIndex, setDriverHighlightIndex] = useState(-1);
-  const [lrToBranchHighlightIndex, setLrToBranchHighlightIndex] = useState(-1);
 
   // Reset highlight index when search terms change
   useEffect(() => { setAgentHighlightIndex(-1); }, [formData.agent]);
   useEffect(() => { setTruckHighlightIndex(-1); }, [truckNoSearch]);
-  useEffect(() => { setMemoHighlightIndex(-1); }, [memoSearch]);
   useEffect(() => { setDriverHighlightIndex(-1); }, [driverSearch]);
-  useEffect(() => { setLrToBranchHighlightIndex(-1); }, [lrToBranchSearch]);
 
   // Derived state for checked LRs
   const loadedLrs = pendingLrs.filter(item => selectedLrIds[item._id]);
@@ -131,7 +124,7 @@ export default function AddChallanPage() {
         if (data && data.branches) {
           const list = data.branches.map((b: any) => ({
             value: b._id,
-            label: `${b.name} (${b.code})`
+            label: b.name
           }));
           setBranchesList(list);
         }
@@ -645,79 +638,15 @@ export default function AddChallanPage() {
               <div className="space-y-1 sm:col-span-2 md:col-span-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
                 <div className="relative">
-                  {/* Backdrop autocomplete suggestion */}
-                  {lrToBranchSearch && lrToBranchSuggestions.length > 0 && lrToBranchSuggestions[0].label.toLowerCase().startsWith(lrToBranchSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{lrToBranchSuggestions[0].label.slice(0, lrToBranchSearch.length)}</span>
-                      <span>{lrToBranchSuggestions[0].label.slice(lrToBranchSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={lrToBranchSearch}
-                    onChange={(e) => {
-                      setLrToBranchSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, lrToBranch: '' }));
-                    }}
-                    onFocus={() => setShowLrToBranchDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowLrToBranchDropdown(false), 200)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && lrToBranchSearch && lrToBranchSuggestions.length > 0) {
-                        const firstMatch = lrToBranchSuggestions[0];
-                        if (firstMatch.label.toLowerCase().startsWith(lrToBranchSearch.toLowerCase())) {
-                          setLrToBranchSearch(firstMatch.label);
-                          setFormData(prev => ({ ...prev, lrToBranch: firstMatch.value }));
-                          setShowLrToBranchDropdown(false);
-                          if (firstMatch.label.toLowerCase() !== lrToBranchSearch.toLowerCase()) {
-                            e.preventDefault();
-                          }
-                          return;
-                        }
-                      }
-                      if (!showLrToBranchDropdown || lrToBranchSuggestions.length === 0) return;
-                      
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setLrToBranchHighlightIndex(prev => prev < lrToBranchSuggestions.length - 1 ? prev + 1 : 0);
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setLrToBranchHighlightIndex(prev => prev > 0 ? prev - 1 : lrToBranchSuggestions.length - 1);
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (lrToBranchHighlightIndex >= 0 && lrToBranchHighlightIndex < lrToBranchSuggestions.length) {
-                          const selected = lrToBranchSuggestions[lrToBranchHighlightIndex];
-                          setLrToBranchSearch(selected.label);
-                          setFormData(prev => ({ ...prev, lrToBranch: selected.value }));
-                          setShowLrToBranchDropdown(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowLrToBranchDropdown(false);
-                      }
-                    }}
+                  <BranchAutocomplete
+                    name="lrToBranch"
+                    value={formData.lrToBranch}
+                    onChange={handleChange}
+                    options={branchesList}
                     placeholder="Search LR to Branch..."
                     disabled={formData.allBranchwise === 'All'}
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${formData.allBranchwise === 'All' ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200' : 'border-gray-200'}`}
-                    autoComplete="off"
+                    className={formData.allBranchwise === 'All' ? 'bg-gray-50' : ''}
                   />
-                  {showLrToBranchDropdown && lrToBranchSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {lrToBranchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.value}
-                          onMouseDown={() => {
-                            setLrToBranchSearch(suggestion.label);
-                            setFormData(prev => ({ ...prev, lrToBranch: suggestion.value }));
-                            setShowLrToBranchDropdown(false);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === lrToBranchHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          {suggestion.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1135,81 +1064,15 @@ export default function AddChallanPage() {
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
                 <div className="relative">
-                  {memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{memoSuggestions[0].label.slice(0, memoSearch.length)}</span>
-                      <span>{memoSuggestions[0].label.slice(memoSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={memoSearch}
-                    onChange={(e) => {
-                      setMemoSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, memoDestinationBranch: '' }));
-                      if (errors.memoDestinationBranch) {
-                        const newErrors = { ...errors };
-                        delete newErrors.memoDestinationBranch;
-                        setErrors(newErrors);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase())) {
-                        setMemoSearch(memoSuggestions[0].label);
-                        setFormData(prev => ({ ...prev, memoDestinationBranch: memoSuggestions[0].value }));
-                        setShowMemoDropdown(false);
-                        if (memoSuggestions[0].label.toLowerCase() !== memoSearch.toLowerCase()) {
-                          e.preventDefault();
-                        }
-                        return;
-                      }
-                      if (!showMemoDropdown || memoSuggestions.length === 0) return;
-                      
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setMemoHighlightIndex(prev => prev < memoSuggestions.length - 1 ? prev + 1 : 0);
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setMemoHighlightIndex(prev => prev > 0 ? prev - 1 : memoSuggestions.length - 1);
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (memoHighlightIndex >= 0 && memoHighlightIndex < memoSuggestions.length) {
-                          const selected = memoSuggestions[memoHighlightIndex];
-                          setMemoSearch(selected.label);
-                          setFormData(prev => ({ ...prev, memoDestinationBranch: selected.value }));
-                          setShowMemoDropdown(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowMemoDropdown(false);
-                      }
-                    }}
-                    onFocus={() => setShowMemoDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowMemoDropdown(false), 200)}
+                  <BranchAutocomplete
+                    name="memoDestinationBranch"
+                    value={formData.memoDestinationBranch}
+                    onChange={handleChange}
+                    options={branchesList}
                     placeholder="Search Memo Destination..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.memoDestinationBranch ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
+                    error={!!errors.memoDestinationBranch}
                   />
                   {renderError('memoDestinationBranch')}
-                  
-                  {showMemoDropdown && memoSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {memoSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setMemoSearch(suggestion.label);
-                            setFormData(prev => ({ ...prev, memoDestinationBranch: suggestion.value }));
-                            setShowMemoDropdown(false);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === memoHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          {suggestion.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="space-y-1">

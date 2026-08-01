@@ -40,10 +40,10 @@ function LogisticsFormContent() {
 
   const fetchLogisticDetails = async () => {
     try {
-      const res = await fetch('/api/admin/logistics');
+      const res = await fetch(`/api/admin/logistics/${editingId}`);
       const data = await res.json();
       if (res.ok && data.data) {
-        const logistic = data.data.find((l: any) => l._id === editingId);
+        const logistic = data.data;
         if (logistic) {
           setFormData({
             name: logistic.name || '',

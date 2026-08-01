@@ -57,7 +57,7 @@ const BookingSchema = new Schema<IBooking>(
       enum: ['auto', 'manual'],
       default: 'auto',
     },
-    lrNumber: { type: String, required: true, unique: true },
+    lrNumber: { type: String, required: true },
     branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
     bookingBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },
     destinationBranch: { type: Schema.Types.ObjectId, ref: 'Branch' },

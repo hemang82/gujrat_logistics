@@ -29,35 +29,66 @@ export default async function ReportsPage() {
     ? new Date(now.getFullYear(), 3, 1) 
     : new Date(now.getFullYear() - 1, 3, 1);
 
+  const session = await getServerSession(authOptions);
+  const baseQuery: any = { isDeleted: { $ne: true } };
+  
+  if (session && (session.user as any).role === 'logistic') {
+    baseQuery.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    baseQuery.logisticId = (session.user as any).logisticId;
+  }
+
   // ---- Summary Stats ----
-  const totalBookings = await Booking.countDocuments({ isDeleted: { $ne: true } });
-  const totalVehicles = await Vehicle.countDocuments({ isDeleted: { $ne: true } });
-  const totalDrivers = await Driver.countDocuments({ isDeleted: { $ne: true } });
+  const totalBookings = await Booking.countDocuments(baseQuery);
+  const totalVehicles = await Vehicle.countDocuments(baseQuery);
+  const totalDrivers = await Driver.countDocuments(baseQuery);
+
+  const branchAgg = await Booking.aggregate([
+    { $match: { ...baseQuery, bookingDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+    { 
+      $group: { 
+        _id: "$branch", 
+        revenue: { $sum: "$charges.totalAmount" },
+        count: { $sum: 1 }
+      } 
+    },
+    {
+      $lookup: {
+        from: "branches",
+        localField: "_id",
+        foreignField: "_id",
+        as: "branchDetails"
+      }
+    },
+    { $unwind: { path: "$branchDetails", preserveNullAndEmptyArrays: true } },
+    { $sort: { revenue: -1 } },
+    { $limit: 5 }
+  ]);
 
   // Current month revenue
   const currentRevenueAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+    { $match: { ...baseQuery, bookingDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
     { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
   ]);
   const currentRevenue = currentRevenueAgg[0]?.total || 0;
 
   // Previous month revenue
   const prevRevenueAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
+    { $match: { ...baseQuery, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
     { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
   ]);
   const prevRevenue = prevRevenueAgg[0]?.total || 0;
 
   // Current month expenses
   const currentExpenseAgg = await Expense.aggregate([
-    { $match: { isDeleted: { $ne: true }, date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+    { $match: { ...baseQuery, date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
     { $group: { _id: null, total: { $sum: "$amount" } } }
   ]);
   const currentExpense = currentExpenseAgg[0]?.total || 0;
 
   // Previous month expenses
   const prevExpenseAgg = await Expense.aggregate([
-    { $match: { isDeleted: { $ne: true }, date: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
+    { $match: { ...baseQuery, date: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
     { $group: { _id: null, total: { $sum: "$amount" } } }
   ]);
   const prevExpense = prevExpenseAgg[0]?.total || 0;
@@ -67,19 +98,20 @@ export default async function ReportsPage() {
 
   // Financial Year totals
   const fyRevenueAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: financialYearStart } } },
+    { $match: { ...baseQuery, bookingDate: { $gte: financialYearStart } } },
     { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
   ]);
   const fyRevenue = fyRevenueAgg[0]?.total || 0;
 
   const fyExpenseAgg = await Expense.aggregate([
-    { $match: { isDeleted: { $ne: true }, date: { $gte: financialYearStart } } },
+    { $match: { ...baseQuery, date: { $gte: financialYearStart } } },
     { $group: { _id: null, total: { $sum: "$amount" } } }
   ]);
   const fyExpense = fyExpenseAgg[0]?.total || 0;
 
   // Total outstanding (invoices)
   const outstandingAgg = await Invoice.aggregate([
+    { $match: baseQuery },
     { $group: { _id: null, totalBilled: { $sum: "$grandTotal" }, totalPaid: { $sum: "$amountPaid" } } }
   ]);
   const totalOutstanding = (outstandingAgg[0]?.totalBilled || 0) - (outstandingAgg[0]?.totalPaid || 0);
@@ -94,13 +126,13 @@ export default async function ReportsPage() {
     const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
     
     const revAgg = await Booking.aggregate([
-      { $match: { isDeleted: { $ne: true }, bookingDate: { $gte: mStart, $lte: mEnd } } },
+      { $match: { ...baseQuery, bookingDate: { $gte: mStart, $lte: mEnd } } },
       { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
     ]);
     const rev = revAgg[0]?.total || 0;
 
     const expAgg = await Expense.aggregate([
-      { $match: { isDeleted: { $ne: true }, date: { $gte: mStart, $lte: mEnd } } },
+      { $match: { ...baseQuery, date: { $gte: mStart, $lte: mEnd } } },
       { $group: { _id: null, total: { $sum: "$amount" } } }
     ]);
     const exp = expAgg[0]?.total || 0;
@@ -115,14 +147,14 @@ export default async function ReportsPage() {
 
   // ---- Booking Status Distribution ----
   const statusAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { ...baseQuery } },
     { $group: { _id: "$status", count: { $sum: 1 } } }
   ]);
   const statusData = statusAgg.map(s => ({ name: s._id, value: s.count }));
 
   // ---- Top Routes ----
   const routesAgg = await Booking.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { ...baseQuery } },
     { $group: { 
       _id: { from: "$pickupLocation", to: "$deliveryLocation" }, 
       count: { $sum: 1 }, 
@@ -139,7 +171,7 @@ export default async function ReportsPage() {
 
   // ---- Expense Breakdown by Category ----
   const expBreakdownAgg = await Expense.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { ...baseQuery } },
     { $group: { _id: "$expenseType", total: { $sum: "$amount" } } },
     { $sort: { total: -1 } }
   ]);
@@ -158,7 +190,7 @@ export default async function ReportsPage() {
 
   // ---- Vehicle Utilization ----
   const vehicleStatusAgg = await Vehicle.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { ...baseQuery } },
     { $group: { _id: "$status", count: { $sum: 1 } } }
   ]);
   const vehicleStatusMap: Record<string, number> = {};

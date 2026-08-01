@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Expense from '@/models/Expense';
+import { getLogisticQuery } from '@/lib/apiAuth';
 
 export async function GET(
   request: Request,
@@ -17,7 +18,14 @@ export async function GET(
     const { id } = resolvedParams;
 
     await connectToDatabase();
-    const expense = await Expense.findById(id).lean();
+    
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+    }
+
+    const expense = await Expense.findOne(query).lean();
     if (!expense) return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
 
     return NextResponse.json(expense);
@@ -40,11 +48,33 @@ export async function PUT(
     const payload = await request.json();
     await connectToDatabase();
 
-    const updatedExpense = await Expense.findByIdAndUpdate(
-      id,
-      { $set: payload },
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+      delete payload.branch; // prevent manual changes
+    } else if (payload.branch === "") {
+      payload.branch = null;
+    }
+
+    const oldExpense = await Expense.findOne(query);
+    if (!oldExpense) return NextResponse.json({ error: 'Expense not found or unauthorized' }, { status: 404 });
+
+    // Handle unset for empty strings
+    const updatePayload: any = { ...payload };
+    if (payload.branch === null) {
+      delete updatePayload.branch;
+    }
+
+    const updatedExpense = await Expense.findOneAndUpdate(
+      query,
+      { $set: updatePayload },
       { new: true, runValidators: true }
     );
+
+    if (payload.branch === null) {
+      await Expense.findByIdAndUpdate(id, { $unset: { branch: 1 } });
+    }
 
     if (!updatedExpense) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });
@@ -70,8 +100,15 @@ export async function DELETE(
     const { id } = resolvedParams;
 
     await connectToDatabase();
+    
+    const query: any = { _id: id, ...(await getLogisticQuery()) };
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      query.branch = user.branchId || user.branch;
+    }
+
     // Soft delete
-    const deletedExpense = await Expense.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
+    const deletedExpense = await Expense.findOneAndUpdate(query, { isDeleted: true }, { new: true });
     
     if (!deletedExpense) {
       return NextResponse.json({ error: 'Expense not found' }, { status: 404 });

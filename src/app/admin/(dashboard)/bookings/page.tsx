@@ -12,10 +12,12 @@ import BookingsFilter from '@/components/admin/BookingsFilter';
 import Pagination from '@/components/admin/Pagination';
 import ListActions from '@/components/admin/ListActions';
 import BookingStatusDropdown from '@/components/admin/BookingStatusDropdown';
+import ExportBookings from '@/components/admin/ExportBookings';
+import Branch from '@/models/Branch';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string, limit?: string }> }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string, limit?: string, destBranch?: string }> }) {
   const session = await getServerSession(authOptions);
   await connectToDatabase();
   const role = (session?.user as any)?.role;
@@ -24,11 +26,37 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
   const dateStr = resolvedParams?.date || '';
+  const destBranch = resolvedParams?.destBranch || '';
   const page = parseInt(resolvedParams?.page || '1', 10);
   const limit = parseInt(resolvedParams?.limit || '15', 10);
 
+  // Fetch branches for filter (scoped to the logistic company)
+  const branchQuery: any = { isDeleted: { $ne: true } };
+  const userLogisticId = role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+  if (userLogisticId) {
+    branchQuery.logisticId = userLogisticId;
+  }
+  const branches = await Branch.find(branchQuery).select('_id name code').lean();
+
   // Build query
   const query: any = { isDeleted: { $ne: true } };
+
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+
+  if (session && ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch')) {
+    const userBranch = (session.user as any).branch || (session.user as any).bookingBranch;
+    if (userBranch) {
+      // In Booking schema, branch can be string or ObjectId. Let's handle both or rely on the populated object match.
+      // Usually bookingBranch is an ObjectId referencing Branch.
+      // We'll search by the branch ID string.
+      // Sometimes it's populated, but here we're filtering on the DB level where bookingBranch is an ObjectId
+      query.bookingBranch = userBranch;
+    }
+  }
 
   if (search) {
     query.$or = [
@@ -45,6 +73,15 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     const endOfDay = new Date(dateStr);
     endOfDay.setHours(23, 59, 59, 999);
     query.bookingDate = { $gte: startOfDay, $lte: endOfDay };
+  }
+
+  if (destBranch) {
+    // destBranch is passed as branch ID
+    // We can filter by destinationBranch (if stored as object ID) 
+    // OR deliveryLocation (if stored as branch name)
+    // Looking at the schema, we'll try deliveryLocation (name) first, or we can use the branch ID directly if destinationBranch is populated.
+    // Let's filter by destinationBranch ObjectId since it's the exact match.
+    query.destinationBranch = destBranch;
   }
 
   const skip = (page - 1) * limit;
@@ -69,13 +106,9 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">Bookings & LR </h1>
           <p className="text-brand-text-secondary mt-1">Manage Lorry Receipts (LR) and track parcels.</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <a href={`/api/admin/bookings/export?search=${encodeURIComponent(search)}&date=${encodeURIComponent(dateStr)}`} download className="w-full sm:w-auto">
-            <Button variant="outline" className="h-12 w-full px-5 rounded-xl font-semibold shadow-sm border-gray-200 text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center gap-2">
-              <Download className="w-5 h-5" />
-              Export Excel
-            </Button>
-          </a>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
+          <ExportBookings search={search} date={dateStr} destBranch={destBranch} />
+          
           {canCreate && (
             <div className="flex gap-3 w-full sm:w-auto">
               <Link href="/admin/bookings/new" className="flex-1 sm:flex-none">
@@ -95,11 +128,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
-      <Card className="border-none shadow-sm rounded-2xl bg-white overflow-hidden">
+      <Card className="border-none shadow-sm rounded-2xl bg-white overflow-visible">
         <CardHeader className="border-b border-gray-100 pb-4">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <CardTitle className="text-xl font-bold text-brand-text-primary">Recent Bookings</CardTitle>
-            <BookingsFilter />
+            <BookingsFilter branches={branches} />
           </div>
         </CardHeader>
         <CardContent className="p-0">

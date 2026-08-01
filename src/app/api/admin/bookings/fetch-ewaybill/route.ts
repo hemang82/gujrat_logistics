@@ -24,7 +24,8 @@ export async function GET(request: Request) {
 
     // 1. Check User Permission
     const dbUser = await User.findById(session.user.id);
-    if (!dbUser || !dbUser.ewbApiAccess) {
+    const hasAccess = (session.user as any).ewbApiAccess;
+    if (!dbUser || !hasAccess) {
       return NextResponse.json({ error: 'E-Way Bill API Access Denied. Contact Admin to enable this feature.' }, { status: 403 });
     }
 

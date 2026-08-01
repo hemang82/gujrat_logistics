@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IDriver extends Document {
   logisticId?: mongoose.Types.ObjectId;
+  branch?: mongoose.Types.ObjectId | any;
   name: string;
   phone: string;
   alternatePhone?: string;
@@ -20,6 +21,7 @@ export interface IDriver extends Document {
 const DriverSchema = new Schema<IDriver>(
   {
     logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
+    branch: { type: Schema.Types.ObjectId, ref: 'Branch' },
     name: { type: String, required: true },
     phone: { type: String, required: true },
     alternatePhone: { type: String },

@@ -14,7 +14,14 @@ export default async function ClientsPage() {
   Invoice.init();
 
   // Fetch all clients
-  const clients = await Client.find({ isDeleted: false }).sort({ name: 1 }).lean();
+  let query: any = { isDeleted: false };
+  const session = await getServerSession(authOptions);
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+  const clients = await Client.find(query).sort({ name: 1 }).lean();
 
   // Enrich clients with balances
   const enrichedClients = await Promise.all(clients.map(async (client: any) => {

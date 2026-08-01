@@ -10,7 +10,9 @@ import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { SearchSelect } from '@/components/ui/search-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Printer } from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 export default function EditChallanPage() {
   const router = useRouter();
@@ -73,10 +75,6 @@ export default function EditChallanPage() {
   const [showTruckDropdown, setShowTruckDropdown] = useState(false);
   const truckSuggestions = vehiclesList.filter(v => v.label.toLowerCase().includes(truckNoSearch.toLowerCase()));
 
-  const [memoSearch, setMemoSearch] = useState('');
-  const [showMemoDropdown, setShowMemoDropdown] = useState(false);
-  const memoSuggestions = branchesList.filter(b => b.label.toLowerCase().includes(memoSearch.toLowerCase()));
-
   const [driverSearch, setDriverSearch] = useState('');
   const [showDriverDropdown, setShowDriverDropdown] = useState(false);
   const driverSuggestions = driversList.filter(d => d.label.toLowerCase().includes(driverSearch.toLowerCase()));
@@ -94,7 +92,7 @@ export default function EditChallanPage() {
         if (branchesData?.branches) {
           setBranchesList(branchesData.branches.map((b: any) => ({
             value: b._id,
-            label: `${b.name} (${b.code})`
+            label: b.name
           })));
         }
 
@@ -654,18 +652,17 @@ export default function EditChallanPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
-                <ThemeSelect
-                  name="lrToBranch"
-                  value={formData.lrToBranch}
-                  onChange={handleChange as any}
-                  options={[{ value: '', label: 'Select Branch' }, ...branchesList]}
-                  disabled={formData.allBranchwise === 'All'}
-                  className={`flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none ${
-                    formData.allBranchwise === 'All'
-                      ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                      : ''
-                  }`}
-                />
+                <div className="relative">
+                  <BranchAutocomplete
+                    name="lrToBranch"
+                    value={formData.lrToBranch}
+                    onChange={handleChange}
+                    options={branchesList}
+                    placeholder="Search LR to Branch..."
+                    disabled={formData.allBranchwise === 'All'}
+                    className={formData.allBranchwise === 'All' ? 'bg-gray-50' : ''}
+                  />
+                </div>
               </div>
             </div>
 
@@ -1035,56 +1032,15 @@ export default function EditChallanPage() {
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
                 <div className="relative">
-                  {memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
-                      <span className="opacity-0">{memoSuggestions[0].label.slice(0, memoSearch.length)}</span>
-                      <span>{memoSuggestions[0].label.slice(memoSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={memoSearch}
-                    onChange={(e) => {
-                      setMemoSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, memoDestinationBranch: '' }));
-                      if (errors.memoDestinationBranch) {
-                        const newErrors = { ...errors };
-                        delete newErrors.memoDestinationBranch;
-                        setErrors(newErrors);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && memoSearch && memoSuggestions.length > 0 && memoSuggestions[0].label.toLowerCase().startsWith(memoSearch.toLowerCase())) {
-                        e.preventDefault();
-                        setMemoSearch(memoSuggestions[0].label);
-                        setFormData(prev => ({ ...prev, memoDestinationBranch: memoSuggestions[0].value }));
-                        setShowMemoDropdown(false);
-                      }
-                    }}
-                    onFocus={() => setShowMemoDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowMemoDropdown(false), 200)}
+                  <BranchAutocomplete
+                    name="memoDestinationBranch"
+                    value={formData.memoDestinationBranch}
+                    onChange={handleChange}
+                    options={branchesList}
                     placeholder="Search Memo Destination..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.memoDestinationBranch ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
+                    error={!!errors.memoDestinationBranch}
                   />
                   {renderError('memoDestinationBranch')}
-                  
-                  {showMemoDropdown && memoSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
-                      {memoSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setMemoSearch(suggestion.label);
-                            setFormData(prev => ({ ...prev, memoDestinationBranch: suggestion.value }));
-                            setShowMemoDropdown(false);
-                          }}
-                          className="px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50"
-                        >
-                          <span className="font-bold">{suggestion.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="space-y-1">

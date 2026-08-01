@@ -20,7 +20,17 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
   const search = resolvedParams?.search || '';
   const statusFilter = resolvedParams?.status || '';
   
+  const session = await getServerSession(authOptions);
   const query: any = { isDeleted: { $ne: true } };
+  if (session && (session.user as any).role === 'logistic') {
+    query.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    query.logisticId = (session.user as any).logisticId;
+  }
+
+  if (session && ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch')) {
+    query.branch = (session.user as any).branchId || (session.user as any).branch;
+  }
   if (statusFilter) {
     query.status = statusFilter;
   }
@@ -32,7 +42,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
     ];
   }
 
-  const drivers = await Driver.find(query).populate('assignedVehicle', 'vehicleNumber type').sort({ createdAt: -1 }).lean();
+  const drivers = await Driver.find(query).populate('assignedVehicle', 'vehicleNumber type').populate('branch', 'name').sort({ createdAt: -1 }).lean();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -107,6 +117,9 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                     <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
                       <th className="font-bold px-4 py-3 w-[30%]">Driver Details</th>
                       <th className="font-bold px-4 py-3 w-[25%]">License & KYC</th>
+                      {(session?.user as any)?.role === 'logistic' && (
+                        <th className="font-bold px-4 py-3 w-[15%]">Branch</th>
+                      )}
                       <th className="font-bold px-4 py-3 w-[15%]">Current Status</th>
                       <th className="font-bold px-4 py-3 w-[20%]">Assigned Vehicle</th>
                       <th className="font-bold px-4 py-3 w-[10%] text-right">Actions</th>
@@ -142,6 +155,15 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                               )}
                             </div>
                           </td>
+                          {(session?.user as any)?.role === 'logistic' && (
+                            <td className="px-4 py-3.5 align-middle">
+                              {d.branch ? (
+                                <span className="font-semibold text-gray-800 text-sm">{d.branch.name}</span>
+                              ) : (
+                                <span className="text-[11px] font-semibold px-2 py-1 bg-gray-100 text-gray-500 rounded-md border border-gray-200">Unassigned</span>
+                              )}
+                            </td>
+                          )}
                           <td className="px-4 py-3.5 align-middle">
                             {getStatusBadge(d.status)}
                           </td>
@@ -206,6 +228,13 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                             </div>
                           </div>
                         </div>
+
+                        {(session?.user as any)?.role === 'logistic' && (
+                          <div className="mb-2 px-2.5">
+                            <p className="text-[10px] text-gray-500 mb-0.5 uppercase font-bold tracking-wider">Branch</p>
+                            <p className="text-sm font-semibold text-gray-800">{d.branch?.name || <span className="text-gray-400 font-medium text-xs">Unassigned</span>}</p>
+                          </div>
+                        )}
 
                         {/* Details Grid */}
                         <div className="grid grid-cols-2 gap-y-2 gap-x-2 text-xs bg-gray-50/50 rounded-lg p-2.5 border border-gray-50 mb-2">

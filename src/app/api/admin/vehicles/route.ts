@@ -18,8 +18,13 @@ export async function GET(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
-    
     const query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(request)) };
+    
+    // Branch filtering
+    if ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch') {
+      query.branch = (session.user as any).branchId || (session.user as any).branch;
+    }
+
     if (search) {
       query.$or = [
         { vehicleNumber: { $regex: search, $options: 'i' } },
@@ -28,7 +33,7 @@ export async function GET(request: Request) {
       ];
     }
 
-    const vehicles = await Vehicle.find(query).populate('assignedDriver', 'name phone').sort({ createdAt: -1 }).lean();
+    const vehicles = await Vehicle.find(query).populate('assignedDriver', 'name phone').populate('branch', 'name').sort({ createdAt: -1 }).lean();
     return NextResponse.json(vehicles);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -51,6 +56,14 @@ export async function POST(request: Request) {
     }
 
     data.logisticId = await getLogisticIdForCreate();
+
+    // Auto-assign branch for branch users
+    const user = session.user as any;
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      data.branch = user.branchId || user.branch;
+    } else if (!data.branch) {
+      delete data.branch; // Don't save empty string
+    }
     const vehicle = await Vehicle.create(data);
 
     if (data.assignedDriver) {

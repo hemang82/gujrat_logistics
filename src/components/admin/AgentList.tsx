@@ -78,6 +78,7 @@ export default function AgentList({ initialAgents }: { initialAgents: any[] }) {
                   <th className="font-semibold p-4">Agent Type</th>
                   <th className="font-semibold p-4">Contact Detail</th>
                   <th className="font-semibold p-4">Address</th>
+                  <th className="font-semibold p-4">Branch</th>
                   <th className="font-semibold p-4 text-right">Opening Balance</th>
                   <th className="font-semibold p-4 text-center">Action</th>
                 </tr>
@@ -133,6 +134,9 @@ export default function AgentList({ initialAgents }: { initialAgents: any[] }) {
                       </td>
                       <td className="p-4 max-w-xs truncate text-gray-600">
                         {agent.address || '-'}
+                      </td>
+                      <td className="p-4 text-sm font-medium text-brand-text-primary">
+                        {agent.branch?.name || <span className="text-gray-400 italic text-xs">Unassigned</span>}
                       </td>
                       <td className="p-4 text-right font-semibold text-brand-text-primary">
                         ₹{(agent.openingBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -224,6 +228,15 @@ export default function AgentList({ initialAgents }: { initialAgents: any[] }) {
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">GST Number</span>
                   <div className="text-sm font-semibold text-gray-700">
                     {selectedAgent.gstNumber || '-'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Branch</span>
+                  <div className="text-sm font-semibold text-gray-700">
+                    {selectedAgent.branch?.name || 'Unassigned'}
                   </div>
                 </div>
               </div>

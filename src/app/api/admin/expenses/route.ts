@@ -8,6 +8,7 @@ import DriverTransaction from '@/models/DriverTransaction';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import Booking from '@/models/Booking';
+import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
 export async function GET(req: Request) {
   try {
@@ -18,11 +19,19 @@ export async function GET(req: Request) {
 
     await connectToDatabase();
     
+    const query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(req)) };
+    
+    // Branch filtering
+    if ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch') {
+      query.branch = (session.user as any).branchId || (session.user as any).branch;
+    }
+    
     // Populate vehicle, driver, and booking for detailed list
-    const expenses = await Expense.find({ isDeleted: { $ne: true } })
+    const expenses = await Expense.find(query)
       .populate('vehicle', 'vehicleNumber type')
       .populate('driver', 'name phone')
       .populate('booking', 'lrNumber status')
+      .populate('branch', 'name')
       .sort({ date: -1 })
       .lean();
     
@@ -43,9 +52,18 @@ export async function POST(req: Request) {
     await connectToDatabase();
     const data = await req.json();
 
+    const user = session.user as any;
+    data.logisticId = await getLogisticIdForCreate();
+
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      data.branch = user.branchId || user.branch;
+    } else if (!data.branch) {
+      delete data.branch;
+    }
+
     const newExpense = new Expense({
       ...data,
-      createdBy: session.user.id
+      createdBy: user.id
     });
     
     await newExpense.save();

@@ -11,6 +11,9 @@ export async function GET(request: Request) {
 
     await connectToDatabase();
     Agent.init();
+    
+    // We need to require Branch model to populate it
+    require('@/models/Branch');
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
@@ -26,8 +29,18 @@ export async function GET(request: Request) {
     if (type) {
       query.agentType = type;
     }
+    
+    const userRole = (session.user as any).role;
+    const userBranch = (session.user as any).branch;
+    
+    // For branch users, only show their own agents
+    if (userRole === 'branch' || userRole === 'branch_user') {
+      if (userBranch) {
+        query.branch = userBranch;
+      }
+    }
 
-    const agents = await Agent.find(query).sort({ name: 1 }).lean();
+    const agents = await Agent.find(query).populate('branch', 'name').sort({ name: 1 }).lean();
     return NextResponse.json(agents);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -42,6 +55,14 @@ export async function POST(request: Request) {
     const data = await request.json();
     await connectToDatabase();
     Agent.init();
+
+    const userRole = (session.user as any).role;
+    const userBranch = (session.user as any).branch;
+    
+    // Auto-assign branch for branch users
+    if (userRole === 'branch' || userRole === 'branch_user') {
+      data.branch = userBranch;
+    }
 
     const agent = await Agent.create({
       ...data,

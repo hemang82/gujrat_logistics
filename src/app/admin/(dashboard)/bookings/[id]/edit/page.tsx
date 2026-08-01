@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,10 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin } from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 
 export default function EditBookingPage() {
@@ -22,6 +24,7 @@ export default function EditBookingPage() {
   const [submitAction, setSubmitAction] = useState<'save' | 'print'>('save');
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isFetchingEway, setIsFetchingEway] = useState(false);
 
   // Autocomplete suggestion states
   const [consignorSuggestions, setConsignorSuggestions] = useState<any[]>([]);
@@ -31,38 +34,86 @@ export default function EditBookingPage() {
   const [consignorHighlightIndex, setConsignorHighlightIndex] = useState(-1);
   const [consigneeHighlightIndex, setConsigneeHighlightIndex] = useState(-1);
 
-  // Branch autocomplete states
-  const [destinationBranchSearch, setDestinationBranchSearch] = useState('');
-  const [branchSuggestions, setBranchSuggestions] = useState<any[]>([]);
-  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
-  const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
+  // Packaging & Description autocomplete states
+  const [packagingSuggestions, setPackagingSuggestions] = useState<string[]>([]);
+  const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
+  const [activePackagingIndex, setActivePackagingIndex] = useState<number | null>(null);
+  const [activeDescriptionIndex, setActiveDescriptionIndex] = useState<number | null>(null);
+  const [packagingHighlightIndex, setPackagingHighlightIndex] = useState(-1);
+  const [descriptionHighlightIndex, setDescriptionHighlightIndex] = useState(-1);
+  const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const [branchesList, setBranchesList] = useState<{ value: string; label: string; code: string }[]>([]);
+  const handleFetchEwayBill = async () => {
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.ewayBillNo;
+      return copy;
+    });
 
-  useEffect(() => {
-    fetch('/api/admin/branches?limit=100')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.branches && data.branches.length > 0) {
-          const list = data.branches.map((b: any) => ({
-            value: b._id,
-            label: `${b.name} (${b.code})`,
-            code: b.code
-          }));
-          setBranchesList(list);
-        }
-      })
-  }, []);
+    if (!formData.ewayBillNo || formData.ewayBillNo.length !== 12) {
+      setErrors(prev => ({
+        ...prev,
+        ewayBillNo: "Please enter a valid 12-digit E-Way Bill Number"
+      }));
+      return;
+    }
+
+    setIsFetchingEway(true);
+    try {
+      const res = await fetch(`/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Auto-fill values in form
+      setFormData(prev => ({
+        ...prev,
+        consignorName: data.consignor.name,
+        consignorGst: data.consignor.gst,
+        consignorPhone: data.consignor.phone,
+        consigneeName: data.consignee.name,
+        consigneeGst: data.consignee.gst,
+        consigneePhone: data.consignee.phone,
+        destinationBranch: data.destinationBranch,
+        invoiceNo: data.invoiceNumber,
+        value: data.totalValue.toString(),
+        freightAmount: data.items.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0).toString()
+      }));
+
+      // Map loaded items
+      if (data.items && data.items.length > 0) {
+        setItems(data.items.map((item: any) => ({
+          packages: item.packages.toString(),
+          packaging: item.packaging,
+          description: item.description,
+          weight: item.weight.toString(),
+          nw: item.nw,
+          rate: item.rate.toString(),
+          amount: item.amount.toString()
+        })));
+      }
+
+      toast.success("E-Way Bill details fetched and auto-filled!");
+    } catch (err: any) {
+      setErrors(prev => ({
+        ...prev,
+        ewayBillNo: `Fetch failed: ${err.message || 'Could not reach server'}`
+      }));
+    } finally {
+      setIsFetchingEway(false);
+    }
+  };
+
+  const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
-    bookingType: 'auto',
-    branch: 'ASL',
+    branch: '',
     grNo: '',
-    bookingDate: '',
-    bookingBranch: 'ASLALI',
+    bookingDate: new Date().toISOString().split('T')[0],
+    bookingBranch: '',
     destinationBranch: '',
-    rateType: 'to_pay',
+    rateType: 'to_pay', // "to_pay" | "paid" | "tbb"
 
     consignorName: '',
     consignorGst: '',
@@ -85,7 +136,67 @@ export default function EditBookingPage() {
     gstRate: '0',
   });
 
-  const [items, setItems] = useState<any[]>([
+  useEffect(() => {
+    const url = selectedLogisticId ? `/api/admin/branches?limit=100&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=100';
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.branches && data.branches.length > 0) {
+          const list = data.branches.map((b: any) => ({
+            value: b._id,
+            label: b.name
+          }));
+          setBranchesList(list);
+        }
+      })
+      .catch(err => console.error('Error fetching branches:', err));
+  }, [selectedLogisticId]);
+
+  useEffect(() => {
+    if (!isManual && formData.branch) {
+      const baseUrl = `/api/admin/bookings?branch=${formData.branch}`;
+      const url = selectedLogisticId ? `${baseUrl}&logisticId=${selectedLogisticId}` : baseUrl;
+      // Fetch bookings to determine next LR No for Auto LR Mode
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            let maxNum = 1000;
+            let foundValid = false;
+            data.forEach((b: any) => {
+              if (b.lrNumber) {
+                const num = parseInt(b.lrNumber.replace(/\D/g, ''), 10);
+                if (!isNaN(num)) {
+                  foundValid = true;
+                  if (num > maxNum) {
+                    maxNum = num;
+                  }
+                }
+              }
+            });
+            setGrNo(foundValid ? (maxNum + 1).toString() : '1001');
+          } else {
+            setGrNo('1001');
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setGrNo('1001');
+        });
+    }
+  }, [isManual, formData.branch, selectedLogisticId]);
+
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        branch: user.branch || '',
+        bookingBranch: user.bookingBranch || ''
+      }));
+    }
+  }, [user]);
+
+  const [items, setItems] = useState([
     { packages: '', packaging: '', description: '', weight: '', nw: 'N', rate: '', amount: '' }
   ]);
 
@@ -244,87 +355,39 @@ export default function EditBookingPage() {
     }
   };
 
-  // Sync destinationBranchSearch label when branchesList loads or destinationBranch changes to prevent race conditions
-  useEffect(() => {
-    if (formData.destinationBranch && branchesList.length > 0) {
-      const match = branchesList.find(b => b.value === formData.destinationBranch);
-      if (match && destinationBranchSearch !== match.label) {
-        setDestinationBranchSearch(match.label);
-      }
-    }
-  }, [formData.destinationBranch, branchesList]);
+  const isManual = formData.bookingType === 'manual';
 
-  // Filter branch suggestions locally from branchesList
-  useEffect(() => {
-    if (!destinationBranchSearch || destinationBranchSearch.trim().length < 1) {
-      setBranchSuggestions([]);
-      return;
-    }
-    const query = destinationBranchSearch.trim().toLowerCase();
-    const filtered = branchesList.filter(b => 
-      b.label.toLowerCase().includes(query) ||
-      b.value.toLowerCase().includes(query)
-    );
-    setBranchSuggestions(filtered);
-  }, [destinationBranchSearch, branchesList]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    let { name, value } = e.target;
 
-  // Reset highlight index when suggestions change
-  useEffect(() => {
-    setBranchHighlightIndex(-1);
-  }, [branchSuggestions]);
-
-  const handleBranchSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setDestinationBranchSearch(val);
-    if (!val) {
-      setFormData(prev => ({ ...prev, destinationBranch: '' }));
-    }
-  };
-
-  const handleBranchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Tab key autocomplete selection
-    if (e.key === 'Tab') {
-      const firstMatch = branchSuggestions[0];
-      if (firstMatch && destinationBranchSearch) {
-        const hasMatch = firstMatch.label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase());
-        if (hasMatch) {
-          setFormData(prev => ({ ...prev, destinationBranch: firstMatch.value }));
-          setDestinationBranchSearch(firstMatch.label);
-          setShowBranchDropdown(false);
-          setBranchHighlightIndex(-1);
-          return;
+    // Apply validation mask
+    if (name === 'consignorName' || name === 'consigneeName') {
+      value = value.replace(/[^a-zA-Z\s.]/g, '');
+    } else if (name === 'consignorPhone' || name === 'consigneePhone') {
+      value = value.replace(/\D/g, '').slice(0, 10);
+    } else if (name === 'consignorGst' || name === 'consigneeGst') {
+      value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    } else if (['value', 'freightAmount', 'pf', 'labour', 'ddCharge', 'biltyCharge', 'gstRate', 'ewayBillNo', 'grNo'].includes(name)) {
+      if (name === 'grNo') {
+        value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+      } else if (name === 'ewayBillNo') {
+        value = value.replace(/\D/g, '');
+      } else {
+        value = value.replace(/[^0-9.]/g, '');
+        if ((value.match(/\./g) || []).length > 1) {
+          value = value.slice(0, -1);
         }
       }
     }
 
-    if (!showBranchDropdown || branchSuggestions.length === 0) return;
+    setFormData(prev => ({ ...prev, [name]: value }));
 
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setBranchHighlightIndex(prev => 
-        prev < branchSuggestions.length - 1 ? prev + 1 : 0
-      );
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setBranchHighlightIndex(prev => 
-        prev > 0 ? prev - 1 : branchSuggestions.length - 1
-      );
-    } else if (e.key === 'Enter') {
-      if (branchHighlightIndex >= 0 && branchHighlightIndex < branchSuggestions.length) {
-        e.preventDefault();
-        const selected = branchSuggestions[branchHighlightIndex];
-        setFormData(prev => ({ ...prev, destinationBranch: selected.value }));
-        setDestinationBranchSearch(selected.label);
-        setShowBranchDropdown(false);
-        setBranchHighlightIndex(-1);
-      }
-    } else if (e.key === 'Escape') {
-      setShowBranchDropdown(false);
-      setBranchHighlightIndex(-1);
+    if (errors[name]) {
+      const newErrors = { ...errors };
+      delete newErrors[name];
+      setErrors(newErrors);
     }
   };
-
-  const isManual = formData.bookingType === 'manual';
 
   useEffect(() => {
     async function fetchBooking() {
@@ -399,37 +462,7 @@ export default function EditBookingPage() {
     if (id) fetchBooking();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    let { name, value } = e.target;
 
-    // Apply validation mask
-    if (name === 'consignorName' || name === 'consigneeName') {
-      value = value.replace(/[^a-zA-Z\s.]/g, '');
-    } else if (name === 'consignorPhone' || name === 'consigneePhone') {
-      value = value.replace(/\D/g, '').slice(0, 10);
-    } else if (name === 'consignorGst' || name === 'consigneeGst') {
-      value = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    } else if (['value', 'freightAmount', 'pf', 'labour', 'ddCharge', 'biltyCharge', 'gstRate', 'ewayBillNo', 'grNo'].includes(name)) {
-      if (name === 'grNo') {
-        value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
-      } else if (name === 'ewayBillNo') {
-        value = value.replace(/\D/g, '');
-      } else {
-        value = value.replace(/[^0-9.]/g, '');
-        if ((value.match(/\./g) || []).length > 1) {
-          value = value.slice(0, -1);
-        }
-      }
-    }
-
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    if (errors[name]) {
-      const newErrors = { ...errors };
-      delete newErrors[name];
-      setErrors(newErrors);
-    }
-  };
 
   const handleItemChange = (index: number, field: string, value: string) => {
     const newItems = [...items];
@@ -700,49 +733,15 @@ export default function EditBookingPage() {
                 </div>
                 <div className="space-y-1 relative">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    {/* Backdrop autocomplete suggestion */}
-                    {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
-                        <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
-                      </div>
-                    )}
-                    <Input 
-                      name="destinationBranchSearch" 
-                      value={destinationBranchSearch} 
-                      onChange={handleBranchSearchChange} 
-                      onFocus={() => setShowBranchDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
-                      onKeyDown={handleBranchKeyDown}
-                      placeholder="Search or type Branch..." 
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`} 
-                    />
-                  </div>
+                  <BranchAutocomplete
+                    name="destinationBranch"
+                    value={formData.destinationBranch}
+                    onChange={handleChange}
+                    options={branchesList}
+                    placeholder="Search or type Branch..."
+                    error={!formData.destinationBranch && !!errors.destinationBranch}
+                  />
                   {renderError('destinationBranch')}
-
-                  {showBranchDropdown && branchSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {branchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.value}
-                          onMouseDown={() => {
-                            setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
-                            setDestinationBranchSearch(suggestion.label);
-                            setShowBranchDropdown(false);
-                            setBranchHighlightIndex(-1);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                            index === branchHighlightIndex 
-                              ? 'bg-brand-primary/10 text-brand-primary' 
-                              : 'hover:bg-gray-50 text-gray-800'
-                          }`}
-                        >
-                          <span>{suggestion.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
@@ -808,49 +807,15 @@ export default function EditBookingPage() {
                   </div>
                   <div className="space-y-1 relative">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                    <div className="relative">
-                      {/* Backdrop autocomplete suggestion */}
-                      {destinationBranchSearch && branchSuggestions.length > 0 && branchSuggestions[0].label.toLowerCase().startsWith(destinationBranchSearch.toLowerCase()) && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                          <span className="opacity-0">{branchSuggestions[0].label.slice(0, destinationBranchSearch.length)}</span>
-                          <span>{branchSuggestions[0].label.slice(destinationBranchSearch.length)}</span>
-                        </div>
-                      )}
-                      <Input 
-                        name="destinationBranchSearch" 
-                        value={destinationBranchSearch} 
-                        onChange={handleBranchSearchChange} 
-                        onFocus={() => setShowBranchDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
-                        onKeyDown={handleBranchKeyDown}
-                        placeholder="Search or type Branch..." 
-                        className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.destinationBranch ? 'border-red-500' : 'border-gray-200'}`} 
-                      />
-                    </div>
+                    <BranchAutocomplete
+                      name="destinationBranch"
+                      value={formData.destinationBranch}
+                      onChange={handleChange}
+                      options={branchesList}
+                      placeholder="Search or type Branch..."
+                      error={!formData.destinationBranch && !!errors.destinationBranch}
+                    />
                     {renderError('destinationBranch')}
-
-                    {showBranchDropdown && branchSuggestions.length > 0 && (
-                      <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                        {branchSuggestions.map((suggestion, index) => (
-                          <div
-                            key={suggestion.value}
-                            onMouseDown={() => {
-                              setFormData(prev => ({ ...prev, destinationBranch: suggestion.value }));
-                              setDestinationBranchSearch(suggestion.label);
-                              setShowBranchDropdown(false);
-                              setBranchHighlightIndex(-1);
-                            }}
-                            className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${
-                              index === branchHighlightIndex 
-                                ? 'bg-brand-primary/10 text-brand-primary' 
-                                : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                          >
-                            <span>{suggestion.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </>
@@ -1019,10 +984,10 @@ export default function EditBookingPage() {
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider">
-                <div className="col-span-1 text-center">Pkgs</div>
+              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider rounded-t-lg">
+                <div className="col-span-1 text-center">Pkgs <span className="text-red-500">*</span></div>
                 <div className="col-span-2">Packaging</div>
-                <div className="col-span-3">Description</div>
+                <div className="col-span-3">Description <span className="text-red-500">*</span></div>
                 <div className="col-span-2">Weight</div>
                 <div className="col-span-1 text-center">N / W</div>
                 <div className="col-span-1">Rate</div>
@@ -1032,7 +997,7 @@ export default function EditBookingPage() {
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
                     <div className="col-span-1 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs</Label>
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
                       <Input
                         value={item.packages}
                         onChange={(e) => handleItemChange(index, 'packages', e.target.value)}
@@ -1041,23 +1006,81 @@ export default function EditBookingPage() {
                       />
                       {renderCellError(`item_${index}_packages`)}
                     </div>
-                    <div className="col-span-2 relative pb-4">
+                    <div className="col-span-2 relative pb-4" ref={el => { packagingDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-semibold text-gray-500 lg:hidden">Packaging</Label>
-                      <Input
-                        value={item.packaging}
-                        onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
-                        placeholder="Bora / Bag / Roll"
-                        className="h-10 text-sm rounded-lg border-gray-200"
-                      />
+                      <div className="relative">
+                        {/* Backdrop autocomplete suggestion */}
+                        {item.packaging && activePackagingIndex === index && packagingSuggestions.length > 0 && packagingSuggestions[0].toLowerCase().startsWith(item.packaging.toLowerCase()) && (
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                            <span className="opacity-0">{packagingSuggestions[0].slice(0, item.packaging.length)}</span>
+                            <span>{packagingSuggestions[0].slice(item.packaging.length)}</span>
+                          </div>
+                        )}
+                        <Input
+                          value={item.packaging}
+                          onChange={(e) => handleItemChange(index, 'packaging', e.target.value)}
+                          onFocus={() => { setActivePackagingIndex(index); fetchMasterSuggestions('packaging', item.packaging); }}
+                          onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
+                          onKeyDown={(e) => handlePackagingKeyDown(index, e)}
+                          placeholder="Bora / Bag / Roll"
+                          className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                          autoComplete="off"
+                        />
+                        {activePackagingIndex === index && packagingSuggestions.length > 0 && (
+                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                            {packagingSuggestions.map((s, si) => (
+                              <div
+                                key={si}
+                                onMouseDown={() => selectPackagingSuggestion(index, s)}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === packagingHighlightIndex
+                                  ? 'bg-brand-primary/10 text-brand-primary'
+                                  : 'hover:bg-gray-50 text-gray-800'
+                                  }`}
+                              >
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="col-span-3 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description</Label>
-                      <Input
-                        value={item.description}
-                        onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                        placeholder="Hardware / Cycle / Kirana"
-                        className={`h-10 text-sm rounded-lg ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
-                      />
+                    <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
+                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description <span className="text-red-500">*</span></Label>
+                      <div className="relative">
+                        {/* Backdrop autocomplete suggestion */}
+                        {item.description && activeDescriptionIndex === index && descriptionSuggestions.length > 0 && descriptionSuggestions[0].toLowerCase().startsWith(item.description.toLowerCase()) && (
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                            <span className="opacity-0">{descriptionSuggestions[0].slice(0, item.description.length)}</span>
+                            <span>{descriptionSuggestions[0].slice(item.description.length)}</span>
+                          </div>
+                        )}
+                        <Input
+                          value={item.description}
+                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          onFocus={() => { setActiveDescriptionIndex(index); fetchMasterSuggestions('description', item.description); }}
+                          onBlur={() => setTimeout(() => setActiveDescriptionIndex(null), 200)}
+                          onKeyDown={(e) => handleDescriptionKeyDown(index, e)}
+                          placeholder="Hardware / Cycle / Kirana"
+                          className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
+                          autoComplete="off"
+                        />
+                        {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
+                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                            {descriptionSuggestions.map((s, si) => (
+                              <div
+                                key={si}
+                                onMouseDown={() => selectDescriptionSuggestion(index, s)}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === descriptionHighlightIndex
+                                  ? 'bg-brand-primary/10 text-brand-primary'
+                                  : 'hover:bg-gray-50 text-gray-800'
+                                  }`}
+                              >
+                                {s}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {renderCellError(`item_${index}_description`)}
                     </div>
                     <div className="col-span-2 relative pb-4">
@@ -1127,23 +1150,18 @@ export default function EditBookingPage() {
 
         {/* Section 4: Additional Details */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
-
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
             <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
               4. Additional Details
             </CardTitle>
           </CardHeader>
-
           <CardContent className="p-4">
-
             <div className={`grid grid-cols-1 sm:grid-cols-2 ${isManual ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3.5`}>
-
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Value</Label>
                 <Input name="value" value={formData.value} onChange={handleChange} placeholder="Goods Value" className="h-10 text-sm rounded-lg border-gray-200" />
                 {renderError('value')}
               </div>
-
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Del. Type</Label>
                 <ThemeSelect
@@ -1157,31 +1175,37 @@ export default function EditBookingPage() {
                   className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
                 />
               </div>
-
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Pvt. Marka</Label>
                 <Input name="pvtMarka" value={formData.pvtMarka} onChange={handleChange} placeholder="e.g. 50" className="h-10 text-sm rounded-lg border-gray-200" />
                 {renderError('pvtMarka')}
               </div>
-
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Invoice No</Label>
                 <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-10 text-sm rounded-lg border-gray-200" />
                 {renderError('invoiceNo')}
               </div>
-
               {isManual && (
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
-                  <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className="h-10 rounded-lg border-gray-200 text-sm" />
+                  <div className="flex gap-2">
+                    <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`} />
+                    {user?.ewbApiAccess && (
+                      <Button
+                        type="button"
+                        onClick={handleFetchEwayBill}
+                        disabled={isFetchingEway}
+                        className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
+                      >
+                        {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                      </Button>
+                    )}
+                  </div>
                   {renderError('ewayBillNo')}
                 </div>
               )}
-
             </div>
-
           </CardContent>
-
         </Card>
 
         {/* Section 5: Financial Charges */}
@@ -1239,7 +1263,7 @@ export default function EditBookingPage() {
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
                 <div className="h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-3 font-bold text-gray-700 text-sm">
-                  ₹ {totals.total.toFixed(2)}
+                  {'\u20B9'} {totals.total.toFixed(2)}
                 </div>
               </div>
             </div>

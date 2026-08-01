@@ -80,11 +80,11 @@ export default function UsersPage() {
           <h1 className="text-lg md:text-xl font-bold text-gray-800">Branch Logins</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage system access for branches</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/admin/users/new">
-            <Button className="h-10 px-4 rounded-xl shadow-sm text-sm font-semibold bg-brand-primary hover:bg-brand-primary/90 text-white flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Login</span>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Link href="/admin/users/new" className="w-full sm:w-auto">
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+              <Plus className="w-5 h-5" />
+              Add Login
             </Button>
           </Link>
         </div>

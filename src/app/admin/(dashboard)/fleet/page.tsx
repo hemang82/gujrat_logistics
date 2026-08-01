@@ -13,29 +13,38 @@ export const dynamic = 'force-dynamic';
 
 export default async function FleetDashboard({ searchParams }: { searchParams: Promise<{ vehicleStatus?: string; driverStatus?: string }> }) {
   await getServerSession(authOptions);
+  const session = await getServerSession(authOptions);
   await connectToDatabase();
+
+  const baseQuery: any = {};
+  if (session && (session.user as any).role === 'logistic') {
+    baseQuery.logisticId = (session.user as any).id;
+  } else if (session && (session.user as any).logisticId) {
+    baseQuery.logisticId = (session.user as any).logisticId;
+  }
+
 
   const resolvedParams = await searchParams;
   const vehicleStatusFilter = resolvedParams?.vehicleStatus || '';
   const driverStatusFilter = resolvedParams?.driverStatus || '';
 
   // Fetch counts
-  const totalVehicles = await Vehicle.countDocuments();
-  const availableVehicles = await Vehicle.countDocuments({ status: 'available' });
-  const onTripVehicles = await Vehicle.countDocuments({ status: 'on-trip' });
-  const maintenanceVehicles = await Vehicle.countDocuments({ status: 'maintenance' });
+  const totalVehicles = await Vehicle.countDocuments(baseQuery);
+  const availableVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'available' });
+  const onTripVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'on-trip' });
+  const maintenanceVehicles = await Vehicle.countDocuments({ ...baseQuery, status: 'maintenance' });
 
-  const totalDrivers = await Driver.countDocuments();
-  const availableDrivers = await Driver.countDocuments({ status: 'available' });
-  const onTripDrivers = await Driver.countDocuments({ status: 'on-trip' });
+  const totalDrivers = await Driver.countDocuments(baseQuery);
+  const availableDrivers = await Driver.countDocuments({ ...baseQuery, status: 'available' });
+  const onTripDrivers = await Driver.countDocuments({ ...baseQuery, status: 'on-trip' });
 
   // Get expiring documents (within 30 days)
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
-  const expiringInsurance = await Vehicle.find({ insuranceExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('vehicleNumber insuranceExpiry').lean();
-  const expiringFitness = await Vehicle.find({ fitnessExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('vehicleNumber fitnessExpiry').lean();
-  const expiringLicenses = await Driver.find({ licenseExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('name licenseExpiry').lean();
+  const expiringInsurance = await Vehicle.find({ ...baseQuery, insuranceExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('vehicleNumber insuranceExpiry').lean();
+  const expiringFitness = await Vehicle.find({ ...baseQuery, fitnessExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('vehicleNumber fitnessExpiry').lean();
+  const expiringLicenses = await Driver.find({ ...baseQuery, licenseExpiry: { $lt: thirtyDaysFromNow, $gt: new Date() } }).select('name licenseExpiry').lean();
 
   return (
     <div className="space-y-8">

@@ -20,6 +20,13 @@ export async function GET(req: Request) {
 
     const Model = type === 'packaging' ? PackagingMaster : ItemDescriptionMaster;
     const query: any = { isActive: true };
+
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
     if (q) query.name = { $regex: q, $options: 'i' };
 
     const items = await Model.find(query)
@@ -42,6 +49,34 @@ export async function POST(req: Request) {
     await connectToDatabase();
 
     const body = await req.json();
+
+    let logisticId;
+    if ((session.user as any).role === 'logistic') {
+      logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      logisticId = (session.user as any).logisticId;
+    }
+
+    // Handle bulk insertion
+    if (body.items && Array.isArray(body.items)) {
+      for (const item of body.items) {
+        if (!item.name || !item.name.trim()) continue;
+        const Model = item.type === 'packaging' ? PackagingMaster : ItemDescriptionMaster;
+        const checkQuery: any = { name: item.name.trim() };
+        if (logisticId) checkQuery.logisticId = logisticId;
+        
+        const existing = await Model.findOne(checkQuery);
+        if (existing) {
+          existing.usageCount += 1;
+          await existing.save();
+        } else {
+          await Model.create({ name: item.name.trim(), logisticId });
+        }
+      }
+      return NextResponse.json({ success: true }, { status: 201 });
+    }
+
+    // Fallback for single insertion
     const { type, name } = body;
 
     if (!name || !name.trim()) {
@@ -50,15 +85,18 @@ export async function POST(req: Request) {
 
     const Model = type === 'packaging' ? PackagingMaster : ItemDescriptionMaster;
 
+    const checkQuery: any = { name: name.trim() };
+    if (logisticId) checkQuery.logisticId = logisticId;
+
     // Upsert: if exists increment usageCount, else create new
-    const existing = await Model.findOne({ name: name.trim() });
+    const existing = await Model.findOne(checkQuery);
     if (existing) {
       existing.usageCount += 1;
       await existing.save();
       return NextResponse.json(existing);
     }
 
-    const newEntry = await Model.create({ name: name.trim() });
+    const newEntry = await Model.create({ name: name.trim(), logisticId });
     return NextResponse.json(newEntry, { status: 201 });
   } catch (err: any) {
     if (err.code === 11000) {

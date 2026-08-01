@@ -33,6 +33,15 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
         
+        let hasEwbAccess = user.ewbApiAccess || false;
+        
+        if ((user.role === 'branch_user' || user.role === 'branch') && user.logisticId) {
+          const parentLogistic = await User.findById(user.logisticId).select('ewbApiAccess').lean();
+          if (parentLogistic) {
+            hasEwbAccess = !!parentLogistic.ewbApiAccess;
+          }
+        }
+        
         return {
           id: user._id.toString(),
           name: user.name,
@@ -41,7 +50,7 @@ export const authOptions: NextAuthOptions = {
           logisticId: user.logisticId ? user.logisticId.toString() : '',
           branch: user.branch ? user.branch.toString() : '',
           bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
-          ewbApiAccess: user.ewbApiAccess || false,
+          ewbApiAccess: hasEwbAccess,
         };
       }
     })
@@ -65,7 +74,15 @@ export const authOptions: NextAuthOptions = {
             token.branch = dbUser.branch ? dbUser.branch.toString() : '';
             token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
             token.role = dbUser.role;
-            token.ewbApiAccess = dbUser.ewbApiAccess || false;
+            
+            let hasEwbAccess = dbUser.ewbApiAccess || false;
+            if ((dbUser.role === 'branch_user' || dbUser.role === 'branch') && dbUser.logisticId) {
+              const parentLogistic = await User.findById(dbUser.logisticId).select('ewbApiAccess').lean();
+              if (parentLogistic) {
+                hasEwbAccess = !!parentLogistic.ewbApiAccess;
+              }
+            }
+            token.ewbApiAccess = hasEwbAccess;
           }
         } catch (err) {
           console.error("Error updating token in jwt callback:", err);

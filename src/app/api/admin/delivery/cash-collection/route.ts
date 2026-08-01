@@ -30,6 +30,11 @@ export async function GET(request: Request) {
       paymentCondition: 'to_pay',
       isPaid: { $ne: true }
     };
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
 
     if (search) {
       const searchRegex = new RegExp(search, 'i');

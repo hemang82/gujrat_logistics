@@ -7,6 +7,31 @@ import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any).role !== 'superadmin') {
+      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    }
+
+    await connectToDatabase();
+    const { id } = await params;
+    const user = await User.findById(id).select('-password').lean();
+
+    if (!user || user.role !== 'logistic') {
+      return NextResponse.json({ error: 'Logistic company not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ data: user }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error fetching logistic company:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

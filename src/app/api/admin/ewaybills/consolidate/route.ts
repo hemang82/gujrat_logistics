@@ -20,8 +20,20 @@ export async function GET(request: Request) {
     const search = searchParams.get('search');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+    const branchId = searchParams.get('branchId');
 
     const query: any = {};
+    if ((session.user as any).role === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
+    if ((session.user as any).role === 'branch_user') {
+      query.branch = (session.user as any).branch;
+    } else if (branchId) {
+      query.branch = branchId;
+    }
 
     if (search) {
       query.$or = [
@@ -90,7 +102,9 @@ export async function POST(request: Request) {
         cEwbDate: cewbResponse.cEwbDate,
         validUpto: body.validUpto ? new Date(body.validUpto) : null,
         status: 'Active',
-        createdBy: dbUser._id
+        createdBy: dbUser._id,
+        logisticId: (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId,
+        branch: (session.user as any).branch || null
       });
 
       await ApiLog.create({

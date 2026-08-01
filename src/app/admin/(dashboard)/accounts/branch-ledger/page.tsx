@@ -10,7 +10,9 @@ import {
   Search,
   Filter,
   Plus,
-  IndianRupee
+  IndianRupee,
+  Download,
+  Printer
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +22,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ThemeSelect } from '@/components/ui/theme-select';
 import { useUserStore } from '@/store/useUserStore';
 import { toast } from 'sonner';
 
 export default function BranchLedgerPage() {
   const user = useUserStore(state => state.user);
-  const isAdmin = user?.role === 'superadmin' || user?.role === 'admin';
+  const isAdmin = user?.role === 'superadmin' || user?.role === 'admin' || user?.role === 'logistic';
   
   const [date, setDate] = useState<Date>(new Date());
   const [selectedBranch, setSelectedBranch] = useState<string>(user?.branch || '');
@@ -64,11 +67,14 @@ export default function BranchLedgerPage() {
   }, [date, selectedBranch]);
 
   const fetchLedger = async () => {
-    if (!selectedBranch && !user?.branch) return;
+    const branchId = selectedBranch || (!isAdmin ? user?.branch : '');
+    if (!branchId) {
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
-      const branchId = selectedBranch || user?.branch;
       const dateStr = date.toISOString().split('T')[0];
       
       const res = await fetch(`/api/admin/accounts/branch-ledger?branchId=${branchId}&date=${dateStr}`);
@@ -129,6 +135,57 @@ export default function BranchLedgerPage() {
     }
   };
 
+  const getExportData = () => {
+    if (!ledgerData || !ledgerData.transactions || ledgerData.transactions.length === 0) {
+      return null;
+    }
+    
+    const headers = ['Date', 'Type', 'Amount', 'Description', 'Balance After'];
+    const rows = ledgerData.transactions.map((t: any) => [
+      format(new Date(t.date), 'dd/MM/yyyy hh:mm a'),
+      t.type.toUpperCase(),
+      t.amount,
+      t.description,
+      t.balanceAfter
+    ]);
+    
+    // Add summary row at the bottom
+    rows.push(['', '', '', 'Opening Balance', ledgerData.openingBalance]);
+    rows.push(['', '', '', 'Total In', ledgerData.totalIn]);
+    rows.push(['', '', '', 'Total Out', ledgerData.totalOut]);
+    rows.push(['', '', '', 'Closing Balance', ledgerData.closingBalance]);
+    
+    return { headers, rows };
+  };
+
+  const exportToExcel = async () => {
+    const data = getExportData();
+    if (!data) {
+      toast.error('No data available to export');
+      return;
+    }
+    
+    // Dynamically import to reduce bundle size since it's a client component
+    const { exportToStyledExcel } = await import('@/lib/exportUtils');
+    await exportToStyledExcel('Branch_Ledger', data.headers, data.rows);
+  };
+
+  const exportToPDF = async () => {
+    const data = getExportData();
+    if (!data) {
+      toast.error('No data available to export');
+      return;
+    }
+    
+    const { exportToStyledPDF } = await import('@/lib/exportUtils');
+    exportToStyledPDF(
+      `Branch Cash Ledger - ${format(date, 'dd/MM/yyyy')}`, 
+      'Branch_Ledger', 
+      data.headers, 
+      data.rows
+    );
+  };
+
   return (
     <div className="w-full pb-8 space-y-6">
       {/* Header & Filters */}
@@ -138,21 +195,17 @@ export default function BranchLedgerPage() {
           <p className="text-sm text-gray-500 mt-1">Daily Day-Book (Rojmel) for cash transactions</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto print:hidden">
           {isAdmin && (
-            <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <select 
+            <div className="w-40 sm:w-48 cursor-pointer">
+              <ThemeSelect 
+                name="branch"
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                disabled
-                className="bg-transparent text-sm font-medium text-gray-700 outline-none w-32 md:w-40 cursor-not-allowed opacity-70"
-              >
-                <option value="">Select Branch</option>
-                {branches.map(b => (
-                  <option key={b._id} value={b._id}>{b.name} ({b.code})</option>
-                ))}
-              </select>
+                options={branches.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
+                placeholder="Select Branch"
+                className="h-10 bg-white border-gray-200 cursor-pointer"
+              />
             </div>
           )}
           
@@ -163,6 +216,24 @@ export default function BranchLedgerPage() {
               className="h-10"
             />
           </div>
+          
+          <Button 
+            onClick={exportToPDF}
+            variant="outline"
+            className="text-gray-700 shadow-sm h-10 px-4 whitespace-nowrap border-gray-200"
+          >
+            <Printer className="w-4 h-4 mr-2 text-red-500" />
+            PDF
+          </Button>
+
+          <Button 
+            onClick={exportToExcel}
+            variant="outline"
+            className="text-gray-700 shadow-sm h-10 px-4 whitespace-nowrap border-gray-200"
+          >
+            <Download className="w-4 h-4 mr-2 text-green-600" />
+            EXCEL
+          </Button>
           
           <Button 
             onClick={() => setIsVoucherOpen(true)}
@@ -288,7 +359,13 @@ export default function BranchLedgerPage() {
             </div>
           </Card>
         </>
-      ) : null}
+      ) : (
+        <div className="h-64 flex flex-col items-center justify-center text-center bg-gray-50/50 rounded-xl border border-gray-100 border-dashed mt-6">
+          <Wallet className="w-12 h-12 text-gray-300 mb-3" />
+          <h3 className="text-lg font-medium text-gray-900">No Branch Selected</h3>
+          <p className="text-gray-500 max-w-sm mt-1">Please select a branch from the dropdown above to view its cash ledger and transactions.</p>
+        </div>
+      )}
 
       {/* Add Voucher Modal */}
       <Dialog open={isVoucherOpen} onOpenChange={setIsVoucherOpen}>

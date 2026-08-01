@@ -101,9 +101,12 @@ export default function LogisticsManagementPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Manage transport companies and their owner accounts.</p>
         </div>
-        <Button onClick={openCreateModal} className="flex items-center gap-2 shadow-sm">
-          <Plus className="w-4 h-4" /> Add Logistic Company
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button onClick={openCreateModal} className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            Add Logistic Company
+          </Button>
+        </div>
       </div>
 
       <Card className="border-gray-200 shadow-sm overflow-hidden">

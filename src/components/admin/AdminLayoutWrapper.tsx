@@ -38,16 +38,35 @@ export function AdminLayoutWrapper({
         if (res.ok) return res.json();
         throw new Error('Failed to fetch live profile');
       })
-      .then((liveUser) => {
+      .then((data) => {
+        const liveUser = data.user;
         if (liveUser) {
+          const branchId = typeof liveUser.branch === 'object' && liveUser.branch !== null 
+            ? (liveUser.branch._id || liveUser.branch.id) 
+            : liveUser.branch;
+            
+          const branchName = typeof liveUser.branch === 'object' && liveUser.branch !== null 
+            ? liveUser.branch.name 
+            : '';
+
+          const bookingBranchId = typeof liveUser.bookingBranch === 'object' && liveUser.bookingBranch !== null 
+            ? (liveUser.bookingBranch._id || liveUser.bookingBranch.id) 
+            : liveUser.bookingBranch;
+            
+          const bookingBranchName = typeof liveUser.bookingBranch === 'object' && liveUser.bookingBranch !== null 
+            ? liveUser.bookingBranch.name 
+            : '';
+            
           setUser({
             id: liveUser._id || liveUser.id || user?.id || '',
             name: liveUser.name || user?.name || '',
             email: liveUser.email || user?.email || '',
             role: liveUser.role || user?.role || '',
             logisticId: liveUser.logisticId || user?.logisticId || '',
-            branch: liveUser.branch || 'ASL',
-            bookingBranch: liveUser.bookingBranch || 'ASLALI',
+            branch: branchId || user?.branch || '',
+            branchName: branchName || '',
+            bookingBranch: bookingBranchId || user?.bookingBranch || '',
+            bookingBranchName: bookingBranchName || '',
             ewbApiAccess: liveUser.ewbApiAccess ?? user?.ewbApiAccess ?? false,
           });
         }

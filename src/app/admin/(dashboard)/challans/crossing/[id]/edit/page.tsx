@@ -10,7 +10,9 @@ import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { SearchSelect } from '@/components/ui/search-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Printer } from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 export default function EditCrossingPage() {
   const router = useRouter();
@@ -79,7 +81,7 @@ export default function EditCrossingPage() {
         if (branchesData?.branches) {
           setBranchesList(branchesData.branches.map((b: any) => ({
             value: b._id,
-            label: `${b.name} (${b.code})`
+            label: b.name
           })));
         }
 
@@ -610,18 +612,17 @@ export default function EditCrossingPage() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
-                <ThemeSelect
-                  name="lrToBranch"
-                  value={formData.lrToBranch}
-                  onChange={handleChange as any}
-                  options={[{ value: '', label: 'Select Branch' }, ...branchesList]}
-                  disabled={formData.allBranchwise === 'All'}
-                  className={`flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none ${
-                    formData.allBranchwise === 'All'
-                      ? 'bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200'
-                      : ''
-                  }`}
-                />
+                <div className="relative">
+                  <BranchAutocomplete
+                    name="lrToBranch"
+                    value={formData.lrToBranch}
+                    onChange={handleChange}
+                    options={branchesList}
+                    placeholder="Search LR to Branch..."
+                    disabled={formData.allBranchwise === 'All'}
+                    className={formData.allBranchwise === 'All' ? 'bg-gray-50' : ''}
+                  />
+                </div>
               </div>
             </div>
 

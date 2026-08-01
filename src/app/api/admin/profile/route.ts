@@ -17,10 +17,23 @@ export async function GET(request: Request) {
     await connectToDatabase();
 
     const activeUser = session.user as any;
-    const user = await User.findById(activeUser.id).lean();
+    const user = await User.findById(activeUser.id)
+      .populate('branch', 'name code')
+      .populate('bookingBranch', 'name code')
+      .lean();
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // If branch user, inherit ewbApiAccess and statutory details from parent logistic
+    if (user.role === 'branch_user' || user.role === 'branch') {
+      if (user.logisticId) {
+        const parentLogistic = await User.findById(user.logisticId).lean();
+        if (parentLogistic) {
+          user.ewbApiAccess = parentLogistic.ewbApiAccess;
+        }
+      }
     }
 
     // Don't send password hash back
