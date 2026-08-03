@@ -21,11 +21,9 @@ export async function resolveBranchId(branchVal: any): Promise<mongoose.Types.Ob
   }
   
   // If not a valid ObjectId, search for branch by code or name
+  // If not a valid ObjectId, search for branch by exact code match
   const branchObj = await Branch.findOne({ 
-    $or: [
-      { code: new RegExp(`^${valStr.substring(0, 3)}`, 'i') },
-      { name: new RegExp(`^${valStr.substring(0, 3)}`, 'i') }
-    ],
+    code: valStr.trim().toUpperCase(),
     isDeleted: { $ne: true } 
   });
   if (branchObj) {

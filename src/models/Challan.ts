@@ -26,7 +26,7 @@ export interface IChallan extends Document {
 const ChallanSchema = new Schema<IChallan>(
   {
     logisticId: { type: Schema.Types.ObjectId, ref: 'User' },
-    challanNumber: { type: String, required: true, unique: true },
+    challanNumber: { type: String, required: true },
     branch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
     challanDate: { type: Date, default: Date.now },
     allBranchwise: { type: String, enum: ['All', 'Branchwise'], default: 'All' },
@@ -49,5 +49,8 @@ const ChallanSchema = new Schema<IChallan>(
   { timestamps: true }
 );
 
-const Challan: Model<IChallan> = mongoose.models.Challan || mongoose.model<IChallan>('Challan', ChallanSchema);
+if (mongoose.models.Challan) {
+  delete mongoose.models.Challan;
+}
+const Challan: Model<IChallan> = mongoose.model<IChallan>('Challan', ChallanSchema);
 export default Challan;

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin, AlertTriangle } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
@@ -25,6 +25,8 @@ function NewBookingForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [grNo, setGrNo] = useState('');
   const user = useUserStore((state) => state.user);
+
+  const canAdd = user?.role === 'logistic' || user?.role === 'superadmin' || user?.permissions?.bookings?.canAdd !== false;
 
   // Superadmin Logistic Selection
   const [logistics, setLogistics] = useState<any[]>([]);
@@ -796,6 +798,22 @@ function NewBookingForm() {
   };
 
 
+  if (user && !canAdd) {
+    return (
+      <div className="p-8 mt-10 max-w-md mx-auto bg-red-50 border border-red-200 rounded-xl text-center shadow-sm">
+        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+        <h2 className="text-lg font-bold text-red-700">Access Denied</h2>
+        <p className="text-sm text-red-600 mt-1">You do not have permission to add new Bookings. Please contact your Logistic Admin.</p>
+        <Button 
+          onClick={() => router.push('/admin/bookings')}
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white"
+        >
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full pb-8">
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
@@ -961,10 +979,7 @@ function NewBookingForm() {
                   <div className="space-y-1 relative">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">Branch <span className="text-red-500">*</span></Label>
                     {user?.role === 'branch' ? (
-                      <Input name="branch" value={(() => {
-                        const b = branches.find(b => b._id === formData.branch);
-                        return b ? `${b.name} (${b.code})` : formData.branch;
-                      })()} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                      <Input name="branch" value={branchesList.find(b => b.value === formData.branch)?.label || formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                     ) : (
                       <BranchAutocomplete
                         name="branch"

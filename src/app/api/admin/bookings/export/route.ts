@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const dateStr = searchParams.get('date') || '';
-    const destBranch = searchParams.get('destBranch') || '';
+    const filterBranch = searchParams.get('branch') || '';
 
     await connectToDatabase();
 
@@ -52,12 +52,23 @@ export async function GET(request: Request) {
       query.bookingDate = { $gte: startOfDay, $lte: endOfDay };
     }
 
-    if (destBranch) {
-      query.destinationBranch = destBranch;
+    if (filterBranch) {
+      query.$or = (query.$or || []).concat([
+        { branch: filterBranch },
+        { bookingBranch: filterBranch }
+      ]);
     }
 
-    // Fetch all matching records (No limit for export)
-    const bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
+    let bookings = [];
+    const isLogisticAdmin = userRole === 'logistic' || userRole === 'superadmin';
+    
+    if (isLogisticAdmin && !filterBranch) {
+      // Force empty export if no branch selected
+      bookings = [];
+    } else {
+      // Fetch all matching records (No limit for export)
+      bookings = await Booking.find(query).sort({ createdAt: -1 }).lean();
+    }
 
     const format = searchParams.get('format');
     if (format === 'json') {

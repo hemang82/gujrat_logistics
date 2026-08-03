@@ -35,6 +35,7 @@ export async function GET(request: Request) {
     }
 
     const bookingCrossing = searchParams.get('bookingCrossing') || '';
+    const branch = searchParams.get('branch') || '';
 
     if (status) {
       query.status = status;
@@ -42,6 +43,10 @@ export async function GET(request: Request) {
 
     if (bookingCrossing) {
       query.bookingCrossing = bookingCrossing;
+    }
+
+    if (branch) {
+      query.branch = branch;
     }
 
     if (search) {
@@ -116,19 +121,56 @@ export async function POST(request: Request) {
 
     // Auto-generate sequential challan number if not provided
     let challanNumber = data.challanNumber;
-    if (!challanNumber) {
-      const lastChallan = await Challan.findOne().sort({ createdAt: -1 });
-      if (lastChallan && !isNaN(Number(lastChallan.challanNumber))) {
-        challanNumber = (Number(lastChallan.challanNumber) + 1).toString();
-      } else {
-        challanNumber = '819'; // Start from mockup default or 819
-      }
-    }
+    
+    // Always use logistic scope for numbering
+    const logisticId = (session.user as any).role === 'logistic' 
+      ? (session.user as any).id 
+      : (session.user as any).logisticId;
 
-    // Check unique challanNumber constraint
-    const existingChallan = await Challan.findOne({ challanNumber, isDeleted: false });
-    if (existingChallan) {
-      return NextResponse.json({ error: `Challan number ${challanNumber} already exists.` }, { status: 400 });
+    if (!challanNumber) {
+      // Find the highest existing numeric challan number for this SPECIFIC branch
+      const allChallans = await Challan.find({ 
+        challanNumber: { $exists: true }, 
+        branch: data.branch,
+        logisticId,
+        isDeleted: false
+      }, { challanNumber: 1 });
+      
+      let maxNum = 800; // So first will be 801
+      allChallans.forEach((c: any) => {
+        if (c.challanNumber) {
+          const num = parseInt(String(c.challanNumber).replace(/\D/g, ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      });
+      challanNumber = (maxNum + 1).toString();
+    } else {
+      // If frontend sent a number, verify it's not taken for THIS branch — if taken, auto-increment
+      const existingChallan = await Challan.findOne({ 
+        challanNumber: String(challanNumber), 
+        branch: data.branch,
+        logisticId,
+        isDeleted: false 
+      });
+      
+      if (existingChallan) {
+        // Auto-increment instead of throwing error
+        const allChallans = await Challan.find({ 
+          challanNumber: { $exists: true }, 
+          branch: data.branch,
+          logisticId,
+          isDeleted: false
+        }, { challanNumber: 1 });
+        
+        let maxNum = 800;
+        allChallans.forEach((c: any) => {
+          if (c.challanNumber) {
+            const num = parseInt(String(c.challanNumber).replace(/\D/g, ''), 10);
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+          }
+        });
+        challanNumber = (maxNum + 1).toString();
+      }
     }
 
     // Check if any of the bookings are already assigned to another active Challan

@@ -105,6 +105,7 @@ export async function POST(request: Request) {
       phone: body.phone,
       role: body.role || 'branch',
       branch: body.branch || null,
+      permissions: body.permissions,
       logisticId: activeUser.role === 'logistic' ? activeUser.id : body.logisticId
     });
 

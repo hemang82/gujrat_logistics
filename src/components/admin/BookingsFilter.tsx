@@ -24,10 +24,10 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
 
   const currentSearch = searchParams.get('search') || '';
   const currentDate = searchParams.get('date') || '';
-  const currentDestBranch = searchParams.get('destBranch') || '';
+  const currentBranch = searchParams.get('branch') || '';
 
   const [searchValue, setSearchValue] = useState(currentSearch);
-  const [destBranch, setDestBranch] = useState(currentDestBranch);
+  const [selectedBranch, setSelectedBranch] = useState(currentBranch);
   
   const branchOptions = [
     { label: 'All Destinations', value: '' },
@@ -37,8 +37,8 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
   // Sync state if URL changes externally
   useEffect(() => {
     setSearchValue(currentSearch);
-    setDestBranch(currentDestBranch);
-  }, [currentSearch, currentDestBranch]);
+    setSelectedBranch(currentBranch);
+  }, [currentSearch, currentBranch]);
 
   const handleUpdate = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -53,8 +53,8 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
 
   const handleBranchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const val = e.target.value;
-    setDestBranch(val);
-    handleUpdate('destBranch', val);
+    setSelectedBranch(val);
+    handleUpdate('branch', val);
   };
 
   const handleClearSearch = () => {
@@ -98,14 +98,14 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
         )}
       </div>
 
-      {/* Destination Branch Filter */}
+      {/* Booking Branch Filter */}
       <div className="w-full md:w-56 relative z-[60]">
         <BranchAutocomplete
-          name="destBranch"
-          value={destBranch}
+          name="branch"
+          value={selectedBranch}
           onChange={handleBranchChange}
-          options={branchOptions}
-          placeholder="Destination Branch"
+          options={branchOptions.map(b => b.value === '' ? { ...b, label: 'All Branches' } : b)}
+          placeholder="Booking Branch"
           className="!rounded-lg"
         />
       </div>

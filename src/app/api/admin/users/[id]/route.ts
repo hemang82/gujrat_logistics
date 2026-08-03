@@ -86,6 +86,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.phone !== undefined) updateData.phone = body.phone;
     if (body.role) updateData.role = body.role;
     if (body.branch !== undefined) updateData.branch = body.branch || null;
+    if (body.permissions !== undefined) updateData.permissions = body.permissions;
     
     // Update password if provided
     if (body.password) {

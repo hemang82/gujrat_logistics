@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin, AlertTriangle } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
@@ -25,6 +25,9 @@ export default function EditBookingPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isFetchingEway, setIsFetchingEway] = useState(false);
+  
+  const user = useUserStore((state) => state.user);
+  const canEdit = user?.role === 'logistic' || user?.role === 'superadmin' || user?.permissions?.bookings?.canEdit !== false;
 
   // Autocomplete suggestion states
   const [consignorSuggestions, setConsignorSuggestions] = useState<any[]>([]);
@@ -104,10 +107,11 @@ export default function EditBookingPage() {
     }
   };
 
-  const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
+  const [branchesList, setBranchesList] = useState<{ value: string; label: string; code: string }[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
+    bookingType: 'auto',
     branch: '',
     grNo: '',
     bookingDate: new Date().toISOString().split('T')[0],
@@ -137,64 +141,20 @@ export default function EditBookingPage() {
   });
 
   useEffect(() => {
-    const url = selectedLogisticId ? `/api/admin/branches?limit=100&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=100';
-    fetch(url)
+    fetch('/api/admin/branches?limit=100')
       .then(res => res.json())
       .then(data => {
         if (data && data.branches && data.branches.length > 0) {
           const list = data.branches.map((b: any) => ({
             value: b._id,
-            label: b.name
+            label: b.name,
+            code: b.code || ''
           }));
           setBranchesList(list);
         }
       })
       .catch(err => console.error('Error fetching branches:', err));
-  }, [selectedLogisticId]);
-
-  useEffect(() => {
-    if (!isManual && formData.branch) {
-      const baseUrl = `/api/admin/bookings?branch=${formData.branch}`;
-      const url = selectedLogisticId ? `${baseUrl}&logisticId=${selectedLogisticId}` : baseUrl;
-      // Fetch bookings to determine next LR No for Auto LR Mode
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0) {
-            let maxNum = 1000;
-            let foundValid = false;
-            data.forEach((b: any) => {
-              if (b.lrNumber) {
-                const num = parseInt(b.lrNumber.replace(/\D/g, ''), 10);
-                if (!isNaN(num)) {
-                  foundValid = true;
-                  if (num > maxNum) {
-                    maxNum = num;
-                  }
-                }
-              }
-            });
-            setGrNo(foundValid ? (maxNum + 1).toString() : '1001');
-          } else {
-            setGrNo('1001');
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          setGrNo('1001');
-        });
-    }
-  }, [isManual, formData.branch, selectedLogisticId]);
-
-  useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        branch: user.branch || '',
-        bookingBranch: user.bookingBranch || ''
-      }));
-    }
-  }, [user]);
+  }, []);
 
   const [items, setItems] = useState([
     { packages: '', packaging: '', description: '', weight: '', nw: 'N', rate: '', amount: '' }
@@ -421,10 +381,10 @@ export default function EditBookingPage() {
 
         setFormData({
           bookingType: booking.bookingType || 'auto',
-          branch: booking.branch?.code || booking.branch || booking.bookingBranch?.code || booking.bookingBranch || '',
+          branch: booking.branch?._id || booking.branch || booking.bookingBranch?._id || booking.bookingBranch || '',
           grNo: booking.lrNumber || '',
           bookingDate: booking.bookingDate ? new Date(booking.bookingDate).toISOString().split('T')[0] : '',
-          bookingBranch: booking.bookingBranch?.code || booking.bookingBranch || '',
+          bookingBranch: booking.bookingBranch?._id || booking.bookingBranch || '',
           destinationBranch: booking.destinationBranch?._id || booking.destinationBranch || '',
           rateType: booking.rateType || booking.paymentCondition || 'to_pay',
 
@@ -449,9 +409,7 @@ export default function EditBookingPage() {
           gstRate: booking.charges?.gstRate?.toString() || '0',
         });
 
-        const matchingBranch = branchesList.find(b => b.value === (booking.destinationBranch?._id || booking.destinationBranch));
-        const fallbackLabel = booking.destinationBranch?.name ? `${booking.destinationBranch.name} (${booking.destinationBranch.code})` : (booking.destinationBranch?.code || booking.destinationBranch || '');
-        setDestinationBranchSearch(matchingBranch ? matchingBranch.label : fallbackLabel);
+
         setItems(loadedItems);
       } catch (error) {
         toast.error('Could not load booking details');
@@ -674,6 +632,22 @@ export default function EditBookingPage() {
     return <div className="p-8 text-center text-gray-500">Loading booking details...</div>;
   }
 
+  if (user && !canEdit) {
+    return (
+      <div className="p-8 mt-10 max-w-md mx-auto bg-red-50 border border-red-200 rounded-xl text-center shadow-sm">
+        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+        <h2 className="text-lg font-bold text-red-700">Access Denied</h2>
+        <p className="text-sm text-red-600 mt-1">You do not have permission to edit Bookings. Please contact your Logistic Admin.</p>
+        <Button 
+          onClick={() => router.push('/admin/bookings')}
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white"
+        >
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full pb-8">
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
@@ -710,8 +684,8 @@ export default function EditBookingPage() {
               /* Manual Mode Row 1 (6 columns) */
               <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
-                  <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
+                  <Input name="branch" value={branchesList.find(b => b.value === formData.branch)?.label || formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                 </div>
                 <div className="space-y-1 relative pb-4">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
@@ -729,7 +703,7 @@ export default function EditBookingPage() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                  <Input name="bookingBranch" value={branchesList.find(b => b.code === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                  <Input name="bookingBranch" value={branchesList.find(b => b.value === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                 </div>
                 <div className="space-y-1 relative">
                   <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
@@ -772,12 +746,12 @@ export default function EditBookingPage() {
                     <Input name="grNo" value={formData.grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
-                    <Input name="branch" value={formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch</Label>
+                    <Input name="branch" value={branchesList.find(b => b.value === formData.branch)?.label || formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">Booking Branch</Label>
-                    <Input name="bookingBranch" value={branchesList.find(b => b.code === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                    <Input name="bookingBranch" value={branchesList.find(b => b.value === formData.bookingBranch)?.label || formData.bookingBranch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
                   </div>
                 </div>
 

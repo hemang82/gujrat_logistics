@@ -28,7 +28,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     password: '',
     phone: '',
     role: 'branch',
-    branchId: ''
+    branchId: '',
+    permissions: {
+      bookings: {
+        canView: true,
+        canAdd: true,
+        canEdit: true,
+        canDelete: false
+      }
+    }
   });
 
   useEffect(() => {
@@ -49,7 +57,15 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             password: '', // Empty password means don't change
             phone: userData.phone || '',
             role: userData.role || 'branch',
-            branchId: userData.branch || ''
+            branchId: userData.branch || '',
+            permissions: userData.permissions || {
+              bookings: {
+                canView: true,
+                canAdd: true,
+                canEdit: true,
+                canDelete: false
+              }
+            }
           });
           
           if (userData.branch && branchesData.branches) {
@@ -135,6 +151,19 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     }
   };
 
+  const togglePermission = (module: string, action: string) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [module]: {
+          ...(prev.permissions as any)[module],
+          [action]: !(prev.permissions as any)[module]?.[action]
+        }
+      }
+    }));
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -195,7 +224,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         email: formData.email,
         phone: formData.phone,
         role: formData.role,
-        branch: finalBranchId || null
+        branch: finalBranchId || null,
+        permissions: formData.permissions
       };
 
       if (formData.password) {
@@ -367,6 +397,49 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 {errors.phone && <p className="text-red-500 text-xs font-medium">{errors.phone}</p>}
               </div>
 
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section: Module Permissions */}
+        <Card className="border border-gray-100 shadow-sm rounded-xl mt-6 overflow-hidden">
+          <CardHeader className="bg-gray-50 border-b border-gray-100 py-3 px-4">
+            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+              Module Permissions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gray-50/50 text-gray-500 text-xs uppercase border-b border-gray-100">
+                    <th className="font-semibold p-4">Module Name</th>
+                    <th className="font-semibold p-4 text-center">View</th>
+                    <th className="font-semibold p-4 text-center">Add</th>
+                    <th className="font-semibold p-4 text-center">Edit</th>
+                    <th className="font-semibold p-4 text-center">Delete</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  <tr className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-gray-800 text-sm">Bookings & LR</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Manage Lorry Receipts</div>
+                    </td>
+                    {['canView', 'canAdd', 'canEdit', 'canDelete'].map(action => (
+                      <td key={action} className="p-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => togglePermission('bookings', action)}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${(formData.permissions.bookings as any)[action] ? (action === 'canDelete' ? 'bg-red-500' : 'bg-brand-primary') : 'bg-gray-200'}`}
+                        >
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${(formData.permissions.bookings as any)[action] ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>

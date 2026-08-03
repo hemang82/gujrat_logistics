@@ -51,6 +51,7 @@ export const authOptions: NextAuthOptions = {
           branch: user.branch ? user.branch.toString() : '',
           bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
           ewbApiAccess: hasEwbAccess,
+          permissions: user.permissions || {},
         };
       }
     })
@@ -64,11 +65,12 @@ export const authOptions: NextAuthOptions = {
         token.branch = (user as any).branch;
         token.bookingBranch = (user as any).bookingBranch;
         token.ewbApiAccess = (user as any).ewbApiAccess;
+        token.permissions = (user as any).permissions;
       } else if (token.id) {
         // Fetch fresh branch/bookingBranch details from the database on refresh
         try {
           await connectToDatabase();
-          const dbUser = await User.findById(token.id).select('logisticId branch bookingBranch role ewbApiAccess');
+          const dbUser = await User.findById(token.id).select('logisticId branch bookingBranch role ewbApiAccess permissions');
           if (dbUser) {
             token.logisticId = dbUser.logisticId ? dbUser.logisticId.toString() : '';
             token.branch = dbUser.branch ? dbUser.branch.toString() : '';
@@ -83,6 +85,7 @@ export const authOptions: NextAuthOptions = {
               }
             }
             token.ewbApiAccess = hasEwbAccess;
+            token.permissions = dbUser.permissions || {};
           }
         } catch (err) {
           console.error("Error updating token in jwt callback:", err);
@@ -98,6 +101,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).branch = token.branch;
         (session.user as any).bookingBranch = token.bookingBranch;
         (session.user as any).ewbApiAccess = token.ewbApiAccess;
+        (session.user as any).permissions = token.permissions;
       }
       return session;
     }

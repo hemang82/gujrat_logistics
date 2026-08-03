@@ -22,9 +22,11 @@ interface ListActionsProps {
   printUrl?: string;
   deleteApiUrl?: string; // optional override for delete endpoint
   onDeleted?: () => void; // optional callback after delete
+  hideEdit?: boolean;
+  hideDelete?: boolean;
 }
 
-export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted }: ListActionsProps) {
+export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted, hideEdit, hideDelete }: ListActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -80,7 +82,7 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
           </Link>
         )}
         
-        {editUrl && (
+        {editUrl && !hideEdit && (
           <Link href={editUrl} onClick={(e) => e.stopPropagation()}>
             <button
               className="p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
@@ -91,17 +93,19 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
           </Link>
         )}
 
-        <button 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setDeleteDialogOpen(true);
-          }}
-          className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer" 
-          title="Delete"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {!hideDelete && (
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setDeleteDialogOpen(true);
+            }}
+            className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors cursor-pointer" 
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -29,6 +29,26 @@ export async function GET(req: Request) {
 
     let query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(req)) };
 
+    // Apply branch isolation for branch users
+    const userRole = (session.user as any)?.role;
+    if (userRole === 'branch' || userRole === 'branch_user') {
+      const userBranchStr = (session.user as any)?.branch || (session.user as any)?.bookingBranch;
+      if (userBranchStr) {
+        let userBranchObj = userBranchStr;
+        try {
+          if (typeof userBranchStr === 'string' && /^[0-9a-fA-F]{24}$/.test(userBranchStr)) {
+            const mongoose = require('mongoose');
+            userBranchObj = new mongoose.Types.ObjectId(userBranchStr);
+          }
+        } catch (e) { }
+
+        query.$or = [
+          { bookingBranch: userBranchObj },
+          { branch: userBranchObj }
+        ];
+      }
+    }
+
     if (search) {
       const cleanSearch = search.trim().replace(/^lr-/i, '');
       
@@ -41,7 +61,12 @@ export async function GET(req: Request) {
         searchConditions.push({ lrNumber: Number(cleanSearch) });
       }
       
-      query.$or = searchConditions;
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchConditions }];
+        delete query.$or;
+      } else {
+        query.$or = searchConditions;
+      }
     }
 
     // Sort by creation time descending (newest created first)

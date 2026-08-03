@@ -284,8 +284,9 @@ export default function EditChallanPage() {
           return newSelections;
         });
 
+        const branchNameStr = getBranchLabel(formData.lrToBranch) || formData.lrToBranch;
         const msg = formData.allBranchwise === 'Branchwise' 
-          ? `Automatically loaded ${matchedBookings.length} LRs for branch: ${formData.lrToBranch}`
+          ? `Automatically loaded ${matchedBookings.length} LRs for branch: ${branchNameStr}`
           : `Automatically loaded all ${matchedBookings.length} pending LRs`;
         toast.success(msg);
       }
@@ -587,7 +588,7 @@ export default function EditChallanPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Branch</Label>
-                <Input name="branch" value={formData.branch} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
+                <Input name="branch" value={getBranchLabel(formData.branch) || formData.branch} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Ch No</Label>

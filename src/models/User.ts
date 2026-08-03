@@ -18,6 +18,15 @@ export interface IUser extends Document {
   transporterId?: string;
   panNumber?: string;
   
+  permissions?: {
+    bookings?: {
+      canView?: boolean;
+      canAdd?: boolean;
+      canEdit?: boolean;
+      canDelete?: boolean;
+    };
+  };
+
   isDeleted?: boolean;
   createdAt: Date;
 }
@@ -44,11 +53,25 @@ const UserSchema = new Schema<IUser>(
     gstNumber: { type: String },
     transporterId: { type: String },
     panNumber: { type: String },
+    permissions: {
+      type: Schema.Types.Mixed,
+      default: {
+        bookings: {
+          canView: true,
+          canAdd: true,
+          canEdit: true,
+          canDelete: false
+        }
+      }
+    },
     isDeleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
 
-const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+const User: Model<IUser> = mongoose.model<IUser>('User', UserSchema);
 export default User;

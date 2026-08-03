@@ -93,31 +93,37 @@ export default function AddChallanPage() {
   // Derived state for checked LRs
   const loadedLrs = pendingLrs.filter(item => selectedLrIds[item._id]);
 
-  // Sync user branch
+  // Sync user branch from store when it loads
   useEffect(() => {
-    if (userBranch) {
+    if (userBranch && !formData.branch) {
       setFormData(prev => ({ ...prev, branch: userBranch }));
     }
   }, [userBranch]);
 
-  // Load Dropdowns
+  // Auto-load next challan number based on selected branch
   useEffect(() => {
-    // 1. Load next sequential challan number estimation
-    fetch('/api/admin/challans?limit=1')
+    if (!formData.branch) return;
+    fetch(`/api/admin/challans?limit=1000&branch=${formData.branch}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.challans && data.challans.length > 0) {
-          const lastNum = Number(data.challans[0].challanNumber);
-          if (!isNaN(lastNum)) {
-            setFormData(prev => ({ ...prev, challanNumber: (lastNum + 1).toString() }));
-          }
+          let maxNum = 800;
+          data.challans.forEach((c: any) => {
+            if (c.challanNumber) {
+              const num = parseInt(String(c.challanNumber).replace(/\D/g, ''), 10);
+              if (!isNaN(num) && num > maxNum) maxNum = num;
+            }
+          });
+          setFormData(prev => ({ ...prev, challanNumber: (maxNum + 1).toString() }));
         } else {
-          setFormData(prev => ({ ...prev, challanNumber: '819' }));
+          setFormData(prev => ({ ...prev, challanNumber: '801' }));
         }
       })
-      .catch(() => setFormData(prev => ({ ...prev, challanNumber: '819' })));
+      .catch(() => setFormData(prev => ({ ...prev, challanNumber: '801' })));
+  }, [formData.branch]);
 
-    // 2. Load Branches
+  // Load Dropdowns (Branches, Vehicles, Drivers, Agents, Bookings)
+  useEffect(() => {
     fetch('/api/admin/branches?limit=100')
       .then(res => res.json())
       .then(data => {
@@ -246,8 +252,9 @@ export default function AddChallanPage() {
           return newSelections;
         });
 
+        const branchNameStr = getBranchLabel(formData.lrToBranch) || formData.lrToBranch;
         const msg = formData.allBranchwise === 'Branchwise' 
-          ? `Automatically loaded ${matchedBookings.length} LRs for branch: ${formData.lrToBranch}`
+          ? `Automatically loaded ${matchedBookings.length} LRs for branch: ${branchNameStr}`
           : `Automatically loaded all ${matchedBookings.length} pending LRs`;
         toast.success(msg);
       }
@@ -571,7 +578,20 @@ export default function AddChallanPage() {
             <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Branch</Label>
-                <Input name="branch" value={formData.branch} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
+                {userBranch ? (
+                  <Input name="branch" value={user?.branchName || getBranchLabel(formData.branch) || formData.branch} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
+                ) : (
+                  <ThemeSelect
+                    name="branch"
+                    value={formData.branch}
+                    onChange={handleChange as any}
+                    options={[
+                      { value: '', label: 'Select Branch' },
+                      ...branchesList
+                    ]}
+                    className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
+                  />
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Ch No <span className="text-red-500">*</span></Label>

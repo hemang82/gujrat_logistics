@@ -4,7 +4,7 @@ import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, FileText, Download, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
+import { Plus, Search, FileText, Download, Calendar as CalendarIcon, ChevronRight, AlertTriangle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import ListActions from '@/components/admin/ListActions';
 import BookingStatusDropdown from '@/components/admin/BookingStatusDropdown';
 import ExportBookings from '@/components/admin/ExportBookings';
 import Branch from '@/models/Branch';
+import User from '@/models/User';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,12 +22,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const session = await getServerSession(authOptions);
   await connectToDatabase();
   const role = (session?.user as any)?.role;
-  const canCreate = role !== 'superadmin' && role !== 'logistic';
 
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
   const dateStr = resolvedParams?.date || '';
-  const destBranch = resolvedParams?.destBranch || '';
+  const filterBranch = resolvedParams?.branch || '';
   const page = parseInt(resolvedParams?.page || '1', 10);
   const limit = parseInt(resolvedParams?.limit || '15', 10);
 
@@ -36,7 +36,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   if (userLogisticId) {
     branchQuery.logisticId = userLogisticId;
   }
-  const branches = await Branch.find(branchQuery).select('_id name code').lean();
+  const branchesDoc = await Branch.find(branchQuery).select('_id name code').lean();
+  const branches = branchesDoc.map((b: any) => ({ ...b, _id: b._id.toString() }));
 
   // Build query
   const query: any = { isDeleted: { $ne: true } };
@@ -48,23 +49,38 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   }
 
   if (session && ((session.user as any).role === 'branch_user' || (session.user as any).role === 'branch')) {
-    const userBranch = (session.user as any).branch || (session.user as any).bookingBranch;
-    if (userBranch) {
-      // In Booking schema, branch can be string or ObjectId. Let's handle both or rely on the populated object match.
-      // Usually bookingBranch is an ObjectId referencing Branch.
-      // We'll search by the branch ID string.
-      // Sometimes it's populated, but here we're filtering on the DB level where bookingBranch is an ObjectId
-      query.bookingBranch = userBranch;
+    const userBranchStr = (session.user as any).branch || (session.user as any).bookingBranch;
+    if (userBranchStr) {
+      let userBranchObj = userBranchStr;
+      try {
+        if (typeof userBranchStr === 'string' && /^[0-9a-fA-F]{24}$/.test(userBranchStr)) {
+          const mongoose = require('mongoose');
+          userBranchObj = new mongoose.Types.ObjectId(userBranchStr);
+        }
+      } catch (e) { }
+
+      // Branch user should see bookings where they are the origin
+      query.$or = [
+        { bookingBranch: userBranchObj },
+        { branch: userBranchObj }
+      ];
     }
   }
 
   if (search) {
-    query.$or = [
+    const searchOr = [
       { lrNumber: { $regex: search, $options: 'i' } },
       { 'consignor.name': { $regex: search, $options: 'i' } },
       { 'consignee.name': { $regex: search, $options: 'i' } },
       { deliveryLocation: { $regex: search, $options: 'i' } }
     ];
+
+    if (query.$or) {
+      query.$and = [{ $or: query.$or }, { $or: searchOr }];
+      delete query.$or;
+    } else {
+      query.$or = searchOr;
+    }
   }
 
   if (dateStr) {
@@ -75,28 +91,77 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
     query.bookingDate = { $gte: startOfDay, $lte: endOfDay };
   }
 
-  if (destBranch) {
-    // destBranch is passed as branch ID
-    // We can filter by destinationBranch (if stored as object ID) 
-    // OR deliveryLocation (if stored as branch name)
-    // Looking at the schema, we'll try deliveryLocation (name) first, or we can use the branch ID directly if destinationBranch is populated.
-    // Let's filter by destinationBranch ObjectId since it's the exact match.
-    query.destinationBranch = destBranch;
+  if (filterBranch) {
+    // Branch filter applied from the Logistic panel
+    query.$or = (query.$or || []).concat([
+      { branch: filterBranch },
+      { bookingBranch: filterBranch }
+    ]);
   }
 
   const skip = (page - 1) * limit;
 
-  // Fetch paginated bookings
-  const bookings = await Booking.find(query)
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit)
-    .populate('destinationBranch', 'name')
-    .populate('bookingBranch', 'name')
-    .lean();
+  let bookings = [];
+  let totalBookings = 0;
+  let totalPages = 0;
 
-  const totalBookings = await Booking.countDocuments(query);
-  const totalPages = Math.ceil(totalBookings / limit);
+  const isLogisticAdmin = role === 'logistic' || role === 'superadmin';
+  
+  let canViewBooking = true;
+  let canAddBooking = true;
+  let canEditBooking = true;
+  let canDeleteBooking = true;
+
+  if (isLogisticAdmin && !filterBranch) {
+    // Return empty list if no branch is selected by admin
+    bookings = [];
+    totalBookings = 0;
+    totalPages = 0;
+  } else {
+    // Fetch paginated bookings
+    bookings = await Booking.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('destinationBranch', 'name')
+      .populate('bookingBranch', 'name')
+      .lean();
+
+    totalBookings = await Booking.countDocuments(query);
+    totalPages = Math.ceil(totalBookings / limit);
+
+    // Fetch permissions for branch users
+    if (session && (role === 'branch_user' || role === 'branch')) {
+      try {
+        const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
+        if (userDoc && userDoc.permissions?.bookings) {
+          canViewBooking = userDoc.permissions.bookings.canView !== false;
+          canAddBooking = userDoc.permissions.bookings.canAdd !== false;
+          canEditBooking = userDoc.permissions.bookings.canEdit !== false;
+          canDeleteBooking = userDoc.permissions.bookings.canDelete === true;
+        } else {
+          canViewBooking = true;
+          canAddBooking = true;
+          canEditBooking = true;
+          canDeleteBooking = false; // default for older users
+        }
+      } catch (e) {
+        console.error("Error fetching user permissions", e);
+      }
+    }
+  }
+
+  if (!canViewBooking) {
+    return (
+      <div className="p-8 mt-10 max-w-md mx-auto bg-red-50 border border-red-200 rounded-xl text-center shadow-sm">
+        <AlertTriangle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+        <h2 className="text-lg font-bold text-red-700">Access Denied</h2>
+        <p className="text-sm text-red-600 mt-1">You do not have permission to view Bookings. Please contact your Logistic Admin.</p>
+      </div>
+    );
+  }
+
+  const canCreate = !isLogisticAdmin && canAddBooking;
 
   return (
     <div className="space-y-6">
@@ -107,7 +172,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
           <p className="text-brand-text-secondary mt-1">Manage Lorry Receipts (LR) and track parcels.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
-          <ExportBookings search={search} date={dateStr} destBranch={destBranch} />
+          <ExportBookings search={search} date={dateStr} branch={filterBranch} />
           
           {canCreate && (
             <div className="flex gap-3 w-full sm:w-auto">
@@ -154,10 +219,14 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
               <tbody className="divide-y divide-gray-50">
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                    <td colSpan={8} className="p-8 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="w-12 h-12 text-gray-300 mb-3" />
-                        <p>No bookings found. Create a new LR to get started.</p>
+                        {isLogisticAdmin && !filterBranch ? (
+                          <p>Please select a Booking Branch to view LRs.</p>
+                        ) : (
+                          <p>No bookings found. Create a new LR to get started.</p>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -193,6 +262,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                             viewUrl={`/admin/bookings/${booking._id}`}
                             editUrl={`/admin/bookings/${booking._id}/edit`}
                             printUrl={`/admin/bookings/${booking._id}/print`}
+                            hideEdit={!canEditBooking}
+                            hideDelete={!canDeleteBooking}
                           />
                         </div>
                       </td>
@@ -208,7 +279,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             {bookings.length === 0 ? (
               <div className="p-8 text-center text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
                 <FileText className="w-10 h-10 text-gray-300 mb-3 mx-auto" />
-                <p className="text-sm font-medium">No bookings found.</p>
+                {isLogisticAdmin && !filterBranch ? (
+                  <p className="text-sm font-medium">Please select a Booking Branch to view LRs.</p>
+                ) : (
+                  <p className="text-sm font-medium">No bookings found.</p>
+                )}
               </div>
             ) : (
               bookings.map((booking: any) => (
@@ -266,6 +341,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         viewUrl={`/admin/bookings/${booking._id}`}
                         editUrl={`/admin/bookings/${booking._id}/edit`}
                         printUrl={`/admin/bookings/${booking._id}/print`}
+                        hideEdit={!canEditBooking}
+                        hideDelete={!canDeleteBooking}
                       />
                     </div>
                   </div>

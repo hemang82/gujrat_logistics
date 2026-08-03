@@ -11,6 +11,7 @@ interface User {
   bookingBranch: string;
   bookingBranchName?: string;
   ewbApiAccess?: boolean;
+  permissions?: any;
 }
 
 interface UserState {

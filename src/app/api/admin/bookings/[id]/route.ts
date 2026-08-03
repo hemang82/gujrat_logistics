@@ -101,6 +101,9 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const userRole = (session.user as any).role;
+    const isBranchUser = userRole === 'branch' || userRole === 'branch_user';
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -123,6 +126,20 @@ export async function PUT(
     const existingBooking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) });
     if (!existingBooking) {
       return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
+    }
+
+    if (isBranchUser) {
+      const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
+      if (userDoc && userDoc.permissions?.bookings?.canEdit === false) {
+        return NextResponse.json({ error: 'Permission denied: You do not have permission to edit LRs.' }, { status: 403 });
+      }
+    }
+
+    if (isBranchUser) {
+      const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
+      if (userDoc && userDoc.permissions?.bookings?.canEdit === false) {
+        return NextResponse.json({ error: 'Permission denied: You do not have permission to edit LRs.' }, { status: 403 });
+      }
     }
 
     if (payload.lrNumber && payload.lrNumber !== existingBooking.lrNumber) {
@@ -200,6 +217,9 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const userRole = (session.user as any).role;
+    const isBranchUser = userRole === 'branch' || userRole === 'branch_user';
+
     const resolvedParams = await params;
     const { id } = resolvedParams;
 
@@ -207,6 +227,13 @@ export async function DELETE(
     const booking = await Booking.findOne({ _id: id, ...(await getLogisticQuery()) });
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
+    }
+
+    if (isBranchUser) {
+      const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
+      if (!userDoc || !userDoc.permissions?.bookings?.canDelete) {
+        return NextResponse.json({ error: 'Permission denied: You do not have permission to delete LRs.' }, { status: 403 });
+      }
     }
 
     const deletedBooking = await Booking.findOneAndUpdate({ _id: id, ...(await getLogisticQuery()) }, { 

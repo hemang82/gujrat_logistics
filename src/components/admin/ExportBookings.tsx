@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { exportToStyledExcel, exportToStyledPDF } from '@/lib/exportUtils';
 import { format } from 'date-fns';
 
-export default function ExportBookings({ search, date, destBranch }: { search: string, date: string, destBranch?: string }) {
+export default function ExportBookings({ search = '', date = '', branch = '' }: { search?: string, date?: string, branch?: string }) {
   const [isExporting, setIsExporting] = useState(false);
 
   const fetchExportData = async () => {
@@ -15,7 +15,7 @@ export default function ExportBookings({ search, date, destBranch }: { search: s
       const params = new URLSearchParams();
       if (search) params.set('search', search);
       if (date) params.set('date', date);
-      if (destBranch) params.set('destBranch', destBranch);
+      if (branch) params.set('branch', branch);
 
       params.set('format', 'json');
 
