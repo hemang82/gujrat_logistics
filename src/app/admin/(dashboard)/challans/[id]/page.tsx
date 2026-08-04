@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { ArrowLeft, Printer, Truck, FileText, CheckCircle2, User, Landmark } from 'lucide-react';
 import Link from 'next/link';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function ViewChallanPage() {
   const router = useRouter();
@@ -17,6 +18,9 @@ export default function ViewChallanPage() {
 
   const [challan, setChallan] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const user = useUserStore((state) => state.user);
+  const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
 
   useEffect(() => {
     async function fetchChallan() {
@@ -80,10 +84,12 @@ export default function ViewChallanPage() {
             <p className="text-xs text-gray-500 mt-0.5">View lorry loading details</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Link href={`/admin/challans/${id}/edit`}>
-            <Button type="button" className="h-9 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
-          </Link>
+        <div className="flex gap-2 print:hidden">
+          {canEdit && (
+            <Link href={`/admin/challans/${id}/edit`}>
+              <Button type="button" className="h-9 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-medium flex items-center gap-1.5 transition-colors">Edit</Button>
+            </Link>
+          )}
           <Button type="button" onClick={handlePrint} className="h-9 px-4 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-medium flex items-center gap-2 transition-colors"><Printer className="w-4 h-4" /> Print</Button>
         </div>
       </div>

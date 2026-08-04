@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
         }
         await connectToDatabase();
         
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ email: credentials.email }).lean();
         
         if (!user || !user.password) {
           throw new Error("Invalid credentials");

@@ -27,6 +27,7 @@ export function AdminLayoutWrapper({
         branch: user.branch || 'ASL',
         bookingBranch: user.bookingBranch || 'ASLALI',
         ewbApiAccess: user.ewbApiAccess || false,
+        permissions: user.permissions || {},
       });
     } else {
       setUser(null);
@@ -68,6 +69,7 @@ export function AdminLayoutWrapper({
             bookingBranch: bookingBranchId || user?.bookingBranch || '',
             bookingBranchName: bookingBranchName || '',
             ewbApiAccess: liveUser.ewbApiAccess ?? user?.ewbApiAccess ?? false,
+            permissions: liveUser.permissions ?? user?.permissions ?? {},
           });
         }
       })

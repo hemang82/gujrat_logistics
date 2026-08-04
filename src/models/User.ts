@@ -25,6 +25,12 @@ export interface IUser extends Document {
       canEdit?: boolean;
       canDelete?: boolean;
     };
+    challans?: {
+      canView?: boolean;
+      canAdd?: boolean;
+      canEdit?: boolean;
+      canDelete?: boolean;
+    };
   };
 
   isDeleted?: boolean;
@@ -57,6 +63,12 @@ const UserSchema = new Schema<IUser>(
       type: Schema.Types.Mixed,
       default: {
         bookings: {
+          canView: true,
+          canAdd: true,
+          canEdit: true,
+          canDelete: false
+        },
+        challans: {
           canView: true,
           canAdd: true,
           canEdit: true,

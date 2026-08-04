@@ -16,11 +16,28 @@ export default async function FleetDashboard({ searchParams }: { searchParams: P
   const session = await getServerSession(authOptions);
   await connectToDatabase();
 
-  const baseQuery: any = {};
-  if (session && (session.user as any).role === 'logistic') {
-    baseQuery.logisticId = (session.user as any).id;
-  } else if (session && (session.user as any).logisticId) {
-    baseQuery.logisticId = (session.user as any).logisticId;
+  const baseQuery: any = { isDeleted: { $ne: true } };
+  const userRole = (session?.user as any)?.role;
+  const logisticId = userRole === 'logistic' ? (session?.user as any)?.id : (session?.user as any)?.logisticId;
+  const userBranch = (session?.user as any)?.branch;
+
+  if (logisticId) {
+    baseQuery.logisticId = logisticId;
+  }
+
+  // Branch Isolation
+  if (userRole === 'branch' || userRole === 'branch_user') {
+    if (userBranch) {
+      let branchId = typeof userBranch === 'object' && userBranch._id ? userBranch._id : userBranch;
+      try {
+        if (typeof branchId === 'string' && /^[0-9a-fA-F]{24}$/.test(branchId)) {
+          const mongoose = require('mongoose');
+          branchId = new mongoose.Types.ObjectId(branchId);
+        }
+      } catch(e) {}
+      
+      baseQuery.branch = branchId;
+    }
   }
 
 

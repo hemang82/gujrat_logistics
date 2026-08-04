@@ -19,7 +19,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     await connectToDatabase();
 
-    const challan = await Challan.findOne({ _id: id, isDeleted: false })
+    if ((session.user as any).role === 'branch' && (session.user as any).permissions?.challans?.canView === false) {
+      return NextResponse.json({ error: 'Forbidden: You do not have permission to view Challans' }, { status: 403 });
+    }
+
+    const logisticId = (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+    const branchFilter = (session.user as any).role === 'branch' ? { branch: (session.user as any).branch } : {};
+
+    const challan = await Challan.findOne({ _id: id, logisticId, ...branchFilter, isDeleted: false })
       .populate({
         path: 'bookings',
         select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch',
@@ -52,6 +59,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const data = await request.json();
+
+    if ((session.user as any).role === 'branch' && (session.user as any).permissions?.challans?.canEdit === false) {
+      return NextResponse.json({ error: 'Forbidden: You do not have permission to edit Challans' }, { status: 403 });
+    }
     if (data.branch === "") delete data.branch;
     if (data.lrToBranch === "") delete data.lrToBranch;
     if (data.memoDestinationBranch === "") delete data.memoDestinationBranch;
@@ -64,7 +75,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     await connectToDatabase();
 
-    const oldChallan = await Challan.findById(id);
+    const logisticId = (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+    const branchFilter = (session.user as any).role === 'branch' ? { branch: (session.user as any).branch } : {};
+
+    const oldChallan = await Challan.findOne({ _id: id, logisticId, ...branchFilter });
     if (!oldChallan || oldChallan.isDeleted) {
       return NextResponse.json({ error: 'Challan not found' }, { status: 404 });
     }
@@ -192,7 +206,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     await connectToDatabase();
 
-    const challan = await Challan.findById(id);
+    const logisticId = (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+    const branchFilter = (session.user as any).role === 'branch' ? { branch: (session.user as any).branch } : {};
+
+    const challan = await Challan.findOne({ _id: id, logisticId, ...branchFilter });
     if (!challan || challan.isDeleted) {
       return NextResponse.json({ error: 'Challan not found' }, { status: 404 });
     }

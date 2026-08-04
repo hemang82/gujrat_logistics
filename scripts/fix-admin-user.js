@@ -16,7 +16,7 @@ async function fixUser() {
   );
 
   console.log('Fixed admin user to be superadmin and reset password to password123');
-  
+
   mongoose.disconnect();
 
 }

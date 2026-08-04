@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -21,6 +22,15 @@ export default function AddChallanPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const canAdd = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
+
+  useEffect(() => {
+    if (user && !canAdd) {
+      toast.error('You do not have permission to create Challans');
+      router.push('/admin/challans');
+    }
+  }, [user, canAdd, router]);
 
   const getBranchLabel = (branchVal: any) => {
     if (!branchVal) return '';
@@ -615,50 +625,54 @@ export default function AddChallanPage() {
                 {renderError('challanDate')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">All / Branchwise</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Load LRs For</Label>
                 <ThemeSelect
                   name="allBranchwise"
                   value={formData.allBranchwise}
                   onChange={handleChange as any}
                   options={[
-                    { value: '', label: 'Select Loading Type' },
-                    { value: 'All', label: 'All' },
-                    { value: 'Branchwise', label: 'Branchwise' }
+                    { value: '', label: 'Select Target...' },
+                    { value: 'All', label: 'All Branches' },
+                    { value: 'Branchwise', label: 'Specific Branch' }
                   ]}
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Booking / Crossing</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">LR Type</Label>
                 <ThemeSelect
                   name="bookingCrossing"
                   value={formData.bookingCrossing}
                   onChange={handleChange as any}
                   options={[
-                    { value: 'Booking', label: 'Booking' },
-                    { value: 'Crossing', label: 'Crossing' }
+                    { value: '', label: 'Select Type...' },
+                    { value: 'Booking', label: 'Own Booking' },
+                    { value: 'Crossing', label: 'Third Party (Crossing)' }
                   ]}
                   disabled
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none bg-gray-50 text-gray-400 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Selective / Default</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Adding Method</Label>
                 <ThemeSelect
                   name="selectiveDefault"
                   value={formData.selectiveDefault}
                   onChange={handleChange as any}
                   options={[
-                    { value: 'Selective', label: 'Selective' },
-                    { value: 'Default', label: 'Default' }
+                    { value: '', label: 'Select Method...' },
+                    { value: 'Selective', label: 'Manual (Scan/Type)' },
+                    { value: 'Default', label: 'Auto-load Pending' }
                   ]}
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
                 />
               </div>
-              <div className="space-y-1 sm:col-span-2 md:col-span-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
-                <div className="relative">
-                  <BranchAutocomplete
+                <div className="space-y-1 md:col-span-2 lg:col-span-1">
+                  <Label className="text-xs font-bold text-brand-primary uppercase flex items-center gap-1">
+                    Destination Branch
+                  </Label>
+                  <div className="relative">
+                    <BranchAutocomplete
                     name="lrToBranch"
                     value={formData.lrToBranch}
                     onChange={handleChange as any}
@@ -915,8 +929,7 @@ export default function AddChallanPage() {
             )}
 
             {/* Row 3 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2"><div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase()) && (
@@ -1013,89 +1026,6 @@ export default function AddChallanPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
-                <div className="relative">
-                  {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
-                      <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    name="agent"
-                    value={formData.agent}
-                    onChange={handleChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
-                        setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
-                        setShowAgentDropdown(false);
-                        if (agentSuggestions[0].value.toLowerCase() !== formData.agent.toLowerCase()) {
-                          e.preventDefault();
-                        }
-                        return;
-                      }
-                      if (!showAgentDropdown || agentSuggestions.length === 0) return;
-                      
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setAgentHighlightIndex(prev => prev < agentSuggestions.length - 1 ? prev + 1 : 0);
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setAgentHighlightIndex(prev => prev > 0 ? prev - 1 : agentSuggestions.length - 1);
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (agentHighlightIndex >= 0 && agentHighlightIndex < agentSuggestions.length) {
-                          setFormData(prev => ({ ...prev, agent: agentSuggestions[agentHighlightIndex].value }));
-                          setShowAgentDropdown(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowAgentDropdown(false);
-                      }
-                    }}
-                    onFocus={() => setShowAgentDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
-                    placeholder="Search Agent..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
-                  />
-                  {renderError('agent')}
-                  
-                  {showAgentDropdown && agentSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {agentSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setFormData(prev => ({ ...prev, agent: suggestion.value }));
-                            setShowAgentDropdown(false);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === agentHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          {suggestion.value}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
-                <div className="relative">
-                  <BranchAutocomplete
-                    name="memoDestinationBranch"
-                    value={formData.memoDestinationBranch}
-                    onChange={handleChange as any}
-                    options={branchesList}
-                    placeholder="Search Memo Destination..."
-                    error={!!errors.memoDestinationBranch}
-                  />
-                  {renderError('memoDestinationBranch')}
-                </div>
-              </div>
-              <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
                 <div className="relative">
                   {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
@@ -1182,7 +1112,90 @@ export default function AddChallanPage() {
                   )}
                 </div>
               </div>
-            </div>
+            <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
+                <div className="relative">
+                  <BranchAutocomplete
+                    name="memoDestinationBranch"
+                    value={formData.memoDestinationBranch}
+                    onChange={handleChange as any}
+                    options={branchesList}
+                    placeholder="Search Memo Destination..."
+                    error={!!errors.memoDestinationBranch}
+                  />
+                  {renderError('memoDestinationBranch')}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
+                <div className="relative">
+                  {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
+                      <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    name="agent"
+                    value={formData.agent}
+                    onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
+                        setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
+                        setShowAgentDropdown(false);
+                        if (agentSuggestions[0].value.toLowerCase() !== formData.agent.toLowerCase()) {
+                          e.preventDefault();
+                        }
+                        return;
+                      }
+                      if (!showAgentDropdown || agentSuggestions.length === 0) return;
+                      
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setAgentHighlightIndex(prev => prev < agentSuggestions.length - 1 ? prev + 1 : 0);
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setAgentHighlightIndex(prev => prev > 0 ? prev - 1 : agentSuggestions.length - 1);
+                      } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (agentHighlightIndex >= 0 && agentHighlightIndex < agentSuggestions.length) {
+                          setFormData(prev => ({ ...prev, agent: agentSuggestions[agentHighlightIndex].value }));
+                          setShowAgentDropdown(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setShowAgentDropdown(false);
+                      }
+                    }}
+                    onFocus={() => setShowAgentDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
+                    placeholder="Search Agent..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('agent')}
+                  
+                  {showAgentDropdown && agentSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {agentSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setFormData(prev => ({ ...prev, agent: suggestion.value }));
+                            setShowAgentDropdown(false);
+                          }}
+                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === agentHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                            }`}
+                        >
+                          {suggestion.value}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              </div>
 
             {/* Row 4 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
@@ -1201,9 +1214,15 @@ export default function AddChallanPage() {
             </div>
 
             {/* Row 5 */}
-            <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Remark</Label>
-              <Input name="remark" value={formData.remark} onChange={handleChange} placeholder="Challan loading remarks" className="h-10 text-sm rounded-lg" />
+            <div className="space-y-2 w-full pt-2">
+              <Label className="text-xs font-bold text-gray-600 uppercase">Remark / Additional Notes</Label>
+              <Textarea 
+                name="remark" 
+                value={formData.remark} 
+                onChange={handleChange as any} 
+                placeholder="Enter any special instructions or remarks for this Lorry Hire..." 
+                className="min-h-[120px] text-sm rounded-xl border-gray-200 focus-visible:ring-brand-primary/50 w-full resize-y" 
+              />
             </div>
 
           </CardContent>

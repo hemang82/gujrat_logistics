@@ -206,11 +206,12 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
+                  <th className="font-semibold p-3 w-20 whitespace-nowrap text-center">Sr. No.</th>
                   <th className="font-semibold p-3">LR Number</th>
                   <th className="font-semibold p-3">Date</th>
                   <th className="font-semibold p-3">Consignor (Sender)</th>
                   <th className="font-semibold p-3">Consignee (Receiver)</th>
-                  <th className="font-semibold p-3">Destination</th>
+                  <th className="font-semibold p-3">Route (Origin ➔ Destination)</th>
                   <th className="font-semibold p-3 text-center">Status</th>
                   <th className="font-semibold p-3 text-right pr-8">Amount</th>
                   <th className="font-semibold p-3 text-center w-48">Actions</th>
@@ -219,7 +220,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
               <tbody className="divide-y divide-gray-50">
                 {bookings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-gray-500">
+                    <td colSpan={9} className="p-8 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="w-12 h-12 text-gray-300 mb-3" />
                         {isLogisticAdmin && !filterBranch ? (
@@ -231,8 +232,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                     </td>
                   </tr>
                 ) : (
-                  bookings.map((booking: any) => (
+                  bookings.map((booking: any, index: number) => (
                     <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
+                      <td className="p-3 text-sm text-gray-500 font-medium text-center">
+                        {(page - 1) * limit + index + 1}
+                      </td>
                       <td className="p-3 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-3 text-sm text-gray-600">
                         {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -244,6 +248,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         {booking.consignee?.name || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
                       <td className="p-3 text-sm text-gray-600">
+                        {booking.bookingBranch?.name || booking.branch?.name || <span className="text-gray-300 font-normal">N/A</span>}
+                        <span className="mx-2 text-gray-400">➔</span>
                         {booking.destinationBranch?.name || booking.deliveryLocation || <span className="text-gray-300 font-normal">N/A</span>}
                       </td>
                       <td className="p-3">
@@ -324,8 +330,13 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       <div>
                         <p className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">To (Consignee)</p>
                         <p className="font-semibold text-gray-800 text-sm mt-0.5">{booking.consignee?.name || 'N/A'}</p>
-                        <p className="text-gray-500 mt-0.5 text-xs">{booking.deliveryLocation}</p>
                       </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-50/50">
+                      <span className="text-xs text-gray-500 block mb-1">Route</span>
+                      <p className="text-sm text-gray-700">
+                        {booking.bookingBranch?.name || booking.branch?.name || 'N/A'} <span className="mx-1 text-gray-400">➔</span> {booking.destinationBranch?.name || booking.deliveryLocation || 'N/A'}
+                      </p>
                     </div>
                   </div>
 

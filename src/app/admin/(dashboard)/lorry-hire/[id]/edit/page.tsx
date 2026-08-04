@@ -893,7 +893,7 @@ export default function LorryHireEditForm() {
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold bg-gray-50"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold bg-gray-50 px-3"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
@@ -904,7 +904,7 @@ export default function LorryHireEditForm() {
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
@@ -913,7 +913,7 @@ export default function LorryHireEditForm() {
                   type="text"
                   value={calculateBalance()}
                   disabled
-                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm text-right pr-4 text-gray-900"
+                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm px-3 text-gray-900"
                 />
               </div>
 

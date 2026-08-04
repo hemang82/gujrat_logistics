@@ -105,6 +105,19 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
 
     // For logistic and branch_user
+    const bookingChildren = [
+      { name: 'LR / Bilti', href: '/admin/bookings', exact: false }
+    ];
+
+    if (user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canView !== false) {
+      bookingChildren.push(
+        { name: 'Lorry Challan', href: '/admin/challans', exact: false, excludePaths: ['/admin/challans/crossing'] },
+        { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false }
+      );
+    }
+
+    bookingChildren.push({ name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false });
+
     navItems.push({ 
       name: 'Booking', 
       icon: <PackageSearch className="w-5 h-5" />, 
@@ -112,12 +125,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       isOpen: isBookingOpen,
       setIsOpen: setIsBookingOpen,
       isActive: isBookingActive,
-      children: [
-        { name: 'LR / Bilti', href: '/admin/bookings', exact: false },
-        { name: 'Lorry Challan', href: '/admin/challans', exact: false, excludePaths: ['/admin/challans/crossing'] },
-        { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false },
-        { name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false },
-      ]
+      children: bookingChildren
     });
     
     navItems.push({ 
@@ -354,7 +362,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       <ConfirmDialog 
         isOpen={isLogoutDialogOpen}
         onClose={() => setIsLogoutDialogOpen(false)}
-        onConfirm={() => signOut({ callbackUrl: '/admin/login' })}
+        onConfirm={() => signOut({ callbackUrl: '/login' })}
         title="Confirm Logout"
         description="Are you sure you want to log out of your workspace? You will need to sign in again to access the dashboard."
         confirmText="Log Out"

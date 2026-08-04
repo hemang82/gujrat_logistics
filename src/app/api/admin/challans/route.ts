@@ -19,6 +19,10 @@ export async function GET(request: Request) {
 
     await connectToDatabase();
 
+    if ((session.user as any).role === 'branch' && (session.user as any).permissions?.challans?.canView === false) {
+      return NextResponse.json({ error: 'Forbidden: You do not have permission to view Challans' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
@@ -32,6 +36,9 @@ export async function GET(request: Request) {
       query.logisticId = (session.user as any).id;
     } else if ((session.user as any).logisticId) {
       query.logisticId = (session.user as any).logisticId;
+      if ((session.user as any).role === 'branch' && (session.user as any).branch) {
+        query.branch = (session.user as any).branch;
+      }
     }
 
     const bookingCrossing = searchParams.get('bookingCrossing') || '';
@@ -45,19 +52,32 @@ export async function GET(request: Request) {
       query.bookingCrossing = bookingCrossing;
     }
 
-    if (branch) {
+    if (branch && (session.user as any).role !== 'branch') {
       query.branch = branch;
     }
 
     if (search) {
       const searchRegex = new RegExp(search, 'i');
+      
+      // Look up matching references
+      const matchingVehicles = await Vehicle.find({ vehicleNumber: searchRegex }, '_id').lean();
+      const matchingDrivers = await Driver.find({ name: searchRegex }, '_id').lean();
+      const matchingBranches = await Branch.find({ name: searchRegex }, '_id').lean();
+      
+      const vehicleIds = matchingVehicles.map(v => v._id);
+      const driverIds = matchingDrivers.map(d => d._id);
+      const branchIds = matchingBranches.map(b => b._id);
+
       query.$or = [
-        { challanNumber: searchRegex },
-        { truckNo: searchRegex },
-        { driverName: searchRegex },
-        { memoDestinationBranch: searchRegex },
-        { branch: searchRegex }
+        { challanNumber: searchRegex }
       ];
+
+      if (vehicleIds.length > 0) query.$or.push({ truckNo: { $in: vehicleIds } });
+      if (driverIds.length > 0) query.$or.push({ driverName: { $in: driverIds } });
+      if (branchIds.length > 0) {
+        query.$or.push({ memoDestinationBranch: { $in: branchIds } });
+        query.$or.push({ branch: { $in: branchIds } });
+      }
     }
 
     const totalChallans = await Challan.countDocuments(query);
@@ -93,6 +113,10 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
+
+    if ((session.user as any).role === 'branch' && (session.user as any).permissions?.challans?.canAdd === false) {
+      return NextResponse.json({ error: 'Forbidden: You do not have permission to add Challans' }, { status: 403 });
+    }
     if (data.branch === "") delete data.branch;
     if (data.lrToBranch === "") delete data.lrToBranch;
     if (data.memoDestinationBranch === "") delete data.memoDestinationBranch;
@@ -189,6 +213,7 @@ export async function POST(request: Request) {
     const newChallan = new Challan({
       challanNumber,
       branch: data.branch,
+      logisticId,
       challanDate: data.challanDate ? new Date(data.challanDate) : new Date(),
       allBranchwise: data.allBranchwise || 'All',
       bookingCrossing: data.bookingCrossing || 'Booking',

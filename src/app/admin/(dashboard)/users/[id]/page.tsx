@@ -35,6 +35,12 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         canAdd: true,
         canEdit: true,
         canDelete: false
+      },
+      challans: {
+        canView: true,
+        canAdd: true,
+        canEdit: true,
+        canDelete: false
       }
     }
   });
@@ -58,13 +64,10 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             phone: userData.phone || '',
             role: userData.role || 'branch',
             branchId: userData.branch || '',
-            permissions: userData.permissions || {
-              bookings: {
-                canView: true,
-                canAdd: true,
-                canEdit: true,
-                canDelete: false
-              }
+            permissions: {
+              bookings: { canView: true, canAdd: true, canEdit: true, canDelete: false },
+              challans: { canView: true, canAdd: true, canEdit: true, canDelete: false },
+              ...(userData.permissions || {})
             }
           });
           
@@ -434,6 +437,23 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                           className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${(formData.permissions.bookings as any)[action] ? (action === 'canDelete' ? 'bg-red-500' : 'bg-brand-primary') : 'bg-gray-200'}`}
                         >
                           <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${(formData.permissions.bookings as any)[action] ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="hover:bg-gray-50/50 transition-colors">
+                    <td className="p-4">
+                      <div className="font-bold text-gray-800 text-sm">Challans</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Manage Truck Memos</div>
+                    </td>
+                    {['canView', 'canAdd', 'canEdit', 'canDelete'].map(action => (
+                      <td key={action} className="p-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => togglePermission('challans', action)}
+                          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${formData.permissions.challans && (formData.permissions.challans as any)[action] ? (action === 'canDelete' ? 'bg-red-500' : 'bg-brand-primary') : 'bg-gray-200'}`}
+                        >
+                          <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData.permissions.challans && (formData.permissions.challans as any)[action] ? 'translate-x-5' : 'translate-x-0'}`} />
                         </button>
                       </td>
                     ))}

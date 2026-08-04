@@ -91,7 +91,8 @@ export const exportToStyledPDF = (
   title: string,
   filename: string,
   headers: string[],
-  data: any[][]
+  data: any[][],
+  options?: { fontSize?: number }
 ) => {
   const doc = new jsPDF('landscape'); // Landscape is usually better for wide reports
   
@@ -116,8 +117,8 @@ export const exportToStyledPDF = (
     startY: 28,
     theme: 'grid',
     styles: {
-      fontSize: 9,
-      cellPadding: 3,
+      fontSize: options?.fontSize || 9,
+      cellPadding: 2,
       valign: 'middle',
       halign: 'center',
       lineColor: [220, 220, 220],

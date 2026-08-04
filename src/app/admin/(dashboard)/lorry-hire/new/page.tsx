@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useUserStore } from '@/store/useUserStore';
 
@@ -133,7 +134,12 @@ export default function LorryHireForm() {
   // ------------- CHALLAN AUTOCOMPLETE -------------
   useEffect(() => {
     if (!scanChallanNo || scanChallanNo.trim().length < 1) {
-      setChallanSuggestions([]);
+      const allPending = challans.filter(c => c.status === 'pending').map(c => ({
+        value: c._id,
+        label: `CH-${c.challanNumber}`,
+        original: c
+      }));
+      setChallanSuggestions(allPending);
       return;
     }
     const query = scanChallanNo.trim().toLowerCase().replace(/^ch-/i, '');
@@ -313,7 +319,7 @@ export default function LorryHireForm() {
   // ------------- BALANCE PAID BY AUTOCOMPLETE -------------
   useEffect(() => {
     if (!balancePaidBySearch || balancePaidBySearch.trim().length < 1) {
-      setBalancePaidBySuggestions([]);
+      setBalancePaidBySuggestions(branchOptions);
       return;
     }
     const query = balancePaidBySearch.trim().toLowerCase();
@@ -834,7 +840,7 @@ export default function LorryHireForm() {
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold bg-gray-50"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold bg-gray-50 px-3"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
@@ -845,7 +851,7 @@ export default function LorryHireForm() {
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm text-right pr-4 font-semibold"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
                 />
               </div>
               <div className="space-y-1 relative pb-4">
@@ -854,7 +860,7 @@ export default function LorryHireForm() {
                   type="text"
                   value={calculateBalance()}
                   disabled
-                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm text-right pr-4 text-gray-900"
+                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm px-3 text-gray-900"
                 />
               </div>
 
@@ -904,14 +910,14 @@ export default function LorryHireForm() {
               </div>
 
               {/* Remark */}
-              <div className="space-y-1 relative pb-4">
+              <div className="space-y-1 relative pb-4 md:col-span-1 lg:col-span-2">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Remark (Optional)</Label>
-                <Input
+                <Textarea
                   name="remark"
                   value={formData.remark}
-                  onChange={handleChange}
-                  placeholder="Any notes..."
-                  className="h-10 text-sm rounded-lg border-gray-200"
+                  onChange={handleChange as any}
+                  placeholder="Any additional notes..."
+                  className="min-h-[100px] text-sm rounded-xl border-gray-200 focus-visible:ring-brand-primary/50 w-full resize-y"
                 />
               </div>
             </div>

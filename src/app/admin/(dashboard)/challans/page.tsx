@@ -12,33 +12,70 @@ import {
   ChevronLeft, ChevronRight, FileText, CheckCircle2, AlertCircle, XCircle 
 } from 'lucide-react';
 import ListActions from '@/components/admin/ListActions';
+import ExportChallans from '@/components/admin/ExportChallans';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
+import { ThemeSelect } from '@/components/ui/theme-select';
 import { useUserStore } from '@/store/useUserStore';
 
 export default function ChallansListPage() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic';
+  const canView = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canView !== false;
+  const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
+  const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
+  const canDelete = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canDelete !== false;
+
+  useEffect(() => {
+    if (user && !canView) {
+      toast.error('You do not have permission to view Challans');
+      router.push('/admin/dashboard');
+    }
+  }, [user, canView, router]);
   
   const [challans, setChallans] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [status, setStatus] = useState('');
+  const [branch, setBranch] = useState('');
+  const [branches, setBranches] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Debounce search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  // Fetch branches for logistic admin filter
+  useEffect(() => {
+    if (user && (user.role === 'logistic' || user.role === 'superadmin')) {
+      fetch('/api/admin/branches?limit=1000')
+        .then(res => res.json())
+        .then(data => setBranches(data.branches || []))
+        .catch(err => console.error('Failed to fetch branches', err));
+    }
+  }, [user]);
+
   const fetchChallans = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&page=${page}&limit=${limit}&bookingCrossing=Booking`);
+      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&branch=${branch}&page=${page}&limit=${limit}&bookingCrossing=Booking`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setChallans(data.challans || []);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.totalCount || 0);
     } catch (error) {
-      toast.error('Could not load challans');
+      console.error('Could not load challans', error);
+      // Removed toast error so it doesn't bother the user during search if nothing is found
+      setChallans([]);
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +83,7 @@ export default function ChallansListPage() {
 
   useEffect(() => {
     fetchChallans();
-  }, [search, status, page, limit]);
+  }, [search, status, branch, page, limit]);
 
   const handleDelete = async (id: string, challanNumber: string) => {
     if (!confirm(`Are you sure you want to delete Challan No: ${challanNumber}? This will reset all loaded LRs back to pending.`)) {
@@ -75,69 +112,101 @@ export default function ChallansListPage() {
           <h1 className="text-xl font-extrabold text-gray-800 tracking-tight">Lorry Challan / Lorry Hires</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage truck loading dispatch sheets and lorry hiring agreements</p>
         </div>
-        {canCreate && (
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <ExportChallans search={search} status={status} branch={branch} />
+          {canCreate && (
             <Link href="/admin/challans/new" className="w-full sm:w-auto">
               <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
                 <Plus className="w-5 h-5" />
                 Create Challan
               </Button>
             </Link>
-          </div>
-        )}
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-        <div className="relative sm:col-span-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            value={search} 
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
-            placeholder="Search Challan No, Truck No, Driver or Destination..." 
-            className="pl-9 h-10 rounded-lg border-gray-200 text-sm focus-visible:ring-brand-primary/50 shadow-sm"
-          />
+          )}
         </div>
-        <select 
-          value={status} 
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          className="h-10 rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-sm bg-white"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="in_transit">In Transit</option>
-          <option value="delivered">Delivered</option>
-        </select>
       </div>
 
       {/* Table grid */}
-      <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+      <Card className="border-none shadow-sm rounded-xl bg-white overflow-visible">
+        <div className="border-b border-gray-100 p-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <h2 className="text-xl font-bold text-brand-text-primary">Recent Challans</h2>
+            
+            <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full lg:w-auto">
+              <div className="relative w-full md:w-[320px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  value={searchInput} 
+                  onChange={(e) => setSearchInput(e.target.value)} 
+                  placeholder="Search Challan No, Truck No..." 
+                  className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
+                />
+              </div>
+              
+              {(user?.role === 'logistic' || user?.role === 'superadmin') && (
+                <div className="w-full md:w-48 relative z-[60]">
+                  <BranchAutocomplete
+                    name="branch"
+                    value={branch}
+                    onChange={(e) => { setBranch(e.target.value); setPage(1); }}
+                    options={[
+                      { label: 'All Branches', value: '' },
+                      ...branches.map(b => ({ label: b.name, value: b._id }))
+                    ]}
+                    placeholder="All Branches"
+                    className="!rounded-lg"
+                  />
+                </div>
+              )}
+
+              <div className="w-full md:w-40 relative">
+                <ThemeSelect
+                  name="status"
+                  value={status}
+                  onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                  options={[
+                    { label: 'All Statuses', value: '' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'In Transit', value: 'in_transit' },
+                    { label: 'Delivered', value: 'delivered' }
+                  ]}
+                  placeholder="All Statuses"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-xs border-b border-gray-100 uppercase tracking-wider font-bold">
+                  <th className="p-4 w-20 whitespace-nowrap text-center">Sr. No.</th>
                   <th className="p-4">Challan No</th>
                   <th className="p-4">Date</th>
+                  <th className="p-4">Route (From ➔ To)</th>
                   <th className="p-4">Truck / Driver</th>
-                  <th className="p-4">Destination Branch</th>
                   <th className="p-4">Loaded LRs</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-sm">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500 font-medium">Loading challans...</td>
+                    <td colSpan={8} className="p-8 text-center text-gray-500 font-medium">Loading challans...</td>
                   </tr>
                 ) : challans.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500 font-medium">No challans found.</td>
+                    <td colSpan={8} className="p-8 text-center text-gray-500 font-medium">No challans found.</td>
                   </tr>
                 ) : (
-                  challans.map((ch) => (
+                  challans.map((ch, index) => (
                     <tr key={ch._id} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
+                      <td className="p-4 text-sm text-gray-500 font-medium text-center">
+                        {(page - 1) * limit + index + 1}
+                      </td>
                       <td className="p-4 font-extrabold text-brand-primary uppercase">
                         {ch.branch?.code || 'GL'}-{ch.challanNumber}
                         <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch?.name || ch.branch || 'N/A'}</span>
@@ -145,12 +214,14 @@ export default function ChallansListPage() {
                       <td className="p-4 text-gray-600 font-medium">
                         {new Date(ch.challanDate).toLocaleDateString('en-IN')}
                       </td>
+                      <td className="p-4 text-gray-700 font-bold uppercase">
+                        <span className="text-gray-500">{ch.branch?.name || ch.branch || 'N/A'}</span>
+                        <span className="mx-2 text-brand-primary">➔</span>
+                        <span>{ch.memoDestinationBranch?.name || ch.memoDestinationBranch || 'N/A'}</span>
+                      </td>
                       <td className="p-4 font-semibold text-gray-800">
                         {ch.truckNo?.vehicleNumber || ch.truckNo || 'N/A'}
                         <span className="block text-xs text-gray-500 font-medium mt-0.5">Driver: {ch.driverName?.name || ch.driverName || 'N/A'}</span>
-                      </td>
-                      <td className="p-4 text-gray-700 font-bold uppercase">
-                        {ch.memoDestinationBranch?.name || ch.memoDestinationBranch || 'N/A'}
                       </td>
                       <td className="p-4">
                         <span className="inline-flex items-center justify-center bg-gray-100 text-gray-800 text-xs font-extrabold px-2.5 py-1 rounded-full">
@@ -169,14 +240,19 @@ export default function ChallansListPage() {
                           {ch.status === 'in_transit' ? 'In Transit' : ch.status}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
-                        <ListActions
-                          id={ch._id}
-                          moduleName="challans"
-                          viewUrl={`/admin/challans/${ch._id}`}
-                          editUrl={`/admin/challans/${ch._id}/edit`}
-                          onDeleted={fetchChallans}
-                        />
+                      <td className="p-4">
+                        <div className="flex justify-center items-center">
+                          <ListActions
+                            id={ch._id}
+                            moduleName="challans"
+                            viewUrl={`/admin/challans/${ch._id}`}
+                            editUrl={`/admin/challans/${ch._id}/edit`}
+                            printUrl={`/admin/challans/${ch._id}/print`}
+                            onDeleted={fetchChallans}
+                            hideEdit={!canEdit}
+                            hideDelete={!canDelete}
+                          />
+                        </div>
                       </td>
                     </tr>
                   ))

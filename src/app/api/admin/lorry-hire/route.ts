@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/db';
@@ -43,10 +44,27 @@ export async function GET(request: Request) {
       query.logisticId = (session.user as any).id;
     } else if ((session.user as any).logisticId) {
       query.logisticId = (session.user as any).logisticId;
+      if ((session.user as any).role === 'branch' && (session.user as any).branch) {
+        const userBranchId = new mongoose.Types.ObjectId((session.user as any).branch);
+        query.$or = [
+          { fromBranch: userBranchId },
+          { toBranch: userBranchId }
+        ];
+      }
     }
 
     if (search) {
-      query.voucherNo = { $regex: search, $options: 'i' };
+      const searchRegex = { $regex: search, $options: 'i' };
+      if (query.$or) {
+        // If $or already exists (from branch filter), we need to use $and to combine them
+        query.$and = [
+          { $or: query.$or },
+          { voucherNo: searchRegex }
+        ];
+        delete query.$or;
+      } else {
+        query.voucherNo = searchRegex;
+      }
     }
 
     const totalCount = await LorryHire.countDocuments(query);
@@ -103,6 +121,7 @@ export async function POST(request: Request) {
 
     const newDoc = new LorryHire({
       ...body,
+      logisticId: (session.user as any).role === 'logistic' ? session.user.id : (session.user as any).logisticId,
       status: finalStatus,
       voucherNo,
       createdBy: session.user.id

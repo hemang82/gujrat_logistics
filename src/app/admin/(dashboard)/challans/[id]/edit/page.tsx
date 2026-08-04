@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -18,11 +19,29 @@ export default function EditChallanPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+  const initialLoadRef = useRef(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const user = useUserStore((state) => state.user);
+  const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
+
+  useEffect(() => {
+    if (user && !canEdit) {
+      toast.error('You do not have permission to edit Challans');
+      router.push('/admin/challans');
+    }
+  }, [user, canEdit, router]);
+
+  const getBranchCode = (branchVal: any) => {
+    if (!branchVal) return 'GL';
+    const valStr = (branchVal?._id || branchVal).toString();
+    const match = branchesList.find(b => b.value === valStr);
+    return match?.code || 'GL';
+  };
+  
   const getBranchLabel = (branchVal: any) => {
     if (!branchVal) return '';
     const valStr = (branchVal?._id || branchVal).toString();
@@ -31,7 +50,7 @@ export default function EditChallanPage() {
   };
   
   // Lists loaded from APIs
-  const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
+  const [branchesList, setBranchesList] = useState<{ value: string; label: string; code?: string }[]>([]);
   const [vehiclesList, setVehiclesList] = useState<{ value: string; label: string; status?: string }[]>([]);
   const [driversList, setDriversList] = useState<{ value: string; label: string; status?: string }[]>([]);
   const [agentsList, setAgentsList] = useState<{ value: string; label: string }[]>([]);
@@ -92,7 +111,8 @@ export default function EditChallanPage() {
         if (branchesData?.branches) {
           setBranchesList(branchesData.branches.map((b: any) => ({
             value: b._id,
-            label: b.name
+            label: b.name,
+            code: b.code || b.name.substring(0, 3).toUpperCase()
           })));
         }
 
@@ -216,80 +236,7 @@ export default function EditChallanPage() {
       .catch(err => console.error('Error fetching pending bookings', err));
   }, [id]);
 
-  // Auto-load LRs when lrToBranch, allBranchwise, or allPendingBookings changes
-  useEffect(() => {
-    async function autoLoadBranchBookings() {
-      if (!formData.allBranchwise) {
-        setPendingLrs([]);
-        return;
-      }
-      if (formData.allBranchwise === 'Branchwise' && !formData.lrToBranch) {
-        setPendingLrs([]);
-        return;
-      }
 
-      if (allPendingBookings.length > 0) {
-        // Filter bookings matching destinationBranch with lrToBranch (ObjectId comparison)
-        const matchedBookings = allPendingBookings.filter((b: any) => {
-          if (formData.allBranchwise === 'Branchwise') {
-            const destId = b.destinationBranch?._id || b.destinationBranch;
-            const targetId = formData.lrToBranch;
-            return (
-              destId && targetId && destId.toString() === targetId.toString() &&
-              b.status === 'pending'
-            );
-          }
-          return b.status === 'pending';
-        });
-
-        if (matchedBookings.length === 0) {
-          const branchLabel = branchesList.find(b => b.value === formData.lrToBranch)?.label || formData.lrToBranch;
-          const emptyMsg = formData.allBranchwise === 'Branchwise'
-            ? `No pending bookings found for branch: ${branchLabel}`
-            : `No pending bookings found in database.`;
-          toast.info(emptyMsg);
-          return;
-        }
-
-        const mapped = matchedBookings.map((b: any) => {
-          const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
-          const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
-          const freight = b.charges?.freightAmount || 0;
-          const totalAmount = b.charges?.totalAmount || freight;
-          return {
-            _id: b._id,
-            lrNumber: b.lrNumber,
-            bookingDate: b.bookingDate,
-            consignorName: b.consignor?.name || 'N/A',
-            consigneeName: b.consignee?.name || 'N/A',
-            pkg: packages,
-            weight: weight,
-            freight: freight,
-            totalAmount: totalAmount,
-            charges: b.charges || {},
-            destinationBranch: b.destinationBranch || 'N/A'
-          };
-        });
-
-        setPendingLrs(mapped);
-        setSelectedLrIds(prev => {
-          const newSelections = { ...prev };
-          mapped.forEach((item: any) => {
-            newSelections[item._id] = true;
-          });
-          return newSelections;
-        });
-
-        const branchNameStr = getBranchLabel(formData.lrToBranch) || formData.lrToBranch;
-        const msg = formData.allBranchwise === 'Branchwise' 
-          ? `Automatically loaded ${matchedBookings.length} LRs for branch: ${branchNameStr}`
-          : `Automatically loaded all ${matchedBookings.length} pending LRs`;
-        toast.success(msg);
-      }
-    }
-
-    autoLoadBranchBookings();
-  }, [formData.lrToBranch, formData.allBranchwise, allPendingBookings]);
 
   // Clear lrToBranch when All is selected
   useEffect(() => {
@@ -561,7 +508,7 @@ export default function EditChallanPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-gray-800">Edit Challan #{getBranchLabel(formData.branch).match(/\(([^)]+)\)/)?.[1] || 'GL'}-{formData.challanNumber}</h1>
+            <h1 className="text-lg md:text-xl font-bold text-gray-800">Edit Challan #{getBranchCode(formData.branch)}-{formData.challanNumber}</h1>
             <p className="text-xs text-gray-500 mt-0.5">Modify truck dispatch manifest and load contents</p>
           </div>
         </div>
@@ -605,48 +552,50 @@ export default function EditChallanPage() {
                 {renderError('challanDate')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">All / Branchwise</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Load LRs For</Label>
                 <ThemeSelect
                   name="allBranchwise"
                   value={formData.allBranchwise}
                   onChange={handleChange as any}
                   options={[
-                    { value: '', label: 'Select Loading Type' },
-                    { value: 'All', label: 'All' },
-                    { value: 'Branchwise', label: 'Branchwise' }
+                    { value: '', label: 'Select Target...' },
+                    { value: 'All', label: 'All Branches' },
+                    { value: 'Branchwise', label: 'Specific Branch' }
                   ]}
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Booking / Crossing</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">LR Type</Label>
                 <ThemeSelect
                   name="bookingCrossing"
                   value={formData.bookingCrossing}
                   onChange={handleChange as any}
                   options={[
-                    { value: 'Booking', label: 'Booking' },
-                    { value: 'Crossing', label: 'Crossing' }
+                    { value: '', label: 'Select Type...' },
+                    { value: 'Booking', label: 'Own Booking' },
+                    { value: 'Crossing', label: 'Third Party (Crossing)' }
                   ]}
                   disabled
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none bg-gray-50 text-gray-400 cursor-not-allowed"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Selective / Default</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Adding Method</Label>
                 <ThemeSelect
                   name="selectiveDefault"
                   value={formData.selectiveDefault}
                   onChange={handleChange as any}
                   options={[
-                    { value: 'Selective', label: 'Selective' },
-                    { value: 'Default', label: 'Default' }
+                    { value: '', label: 'Select Method...' },
+                    { value: 'Selective', label: 'Manual (Scan/Type)' },
+                    { value: 'Default', label: 'Auto-load Pending' }
                   ]}
                   className="flex h-10 w-full rounded-lg border px-3 text-sm focus-visible:outline-none"
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">LR To Branch</Label>
+                <Label className="text-xs font-bold text-gray-600 uppercase">Destination Branch</Label>
                 <div className="relative">
                   <BranchAutocomplete
                     name="lrToBranch"
@@ -905,8 +854,7 @@ export default function EditChallanPage() {
             )}
 
             {/* Row 3 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2"><div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Truck No. <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase()) && (
@@ -977,68 +925,6 @@ export default function EditChallanPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
-                <div className="relative">
-                  {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
-                      <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
-                      <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    name="agent"
-                    value={formData.agent}
-                    onChange={handleChange}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
-                        e.preventDefault();
-                        setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
-                        setShowAgentDropdown(false);
-                      }
-                    }}
-                    onFocus={() => {
-                      if (formData.agent.length >= 0) setShowAgentDropdown(true);
-                    }}
-                    onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
-                    placeholder="Search Agent..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
-                  />
-                  {renderError('agent')}
-                  
-                  {showAgentDropdown && agentSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
-                      {agentSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setFormData(prev => ({ ...prev, agent: suggestion.value }));
-                            setShowAgentDropdown(false);
-                          }}
-                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50`}
-                        >
-                          <span className="font-bold">{suggestion.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
-                <div className="relative">
-                  <BranchAutocomplete
-                    name="memoDestinationBranch"
-                    value={formData.memoDestinationBranch}
-                    onChange={handleChange as any}
-                    options={branchesList}
-                    placeholder="Search Memo Destination..."
-                    error={!!errors.memoDestinationBranch}
-                  />
-                  {renderError('memoDestinationBranch')}
-                </div>
-              </div>
-              <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
                 <div className="relative">
                   {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
@@ -1100,6 +986,68 @@ export default function EditChallanPage() {
                 </div>
               </div>
               <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
+                <div className="relative">
+                  <BranchAutocomplete
+                    name="memoDestinationBranch"
+                    value={formData.memoDestinationBranch}
+                    onChange={handleChange as any}
+                    options={branchesList}
+                    placeholder="Search Memo Destination..."
+                    error={!!errors.memoDestinationBranch}
+                  />
+                  {renderError('memoDestinationBranch')}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-gray-600 uppercase">Agent</Label>
+                <div className="relative">
+                  {formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase()) && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 font-medium text-sm h-10 w-full overflow-hidden whitespace-nowrap bg-transparent rounded-lg">
+                      <span className="opacity-0">{agentSuggestions[0].value.slice(0, formData.agent.length)}</span>
+                      <span>{agentSuggestions[0].value.slice(formData.agent.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    name="agent"
+                    value={formData.agent}
+                    onChange={handleChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && formData.agent && agentSuggestions.length > 0 && agentSuggestions[0].value.toLowerCase().startsWith(formData.agent.toLowerCase())) {
+                        e.preventDefault();
+                        setFormData(prev => ({ ...prev, agent: agentSuggestions[0].value }));
+                        setShowAgentDropdown(false);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (formData.agent.length >= 0) setShowAgentDropdown(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowAgentDropdown(false), 200)}
+                    placeholder="Search Agent..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agent ? 'border-red-500' : 'border-gray-200'}`}
+                    autoComplete="off"
+                  />
+                  {renderError('agent')}
+                  
+                  {showAgentDropdown && agentSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto font-normal">
+                      {agentSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setFormData(prev => ({ ...prev, agent: suggestion.value }));
+                            setShowAgentDropdown(false);
+                          }}
+                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 hover:bg-gray-50`}
+                        >
+                          <span className="font-bold">{suggestion.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Challan Status</Label>
                 <ThemeSelect
                   name="status"
@@ -1132,9 +1080,15 @@ export default function EditChallanPage() {
             </div>
 
             {/* Row 5 */}
-            <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Remark</Label>
-              <Input name="remark" value={formData.remark} onChange={handleChange} placeholder="Challan loading remarks" className="h-10 text-sm rounded-lg" />
+            <div className="space-y-2 w-full pt-2">
+              <Label className="text-xs font-bold text-gray-600 uppercase">Remark / Additional Notes</Label>
+              <Textarea 
+                name="remark" 
+                value={formData.remark} 
+                onChange={handleChange as any} 
+                placeholder="Enter any special instructions or remarks for this Lorry Hire..." 
+                className="min-h-[120px] text-sm rounded-xl border-gray-200 focus-visible:ring-brand-primary/50 w-full resize-y" 
+              />
             </div>
 
           </CardContent>
