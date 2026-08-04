@@ -605,7 +605,7 @@ export default function AddCrossingPage() {
                   <BranchAutocomplete
                     name="lrToBranch"
                     value={formData.lrToBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search LR to Branch..."
                     disabled={formData.allBranchwise === 'All'}

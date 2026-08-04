@@ -33,8 +33,14 @@ export async function GET(request: Request) {
     const userRole = (session.user as any).role;
     const userBranch = (session.user as any).branch;
     
+    if (userRole === 'logistic') {
+      query.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      query.logisticId = (session.user as any).logisticId;
+    }
+
     // For branch users, only show their own agents
-    if (userRole === 'branch' || userRole === 'branch_user') {
+    if (userRole === 'branch') {
       if (userBranch) {
         query.branch = userBranch;
       }
@@ -59,8 +65,14 @@ export async function POST(request: Request) {
     const userRole = (session.user as any).role;
     const userBranch = (session.user as any).branch;
     
+    if (userRole === 'logistic') {
+      data.logisticId = (session.user as any).id;
+    } else if ((session.user as any).logisticId) {
+      data.logisticId = (session.user as any).logisticId;
+    }
+
     // Auto-assign branch for branch users
-    if (userRole === 'branch' || userRole === 'branch_user') {
+    if (userRole === 'branch') {
       data.branch = userBranch;
     }
 

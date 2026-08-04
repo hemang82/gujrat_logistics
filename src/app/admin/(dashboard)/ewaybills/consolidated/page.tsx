@@ -401,7 +401,7 @@ export default function CEWBListPage() {
                               <Printer className="w-4 h-4" />
                             </Button>
                           </Link>
-                          {user.role !== 'logistic' && canEdit && (
+                          {user?.role !== 'logistic' && canEdit && (
                             <Button 
                               variant="ghost" 
                               size="icon" 

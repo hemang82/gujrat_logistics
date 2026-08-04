@@ -661,7 +661,7 @@ export default function AddChallanPage() {
                   <BranchAutocomplete
                     name="lrToBranch"
                     value={formData.lrToBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search LR to Branch..."
                     disabled={formData.allBranchwise === 'All'}
@@ -1087,7 +1087,7 @@ export default function AddChallanPage() {
                   <BranchAutocomplete
                     name="memoDestinationBranch"
                     value={formData.memoDestinationBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search Memo Destination..."
                     error={!!errors.memoDestinationBranch}

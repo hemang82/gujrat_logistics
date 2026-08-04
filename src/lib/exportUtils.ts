@@ -65,7 +65,7 @@ export const exportToStyledExcel = async (
   // Auto-fit Columns (simple approach)
   worksheet.columns.forEach((col, i) => {
     let maxLength = 0;
-    col.eachCell({ includeEmpty: true }, (cell) => {
+    col.eachCell?.({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 10;
       if (columnLength > maxLength) {
         maxLength = columnLength;

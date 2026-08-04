@@ -74,9 +74,7 @@ export async function PUT(
     if (ewbApiAccess !== undefined) user.ewbApiAccess = ewbApiAccess;
     if (ewbApiQuota !== undefined) user.ewbApiQuota = Number(ewbApiQuota) || 0;
     
-    if (settings) {
-      user.settings = { ...user.settings, ...settings };
-    }
+    // removed settings assignment
 
     if (password) {
       const salt = await bcrypt.genSalt(10);

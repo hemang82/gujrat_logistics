@@ -159,11 +159,7 @@ export default function EditChallanPage() {
           if (matchedTruck) setTruckNoSearch(matchedTruck.vehicleNumber);
         }
 
-        const memoBranchId = data.memoDestinationBranch?._id || data.memoDestinationBranch;
-        if (memoBranchId && branchesData?.branches) {
-          const matchedBranch = branchesData.branches.find((b: any) => b._id === memoBranchId);
-          if (matchedBranch) setMemoSearch(`${matchedBranch.name} (${matchedBranch.code})`);
-        }
+        // (Memo destination search is handled internally by BranchAutocomplete)
 
         const driverId = data.driverName?._id || data.driverName;
         if (driverId && Array.isArray(driversData)) {
@@ -495,9 +491,7 @@ export default function EditChallanPage() {
     if (formData.agent && !agentsList.some(a => a.value === formData.agent)) {
       newErrors.agent = 'Please select a valid agent from the list';
     }
-    if (memoSearch && !formData.memoDestinationBranch) {
-      newErrors.memoDestinationBranch = 'Please select a valid Memo Destination Branch';
-    }
+
     if (driverSearch && !formData.driverName) {
       newErrors.driverName = 'Please select a valid Driver';
     }
@@ -657,7 +651,7 @@ export default function EditChallanPage() {
                   <BranchAutocomplete
                     name="lrToBranch"
                     value={formData.lrToBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search LR to Branch..."
                     disabled={formData.allBranchwise === 'All'}
@@ -1036,7 +1030,7 @@ export default function EditChallanPage() {
                   <BranchAutocomplete
                     name="memoDestinationBranch"
                     value={formData.memoDestinationBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search Memo Destination..."
                     error={!!errors.memoDestinationBranch}

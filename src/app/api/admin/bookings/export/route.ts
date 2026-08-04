@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       ]);
     }
 
-    let bookings = [];
+    let bookings: any[] = [];
     const isLogisticAdmin = userRole === 'logistic' || userRole === 'superadmin';
     
     if (isLogisticAdmin && !filterBranch) {

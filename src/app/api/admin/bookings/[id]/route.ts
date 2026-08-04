@@ -7,6 +7,7 @@ import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
+import User from '@/models/User';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { getLogisticQuery } from '@/lib/apiAuth';
 

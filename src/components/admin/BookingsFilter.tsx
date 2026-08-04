@@ -51,7 +51,7 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const handleBranchChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleBranchChange = (e: { target: { name: string; value: string; } }) => {
     const val = e.target.value;
     setSelectedBranch(val);
     handleUpdate('branch', val);

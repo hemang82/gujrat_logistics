@@ -17,6 +17,7 @@ interface BranchAutocompleteProps {
   placeholder?: string;
   error?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export function BranchAutocomplete({
@@ -24,9 +25,10 @@ export function BranchAutocomplete({
   value,
   onChange,
   options,
-  placeholder = 'Search or type Branch...',
+  placeholder = 'Select branch...',
   error = false,
-  className = ''
+  className = '',
+  disabled = false
 }: BranchAutocompleteProps) {
   const [search, setSearch] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -153,8 +155,9 @@ export function BranchAutocomplete({
           placeholder={placeholder}
           className={`h-10 w-full rounded-lg border px-3 pr-10 text-sm bg-white focus-visible:outline-none ${
             error ? 'border-red-500' : 'border-gray-200 focus:border-brand-primary/50 focus:ring-1 focus:ring-brand-primary/50'
-          } ${className}`}
+          } ${className} ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-70' : ''}`}
           autoComplete="off"
+          disabled={disabled}
         />
         
         {/* Backdrop autocomplete text */}

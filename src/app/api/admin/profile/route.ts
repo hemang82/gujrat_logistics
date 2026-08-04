@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     }
 
     // If branch user, inherit ewbApiAccess and statutory details from parent logistic
-    if (user.role === 'branch_user' || user.role === 'branch') {
+    if (user.role === 'branch') {
       if (user.logisticId) {
         const parentLogistic = await User.findById(user.logisticId).lean();
         if (parentLogistic) {

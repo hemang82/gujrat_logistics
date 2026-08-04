@@ -858,7 +858,6 @@ function NewBookingForm() {
                   onChange={(e) => {
                     setSelectedLogisticId(e.target.value);
                     setFormData(prev => ({ ...prev, bookingBranch: '', destinationBranch: '' }));
-                    setDestinationBranchSearch('');
                     setErrors(prev => {
                       const newErrors = { ...prev };
                       delete newErrors.selectedLogisticId;
@@ -902,7 +901,7 @@ function NewBookingForm() {
                     <BranchAutocomplete
                       name="branch"
                       value={formData.branch}
-                      onChange={handleChange}
+                      onChange={handleChange as any}
                       options={branchesList}
                       placeholder="Search or type Branch..."
                       error={!formData.branch && !!errors.branch}
@@ -929,7 +928,7 @@ function NewBookingForm() {
                   <BranchAutocomplete
                     name="destinationBranch"
                     value={formData.destinationBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search or type Branch..."
                     error={!formData.destinationBranch && !!errors.destinationBranch}
@@ -984,7 +983,7 @@ function NewBookingForm() {
                       <BranchAutocomplete
                         name="branch"
                         value={formData.branch}
-                        onChange={handleChange}
+                        onChange={handleChange as any}
                         options={branchesList}
                         placeholder="Search or type Branch..."
                         error={!formData.branch && !!errors.branch}
@@ -1023,7 +1022,7 @@ function NewBookingForm() {
                     <BranchAutocomplete
                       name="destinationBranch"
                       value={formData.destinationBranch}
-                      onChange={handleChange}
+                      onChange={handleChange as any}
                       options={branchesList}
                       placeholder="Search or type Branch..."
                       error={!formData.destinationBranch && !!errors.destinationBranch}

@@ -18,7 +18,7 @@ import User from '@/models/User';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string, limit?: string, destBranch?: string }> }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ search?: string, date?: string, page?: string, limit?: string, destBranch?: string, branch?: string }> }) {
   const session = await getServerSession(authOptions);
   await connectToDatabase();
   const role = (session?.user as any)?.role;
@@ -32,7 +32,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   // Fetch branches for filter (scoped to the logistic company)
   const branchQuery: any = { isDeleted: { $ne: true } };
-  const userLogisticId = role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
+  const userLogisticId = role === 'logistic' ? (session?.user as any)?.id : (session?.user as any)?.logisticId;
   if (userLogisticId) {
     branchQuery.logisticId = userLogisticId;
   }
@@ -101,7 +101,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   const skip = (page - 1) * limit;
 
-  let bookings = [];
+  let bookings: any[] = [];
   let totalBookings = 0;
   let totalPages = 0;
 

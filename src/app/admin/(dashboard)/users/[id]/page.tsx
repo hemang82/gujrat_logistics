@@ -84,7 +84,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       toast.error('Failed to load branch login data');
     })
     .finally(() => setIsFetching(false));
-  }, [params.id, router]);
+  }, [resolvedParams.id, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let { name, value } = e.target;

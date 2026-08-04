@@ -35,7 +35,7 @@ export const authOptions: NextAuthOptions = {
         
         let hasEwbAccess = user.ewbApiAccess || false;
         
-        if ((user.role === 'branch_user' || user.role === 'branch') && user.logisticId) {
+        if (user.role === 'branch' && user.logisticId) {
           const parentLogistic = await User.findById(user.logisticId).select('ewbApiAccess').lean();
           if (parentLogistic) {
             hasEwbAccess = !!parentLogistic.ewbApiAccess;
@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
             token.role = dbUser.role;
             
             let hasEwbAccess = dbUser.ewbApiAccess || false;
-            if ((dbUser.role === 'branch_user' || dbUser.role === 'branch') && dbUser.logisticId) {
+            if (dbUser.role === 'branch' && dbUser.logisticId) {
               const parentLogistic = await User.findById(dbUser.logisticId).select('ewbApiAccess').lean();
               if (parentLogistic) {
                 hasEwbAccess = !!parentLogistic.ewbApiAccess;

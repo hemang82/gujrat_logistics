@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -422,6 +422,52 @@ export default function EditBookingPage() {
 
 
 
+  // Reset highlight index when suggestions change
+  useEffect(() => {
+    setPackagingHighlightIndex(-1);
+  }, [packagingSuggestions]);
+
+  useEffect(() => {
+    setDescriptionHighlightIndex(-1);
+  }, [descriptionSuggestions]);
+
+  // Fetch suggestions from masters API
+  const fetchMasterSuggestions = useCallback(async (type: 'packaging' | 'description', query: string) => {
+    if (!query || query.length < 1) {
+      if (type === 'packaging') setPackagingSuggestions([]);
+      else setDescriptionSuggestions([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/masters?type=${type}&q=${encodeURIComponent(query)}&suggest=true`);
+      if (res.ok) {
+        const data = await res.json();
+        const names = data.map((d: any) => d.name);
+        if (type === 'packaging') setPackagingSuggestions(names);
+        else setDescriptionSuggestions(names);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Auto-save new masters entries after successful booking
+  const autoSaveMasters = useCallback(async (bookingItems: typeof items) => {
+    const payloads = [];
+    for (const item of bookingItems) {
+      if (item.packaging && item.packaging.trim()) payloads.push({ type: 'packaging', name: item.packaging.trim() });
+      if (item.description && item.description.trim()) payloads.push({ type: 'description', name: item.description.trim() });
+    }
+    
+    if (payloads.length === 0) return;
+    
+    try {
+      await fetch('/api/admin/masters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: payloads })
+      });
+    } catch { /* ignore */ }
+  }, []);
+
   const handleItemChange = (index: number, field: string, value: string) => {
     const newItems = [...items];
 
@@ -435,6 +481,17 @@ export default function EditBookingPage() {
     }
 
     newItems[index] = { ...newItems[index], [field]: value };
+
+    // Fetch autocomplete suggestions for packaging / description
+    if (field === 'packaging') {
+      setActivePackagingIndex(index);
+      setActiveDescriptionIndex(null);
+      fetchMasterSuggestions('packaging', value);
+    } else if (field === 'description') {
+      setActiveDescriptionIndex(index);
+      setActivePackagingIndex(null);
+      fetchMasterSuggestions('description', value);
+    }
 
     // Automatically calculate amount:
     // If NW basis is 'W' / 'w', calculate based on Weight. Otherwise calculate based on Packages.
@@ -461,6 +518,86 @@ export default function EditBookingPage() {
       const newErrors = { ...errors };
       delete newErrors[errKey];
       setErrors(newErrors);
+    }
+  };
+
+  const selectPackagingSuggestion = (index: number, name: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], packaging: name };
+    setItems(newItems);
+    setActivePackagingIndex(null);
+    setPackagingSuggestions([]);
+    setPackagingHighlightIndex(-1);
+  };
+
+  const selectDescriptionSuggestion = (index: number, name: string) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], description: name };
+    setItems(newItems);
+    setActiveDescriptionIndex(null);
+    setDescriptionSuggestions([]);
+    setDescriptionHighlightIndex(-1);
+  };
+
+  const handlePackagingKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && packagingSuggestions.length > 0 && items[index].packaging) {
+      const firstMatch = packagingSuggestions[0];
+      if (firstMatch.toLowerCase().startsWith(items[index].packaging.toLowerCase())) {
+        selectPackagingSuggestion(index, firstMatch);
+        if (firstMatch.toLowerCase() !== items[index].packaging.toLowerCase()) {
+          e.preventDefault();
+        }
+        return;
+      }
+    }
+
+    if (activePackagingIndex !== index || packagingSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setPackagingHighlightIndex(prev => prev < packagingSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setPackagingHighlightIndex(prev => prev > 0 ? prev - 1 : packagingSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      if (packagingHighlightIndex >= 0 && packagingHighlightIndex < packagingSuggestions.length) {
+        e.preventDefault();
+        selectPackagingSuggestion(index, packagingSuggestions[packagingHighlightIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setActivePackagingIndex(null);
+      setPackagingHighlightIndex(-1);
+    }
+  };
+
+  const handleDescriptionKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' && descriptionSuggestions.length > 0 && items[index].description) {
+      const firstMatch = descriptionSuggestions[0];
+      if (firstMatch.toLowerCase().startsWith(items[index].description.toLowerCase())) {
+        selectDescriptionSuggestion(index, firstMatch);
+        if (firstMatch.toLowerCase() !== items[index].description.toLowerCase()) {
+          e.preventDefault();
+        }
+        return;
+      }
+    }
+
+    if (activeDescriptionIndex !== index || descriptionSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setDescriptionHighlightIndex(prev => prev < descriptionSuggestions.length - 1 ? prev + 1 : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setDescriptionHighlightIndex(prev => prev > 0 ? prev - 1 : descriptionSuggestions.length - 1);
+    } else if (e.key === 'Enter') {
+      if (descriptionHighlightIndex >= 0 && descriptionHighlightIndex < descriptionSuggestions.length) {
+        e.preventDefault();
+        selectDescriptionSuggestion(index, descriptionSuggestions[descriptionHighlightIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setActiveDescriptionIndex(null);
+      setDescriptionHighlightIndex(-1);
     }
   };
 
@@ -593,6 +730,7 @@ export default function EditBookingPage() {
       });
 
       if (response.ok) {
+        autoSaveMasters(items);
         toast.success('LR Updated Successfully!');
         router.refresh();
         if (submitAction === 'print') {
@@ -710,7 +848,7 @@ export default function EditBookingPage() {
                   <BranchAutocomplete
                     name="destinationBranch"
                     value={formData.destinationBranch}
-                    onChange={handleChange}
+                    onChange={handleChange as any}
                     options={branchesList}
                     placeholder="Search or type Branch..."
                     error={!formData.destinationBranch && !!errors.destinationBranch}
@@ -784,7 +922,7 @@ export default function EditBookingPage() {
                     <BranchAutocomplete
                       name="destinationBranch"
                       value={formData.destinationBranch}
-                      onChange={handleChange}
+                      onChange={handleChange as any}
                       options={branchesList}
                       placeholder="Search or type Branch..."
                       error={!formData.destinationBranch && !!errors.destinationBranch}
