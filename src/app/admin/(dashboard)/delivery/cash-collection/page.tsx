@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, Handshake, Info, CreditCard, Banknote } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function CashCollectionPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -146,7 +147,7 @@ export default function CashCollectionPage() {
                       <p className="font-semibold text-gray-800">{bk.consignee?.name || 'N/A'}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {bk.deliveryDate ? new Date(bk.deliveryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                      {formatDate(bk.deliveryDate)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-lg text-orange-600 bg-orange-50 px-3 py-1 rounded-lg inline-block border border-orange-100 tracking-tight">

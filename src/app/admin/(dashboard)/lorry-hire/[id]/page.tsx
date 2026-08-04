@@ -6,6 +6,7 @@ import LorryHire from '@/models/LorryHire';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Truck, FileText } from 'lucide-react';
 import Link from 'next/link';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function LorryHireDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -100,7 +101,7 @@ export default async function LorryHireDetailsPage({ params }: { params: Promise
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 bg-gray-50/50 p-5 rounded-xl border border-gray-100">
           <div>
             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Date</p>
-            <p className="font-semibold text-gray-800">{new Date(lorryHire.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            <p className="font-semibold text-gray-800">{formatDate(lorryHire.date)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500 font-bold uppercase mb-1">Truck No</p>

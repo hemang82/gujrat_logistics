@@ -12,6 +12,9 @@ import {
   ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, XCircle 
 } from 'lucide-react';
 import ListActions from '@/components/admin/ListActions';
+import { ThemeSelect } from '@/components/ui/theme-select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function CrossingListPage() {
   const router = useRouter();
@@ -19,7 +22,9 @@ export default function CrossingListPage() {
   const [challans, setChallans] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +32,7 @@ export default function CrossingListPage() {
   const fetchChallans = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&page=${page}&limit=10&bookingCrossing=Crossing`);
+      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&date=${encodeURIComponent(dateFilter)}&page=${page}&limit=${limit}&bookingCrossing=Crossing`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setChallans(data.challans || []);
@@ -42,7 +47,7 @@ export default function CrossingListPage() {
 
   useEffect(() => {
     fetchChallans();
-  }, [search, status, page]);
+  }, [search, status, dateFilter, page, limit]);
 
   const handleDelete = async (id: string, challanNumber: string) => {
     if (!confirm(`Are you sure you want to delete Crossing Challan No: ${challanNumber}? This will reset all loaded LRs back to pending.`)) {
@@ -81,31 +86,51 @@ export default function CrossingListPage() {
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-        <div className="relative sm:col-span-2">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            value={search} 
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
-            placeholder="Search Challan No, Agent, Destination Branch..." 
-            className="pl-9 h-10 rounded-lg border-gray-200 text-sm focus-visible:ring-brand-primary/50 shadow-sm"
-          />
-        </div>
-        <select 
-          value={status} 
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-          className="h-10 rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-primary/50 shadow-sm bg-white"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="in_transit">In Transit</option>
-          <option value="delivered">Delivered</option>
-        </select>
-      </div>
-
       {/* Table grid */}
-      <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+      <Card className="border-none shadow-sm rounded-xl overflow-visible bg-white">
+        <div className="border-b border-gray-100 p-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <h2 className="text-xl font-bold text-brand-text-primary">Recent Crossing Memos</h2>
+            
+            <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full lg:w-auto">
+              <div className="relative w-full md:w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  value={search} 
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }} 
+                  placeholder="Search Challan No, Agent..." 
+                  className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
+                />
+              </div>
+
+              <div className="w-full md:w-40 relative z-10">
+                <DatePicker 
+                  value={dateFilter} 
+                  onChange={(val) => { setDateFilter(val); setPage(1); }} 
+                  placeholder="Filter Date"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+
+              <div className="w-full md:w-40 relative z-20">
+                <ThemeSelect
+                  name="status"
+                  value={status}
+                  onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+                  options={[
+                    { label: 'All Statuses', value: '' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'In Transit', value: 'in_transit' },
+                    { label: 'Delivered', value: 'delivered' }
+                  ]}
+                  placeholder="All Statuses"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -137,7 +162,7 @@ export default function CrossingListPage() {
                         <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch}</span>
                       </td>
                       <td className="p-4 text-gray-600 font-medium">
-                        {new Date(ch.challanDate).toLocaleDateString('en-IN')}
+                        {formatDate(ch.challanDate)}
                       </td>
                       <td className="p-4 font-semibold text-gray-800">
                         {ch.agent || 'N/A'}

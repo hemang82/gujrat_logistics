@@ -7,6 +7,7 @@ import { Truck, Scissors, ArrowLeft } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
 import React from 'react';
 import Link from 'next/link';
+import { formatDate } from '@/lib/dateUtils';
 
 // Reusable component for a single half-page LR Copy
 const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
@@ -40,7 +41,7 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
             </div>
             <div>
               <span className="text-[10px] text-gray-500 block uppercase font-normal">Date</span>
-              <span className="text-sm">{new Date(booking.bookingDate).toLocaleDateString('en-IN')}</span>
+              <span className="text-sm">{formatDate(booking.bookingDate)}</span>
             </div>
           </div>
         </div>

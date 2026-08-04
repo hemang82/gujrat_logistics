@@ -9,6 +9,7 @@ import { Plus, Search, Truck, AlertTriangle, FileText, CalendarClock, ShieldAler
 import Link from 'next/link';
 import ListActions from '@/components/admin/ListActions';
 import StatusFilter from '@/components/admin/StatusFilter';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -240,7 +241,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                             <p className="text-gray-400 text-xs uppercase font-bold mb-0.5">Insurance Till</p>
                             <p className={`font-medium flex items-center gap-1 ${isInsuranceExpiring ? 'text-red-600' : 'text-gray-700'}`}>
                               <CalendarClock className={`w-3.5 h-3.5 ${isInsuranceExpiring ? 'text-red-500' : 'text-gray-400'}`} />
-                              {v.insuranceExpiry ? new Date(v.insuranceExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit'}) : 'N/A'}
+                              {formatDate(v.insuranceExpiry)}
                             </p>
                           </div>
                         </div>

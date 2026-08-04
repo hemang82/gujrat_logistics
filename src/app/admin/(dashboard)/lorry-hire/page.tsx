@@ -9,7 +9,13 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { ThemeSelect } from '@/components/ui/theme-select';
+import { useUserStore } from '@/store/useUserStore';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
+import { useSWR } from 'swr';
+import { DatePicker } from '@/components/ui/date-picker';
+import ExportLorryHire from '@/components/admin/ExportLorryHire';
+import { formatDate } from '@/lib/dateUtils';
 
 // Basic Dialog components to avoid adding huge dependencies if not present. We can just build a simple modal.
 function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
@@ -68,9 +74,21 @@ function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
 }
 
 export default function LorryHireList() {
+  const user = useUserStore((state) => state.user);
+  
+  const canView = user?.role === 'superadmin' || user?.permissions?.challans?.canView !== false;
+  const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
+  const canEdit = user?.role === 'superadmin' || user?.permissions?.challans?.canEdit !== false;
+  const canDelete = user?.role === 'superadmin' || user?.permissions?.challans?.canDelete !== false;
+  const isLogisticAdmin = user?.role === 'superadmin' || user?.role === 'logistic';
+
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [branchFilter, setBranchFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [branches, setBranches] = useState<any[]>([]);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -80,10 +98,20 @@ export default function LorryHireList() {
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
 
+  // Fetch branches for logistic admin filter
+  useEffect(() => {
+    if (user && (user.role === 'logistic' || user.role === 'superadmin')) {
+      fetch('/api/admin/branches?limit=1000')
+        .then(res => res.json())
+        .then(data => setBranches(data.branches || []))
+        .catch(err => console.error('Failed to fetch branches', err));
+    }
+  }, [user]);
+
   const fetchVouchers = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/admin/lorry-hire?search=${encodeURIComponent(searchTerm)}&page=${page}&limit=${limit}`);
+      const res = await fetch(`/api/admin/lorry-hire?search=${encodeURIComponent(searchTerm)}&status=${encodeURIComponent(statusFilter)}&date=${encodeURIComponent(dateFilter)}&branch=${encodeURIComponent(branchFilter)}&page=${page}&limit=${limit}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');
       setVouchers(data.lorryHires || []);
@@ -101,7 +129,7 @@ export default function LorryHireList() {
       fetchVouchers();
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, page, limit]);
+  }, [searchTerm, statusFilter, dateFilter, page, limit]);
 
   const handleDelete = async (id: string, voucherNo: string) => {
     if (!confirm(`Are you sure you want to delete this Lorry Hire voucher: ${voucherNo}?`)) return;
@@ -153,30 +181,74 @@ export default function LorryHireList() {
           <h1 className="text-xl font-extrabold text-gray-800 tracking-tight">Lorry Hire Vouchers</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage truck hire and freight payments</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Link href="/admin/lorry-hire/new" className="w-full sm:w-auto">
-            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
-              <Plus className="w-5 h-5" />
-              Create Voucher
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            placeholder="Search by Voucher No..." 
-            className="pl-9 h-10 rounded-lg border-gray-200 text-sm focus-visible:ring-brand-primary/50 shadow-sm"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-center">
+          <ExportLorryHire search={searchTerm} status={statusFilter} date={dateFilter} />
+          {canCreate && (
+            <Link href="/admin/lorry-hire/new" className="w-full sm:w-auto">
+              <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
+                <Plus className="w-5 h-5" />
+                Create Voucher
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
       <Card className="border-gray-100 shadow-sm overflow-hidden">
+        <div className="border-b border-gray-100 p-4 bg-white">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <h2 className="text-xl font-bold text-brand-text-primary">Recent Vouchers</h2>
+            
+            <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full lg:w-auto">
+              <div className="relative w-full md:w-[280px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  placeholder="Search Voucher No..." 
+                  className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
+                />
+              </div>
+              {isLogisticAdmin && (
+                <div className="w-full md:w-44 relative z-10">
+                  <BranchAutocomplete
+                    name="branch"
+                    value={branchFilter}
+                    onChange={(e) => { setBranchFilter(e.target.value); setPage(1); }}
+                    options={[
+                      { label: 'All Branches', value: '' },
+                      ...branches.map(b => ({ label: b.name, value: b._id }))
+                    ]}
+                    placeholder="All Branches"
+                    className="!rounded-lg !h-10 bg-white !border-gray-200"
+                  />
+                </div>
+              )}
+              <div className="w-full md:w-44 relative z-20">
+                <DatePicker 
+                  value={dateFilter} 
+                  onChange={(val) => { setDateFilter(val); setPage(1); }} 
+                  placeholder="Filter Date"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+              <div className="w-full md:w-44 relative z-30">
+                <ThemeSelect
+                  name="statusFilter"
+                  value={statusFilter}
+                  onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                  options={[
+                    { label: 'All Statuses', value: '' },
+                    { label: 'Pending', value: 'pending' },
+                    { label: 'Completed', value: 'completed' }
+                  ]}
+                  placeholder="All Statuses"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
@@ -219,16 +291,25 @@ export default function LorryHireList() {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-gray-600 font-medium">
-                      {new Date(v.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(v.date)}
                     </td>
                     <td className="py-3 px-4 font-bold text-gray-800">
                       {v.truckNo?.vehicleNumber || 'N/A'}
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3 px-4 max-w-[200px] truncate">
                       <div className="flex items-center gap-2 text-gray-600 font-medium">
-                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{v.fromBranch?.code || 'N/A'}</span>
+                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-semibold whitespace-normal">{v.fromBranch?.name || 'N/A'}</span>
                         <span className="text-gray-300">→</span>
-                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">{v.toBranch?.code || 'N/A'}</span>
+                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-semibold whitespace-normal">
+                          {(() => {
+                            if (v.challans && v.challans.length > 0) {
+                              const dests = v.challans.map((c: any) => c.memoDestinationBranch?.name).filter(Boolean);
+                              const uniqueDests = Array.from(new Set(dests));
+                              if (uniqueDests.length > 0) return uniqueDests.join(', ');
+                            }
+                            return v.toBranch?.name || 'N/A';
+                          })()}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3 px-4 font-semibold text-gray-900">
@@ -265,6 +346,8 @@ export default function LorryHireList() {
                             editUrl={`/admin/lorry-hire/${v._id}/edit`}
                             printUrl={`/admin/lorry-hire/${v._id}/print`}
                             onDeleted={fetchVouchers}
+                            hideEdit={!canEdit}
+                            hideDelete={!canDelete}
                           />
                         </div>
                       </td>

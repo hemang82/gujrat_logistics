@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Wallet, Calendar as CalendarIcon, Truck, UserCircle, FileText, CheckCircle2, CreditCard } from 'lucide-react';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,7 +87,7 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
                 <div>
                   <p className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5"><CalendarIcon className="w-4 h-4" /> Date</p>
                   <p className="text-lg font-semibold text-brand-text-primary">
-                    {new Date(expense.date).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    {formatDate(expense.date)}
                   </p>
                 </div>
                 <div>

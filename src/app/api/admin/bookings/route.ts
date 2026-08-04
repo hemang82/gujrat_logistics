@@ -26,6 +26,7 @@ export async function GET(req: Request) {
     
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
+    const dateStr = searchParams.get('date') || '';
 
     let query: any = { isDeleted: { $ne: true }, ...(await getLogisticQuery(req)) };
 
@@ -46,6 +47,18 @@ export async function GET(req: Request) {
           { bookingBranch: userBranchObj },
           { branch: userBranchObj }
         ];
+      }
+    }
+
+    if (dateStr) {
+      const selectedDate = new Date(dateStr);
+      if (!isNaN(selectedDate.getTime())) {
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query.bookingDate = {
+          $gte: selectedDate.toISOString(),
+          $lt: nextDay.toISOString()
+        };
       }
     }
 

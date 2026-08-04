@@ -14,13 +14,17 @@ import {
 import ListActions from '@/components/admin/ListActions';
 import ExportChallans from '@/components/admin/ExportChallans';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
+import { Badge } from '@/components/ui/badge';
 import { ThemeSelect } from '@/components/ui/theme-select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useUserStore } from '@/store/useUserStore';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function ChallansListPage() {
   const router = useRouter();
   const user = useUserStore((state) => state.user);
-  const canView = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canView !== false;
+  const isLogisticAdmin = user?.role === 'superadmin' || user?.role === 'logistic';
+  const canView = isLogisticAdmin || user?.permissions?.challans?.canView !== false;
   const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
   const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
   const canDelete = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canDelete !== false;
@@ -37,6 +41,7 @@ export default function ChallansListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [status, setStatus] = useState('');
   const [branch, setBranch] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [branches, setBranches] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -66,7 +71,7 @@ export default function ChallansListPage() {
   const fetchChallans = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${status}&branch=${branch}&page=${page}&limit=${limit}&bookingCrossing=Booking`);
+      const res = await fetch(`/api/admin/challans?search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}&branch=${encodeURIComponent(branch)}&date=${encodeURIComponent(dateFilter)}&page=${page}&limit=${limit}&bookingCrossing=Booking`);
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setChallans(data.challans || []);
@@ -83,7 +88,7 @@ export default function ChallansListPage() {
 
   useEffect(() => {
     fetchChallans();
-  }, [search, status, branch, page, limit]);
+  }, [search, status, branch, dateFilter, page, limit]);
 
   const handleDelete = async (id: string, challanNumber: string) => {
     if (!confirm(`Are you sure you want to delete Challan No: ${challanNumber}? This will reset all loaded LRs back to pending.`)) {
@@ -113,7 +118,7 @@ export default function ChallansListPage() {
           <p className="text-xs text-gray-500 mt-0.5">Manage truck loading dispatch sheets and lorry hiring agreements</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <ExportChallans search={search} status={status} branch={branch} />
+          <ExportChallans search={search} status={status} branch={branch} date={dateFilter} />
           {canCreate && (
             <Link href="/admin/challans/new" className="w-full sm:w-auto">
               <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full sm:w-auto px-6 rounded-xl font-semibold shadow-md flex items-center justify-center gap-2">
@@ -132,7 +137,7 @@ export default function ChallansListPage() {
             <h2 className="text-xl font-bold text-brand-text-primary">Recent Challans</h2>
             
             <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full lg:w-auto">
-              <div className="relative w-full md:w-[320px]">
+              <div className="relative w-full md:w-[280px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input 
                   value={searchInput} 
@@ -142,8 +147,8 @@ export default function ChallansListPage() {
                 />
               </div>
               
-              {(user?.role === 'logistic' || user?.role === 'superadmin') && (
-                <div className="w-full md:w-48 relative z-[60]">
+              {isLogisticAdmin && (
+                <div className="w-full md:w-44 relative z-[60]">
                   <BranchAutocomplete
                     name="branch"
                     value={branch}
@@ -158,7 +163,16 @@ export default function ChallansListPage() {
                 </div>
               )}
 
-              <div className="w-full md:w-40 relative">
+              <div className="w-full md:w-44 relative z-10">
+                <DatePicker 
+                  value={dateFilter} 
+                  onChange={(val) => { setDateFilter(val); setPage(1); }} 
+                  placeholder="Filter Date"
+                  className="!rounded-lg !h-10 bg-white !border-gray-200"
+                />
+              </div>
+
+              <div className="w-full md:w-44 relative z-20">
                 <ThemeSelect
                   name="status"
                   value={status}
@@ -212,7 +226,7 @@ export default function ChallansListPage() {
                         <span className="block text-xs text-gray-400 font-normal mt-0.5">Branch: {ch.branch?.name || ch.branch || 'N/A'}</span>
                       </td>
                       <td className="p-4 text-gray-600 font-medium">
-                        {new Date(ch.challanDate).toLocaleDateString('en-IN')}
+                        {formatDate(ch.challanDate)}
                       </td>
                       <td className="p-4 text-gray-700 font-bold uppercase">
                         <span className="text-gray-500">{ch.branch?.name || ch.branch || 'N/A'}</span>

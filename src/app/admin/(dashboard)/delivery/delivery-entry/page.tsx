@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, MapPin, Handshake, Info, CreditCard, PackageCheck, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function DeliveryEntryPage() {
   const [bookings, setBookings] = useState<any[]>([]);
@@ -184,7 +185,7 @@ export default function DeliveryEntryPage() {
                           #{bk.lrNumber}
                         </span>
                         <div className="text-xs text-gray-500 mt-1">
-                          {new Date(bk.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatDate(bk.bookingDate)}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -211,7 +212,7 @@ export default function DeliveryEntryPage() {
                       </td>
                       {activeTab === 'delivered' && (
                         <td className="px-4 py-3 text-gray-600 font-medium">
-                          {bk.deliveryDate ? new Date(bk.deliveryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                          {formatDate(bk.deliveryDate)}
                         </td>
                       )}
                       <td className="px-4 py-3 text-right">

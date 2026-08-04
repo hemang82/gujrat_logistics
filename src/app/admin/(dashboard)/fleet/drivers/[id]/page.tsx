@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import DriverDetailsTabs from '@/components/admin/DriverDetailsTabs';
 import DriverTransaction from '@/models/DriverTransaction';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function ViewDriverPage({ params }: { params: Promise<{ id: string }> }) {
   await getServerSession(authOptions);
@@ -158,7 +159,7 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
                   <div className="flex items-center gap-2">
                     <CalendarClock className={`w-5 h-5 ${isLicenseExpiring ? 'text-red-500' : 'text-gray-500'}`} />
                     <p className={`text-lg font-bold ${isLicenseExpiring ? 'text-red-600' : 'text-gray-800'}`}>
-                      {driver.licenseExpiry ? new Date(driver.licenseExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric'}) : 'Not Set'}
+                      {driver.licenseExpiry ? formatDate(driver.licenseExpiry) : 'Not Set'}
                     </p>
                   </div>
                   {isLicenseExpiring && (

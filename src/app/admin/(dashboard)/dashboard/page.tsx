@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Truck, Users, IndianRupee, FileText, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { DashboardCharts } from '@/components/admin/DashboardCharts';
 import Link from 'next/link';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -284,7 +285,7 @@ export default async function AdminDashboard() {
                           {alert.isExpired ? 'Expired' : `${alert.daysLeft} Days`}
                         </p>
                         <p className="text-[10px] text-gray-400 mt-1">
-                          {new Date(alert.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatDate(alert.date)}
                         </p>
                       </div>
                     </div>
@@ -332,7 +333,7 @@ export default async function AdminDashboard() {
                     <tr key={booking._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-4 text-sm text-gray-600">
-                        {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {formatDate(booking.bookingDate)}
                       </td>
                       <td className="p-4 text-sm font-medium">{booking.consignee?.name || 'N/A'}</td>
                       <td className="p-4 text-sm text-gray-600">

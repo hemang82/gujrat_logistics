@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Truck, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import PrintButton from '@/components/admin/PrintButton';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +83,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
             <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 w-full sm:w-auto text-left">
               <p className="text-sm"><span className="text-gray-500 font-medium">Invoice No:</span> <strong className="text-lg">{invoice.invoiceNumber}</strong></p>
-              <p className="text-sm"><span className="text-gray-500 font-medium">Date:</span> <strong>{new Date(invoice.invoiceDate).toLocaleDateString('en-IN')}</strong></p>
+              <p className="text-sm"><span className="text-gray-500 font-medium">Date:</span> <strong>{formatDate(invoice.invoiceDate)}</strong></p>
             </div>
           </div>
         </div>
@@ -113,7 +114,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
               {invoice.bookings.map((booking: any) => (
                 <tr key={booking._id.toString()} className="hover:bg-gray-50 transition-colors">
                   <td className="p-3 font-bold text-gray-800 border-r border-gray-100">{booking.lrNumber}</td>
-                  <td className="p-3 text-gray-600 border-r border-gray-100">{new Date(booking.bookingDate).toLocaleDateString('en-IN')}</td>
+                  <td className="p-3 text-gray-600 border-r border-gray-100">{formatDate(booking.bookingDate)}</td>
                   <td className="p-3 text-gray-600 border-r border-gray-100">{booking.pickupLocation} &rarr; {booking.deliveryLocation}</td>
                   <td className="p-3 text-center text-gray-700 border-r border-gray-100">{booking.material?.quantity || 1} {booking.material?.packagingType || 'Pkg'}</td>
                   <td className="p-3 text-center text-gray-700 border-r border-gray-100">{booking.material?.weight || 0} Kg</td>

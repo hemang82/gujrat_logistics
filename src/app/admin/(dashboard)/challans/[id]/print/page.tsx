@@ -6,6 +6,7 @@ import Challan from '@/models/Challan';
 import { Truck, ArrowLeft, Printer } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
 import Link from 'next/link';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function PrintChallanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -82,7 +83,7 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
 
             <div className="text-right">
               <h2 className="text-xl font-bold text-brand-primary m-0">CHALLAN NO: {ch.branch?.code || 'GL'}-{ch.challanNumber}</h2>
-              <p className="text-sm text-gray-600 font-medium m-0 mt-1">Date: {new Date(ch.challanDate).toLocaleDateString('en-IN')}</p>
+              <p className="text-sm text-gray-600 font-medium m-0 mt-1">Date: {formatDate(ch.challanDate)}</p>
             </div>
           </div>
 

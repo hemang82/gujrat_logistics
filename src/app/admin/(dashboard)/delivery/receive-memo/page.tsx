@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Download, CheckCircle, Truck, PackageCheck, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function ReceiveMemoPage() {
   const [challans, setChallans] = useState<any[]>([]);
@@ -214,7 +215,7 @@ export default function ReceiveMemoPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {new Date(ch.challanDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {formatDate(ch.challanDate)}
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-semibold text-gray-800">{ch.truckNo?.vehicleNumber || 'N/A'}</p>

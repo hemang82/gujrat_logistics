@@ -443,8 +443,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                   </tr>
                   <tr className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4">
-                      <div className="font-bold text-gray-800 text-sm">Challans</div>
-                      <div className="text-xs text-gray-500 mt-0.5">Manage Truck Memos</div>
+                      <div className="font-bold text-gray-800 text-sm">Challans & Lorry Hire</div>
+                      <div className="text-xs text-gray-500 mt-0.5">Manage Truck Memos & Lorry Hire Vouchers</div>
                     </td>
                     {['canView', 'canAdd', 'canEdit', 'canDelete'].map(action => (
                       <td key={action} className="p-4 text-center">

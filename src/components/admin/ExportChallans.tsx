@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { exportToStyledExcel, exportToStyledPDF } from '@/lib/exportUtils';
 import { format } from 'date-fns';
 
-export default function ExportChallans({ search = '', status = '', branch = '' }: { search?: string, status?: string, branch?: string }) {
+export default function ExportChallans({ search = '', status = '', branch = '', date = '' }: { search?: string, status?: string, branch?: string, date?: string }) {
   const [isExporting, setIsExporting] = useState(false);
 
   const fetchExportData = async () => {
@@ -16,6 +16,7 @@ export default function ExportChallans({ search = '', status = '', branch = '' }
       if (search) params.set('search', search);
       if (status) params.set('status', status);
       if (branch) params.set('branch', branch);
+      if (date) params.set('date', date);
       
       // Fetch up to 1000 challans for export to ensure we get most data without paging
       params.set('limit', '1000');

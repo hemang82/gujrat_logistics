@@ -9,6 +9,7 @@ import { Plus, Search, Users, AlertTriangle, Phone, Contact, IdCard, CalendarClo
 import Link from 'next/link';
 import ListActions from '@/components/admin/ListActions';
 import StatusFilter from '@/components/admin/StatusFilter';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -259,7 +260,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                               </p>
                               <p className={`font-medium text-[9px] flex items-center gap-1 mt-0.5 ${isLicenseExpiring ? 'text-red-600' : 'text-gray-500'}`}>
                                 <CalendarClock className={`w-2.5 h-2.5 ${isLicenseExpiring ? 'text-red-500' : 'text-gray-400'}`} />
-                                Exp: {d.licenseExpiry ? new Date(d.licenseExpiry).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit'}) : 'N/A'}
+                                Exp: {formatDate(d.licenseExpiry)}
                               </p>
                             </div>
                           </div>

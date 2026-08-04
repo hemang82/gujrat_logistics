@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import { SearchSelect } from '@/components/ui/search-select';
 import { useUserStore } from '@/store/useUserStore';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function CEWBListPage() {
   const [bills, setBills] = useState<any[]>([]);
@@ -318,7 +319,7 @@ export default function CEWBListPage() {
                       </td>
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">DATE</span>
-                        <span className="text-right lg:text-left">{bill.cEwbDate || new Date(bill.createdAt).toLocaleDateString()}</span>
+                        <span className="text-right lg:text-left">{bill.cEwbDate || formatDate(bill.createdAt)}</span>
                       </td>
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">VEHICLE NO</span>
@@ -330,7 +331,7 @@ export default function CEWBListPage() {
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">VALID UPTO</span>
                         <div className="flex items-center gap-2 justify-end lg:justify-start">
                           <span className="text-gray-600 text-right lg:text-left">
-                            {bill.validUpto ? new Date(bill.validUpto).toLocaleDateString() : '-'}
+                            {formatDate(bill.validUpto)}
                           </span>
                           {bill.validUpto && (() => {
                             const validUpto = new Date(bill.validUpto);

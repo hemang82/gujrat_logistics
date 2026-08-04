@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Printer, Truck, FileText, CheckCircle2, User, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import { useUserStore } from '@/store/useUserStore';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function ViewChallanPage() {
   const router = useRouter();
@@ -113,7 +114,7 @@ export default function ViewChallanPage() {
             </div>
             <div className="space-y-1 sm:col-span-2 md:col-span-1">
               <Label className="text-xs font-bold text-gray-600 uppercase">Challan Date</Label>
-              <Input value={new Date(challan.challanDate).toLocaleDateString('en-IN').replace(/\//g, '-')} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
+              <Input value={formatDate(challan.challanDate).replace(/\//g, '-')} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-bold text-gray-600 uppercase">Booking / Crossing</Label>
@@ -197,7 +198,7 @@ export default function ViewChallanPage() {
           <div className="flex">
             <span className="w-24">Date</span>
             <span className="mr-2">:</span>
-            <span>{new Date(challan.challanDate).toLocaleDateString('en-IN').replace(/\//g, '-')}</span>
+            <span>{formatDate(challan.challanDate).replace(/\//g, '-')}</span>
           </div>
         </div>
 

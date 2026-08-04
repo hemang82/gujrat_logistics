@@ -12,6 +12,7 @@ import { ArrowLeft, Printer, Edit2, Save, X, Truck, List, CalendarClock, History
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import QRCode from 'react-qr-code';
+import { formatDate } from '@/lib/dateUtils';
 
 export default function CEWBDetailsPage() {
   const params = useParams();
@@ -129,7 +130,7 @@ export default function CEWBDetailsPage() {
         <div>
           <h1 className="text-3xl font-bold uppercase tracking-widest text-black">Master E-Way Bill</h1>
           <p className="text-lg font-mono font-bold mt-2 text-black">CEWB NO: {bill.cEwbNo}</p>
-          <p className="text-sm text-gray-600 mt-1 font-medium">Generated On: {new Date(bill.createdAt).toLocaleDateString()}</p>
+          <p className="text-sm text-gray-600 mt-1 font-medium">Generated On: {formatDate(bill.createdAt)}</p>
         </div>
         <div className="bg-white p-2 border border-gray-200 rounded">
           <QRCode value={bill.cEwbNo} size={80} level="M" />
@@ -250,7 +251,7 @@ export default function CEWBDetailsPage() {
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Valid Upto</Label>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-700">{bill.validUpto ? new Date(bill.validUpto).toLocaleDateString() : 'N/A'}</p>
+                    <p className="font-medium text-gray-700">{formatDate(bill.validUpto)}</p>
                     {bill.validUpto && (() => {
                       const validUpto = new Date(bill.validUpto);
                       validUpto.setHours(0,0,0,0);
@@ -357,9 +358,9 @@ export default function CEWBDetailsPage() {
                     <tbody className="divide-y divide-gray-100">
                       {bill.extensionHistory.map((ext: any, idx: number) => (
                         <tr key={idx}>
-                          <td className="px-6 py-3">{new Date(ext.extendedAt).toLocaleDateString()}</td>
-                          <td className="px-6 py-3">{ext.oldValidUpto ? new Date(ext.oldValidUpto).toLocaleDateString() : 'N/A'}</td>
-                          <td className="px-6 py-3 font-semibold text-brand-primary">{new Date(ext.newValidUpto).toLocaleDateString()}</td>
+                          <td className="px-6 py-3">{formatDate(ext.extendedAt)}</td>
+                          <td className="px-6 py-3">{formatDate(ext.oldValidUpto)}</td>
+                          <td className="px-6 py-3 font-semibold text-brand-primary">{formatDate(ext.newValidUpto)}</td>
                           <td className="px-6 py-3 text-gray-600">{ext.reason || '-'}</td>
                         </tr>
                       ))}
@@ -385,7 +386,7 @@ export default function CEWBDetailsPage() {
               
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Current Validity</Label>
-                <p className="font-medium text-gray-700">{bill.validUpto ? new Date(bill.validUpto).toLocaleDateString() : 'N/A'}</p>
+                <p className="font-medium text-gray-700">{formatDate(bill.validUpto)}</p>
               </div>
               
               <div className="space-y-2">

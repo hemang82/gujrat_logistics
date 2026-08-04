@@ -22,6 +22,15 @@ export default function LorryHireForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [voucherNo, setVoucherNo] = useState('Loading...');
   
+  const canAdd = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
+
+  useEffect(() => {
+    if (user && !canAdd) {
+      toast.error('You do not have permission to create Lorry Hire');
+      router.push('/admin/lorry-hire');
+    }
+  }, [user, canAdd, router]);
+  
   const [branches, setBranches] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [challans, setChallans] = useState<any[]>([]);

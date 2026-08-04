@@ -9,6 +9,7 @@ import Link from 'next/link';
 
 import PrintButton from '@/components/admin/PrintButton';
 import UpdateStatusDialog from '@/components/admin/UpdateStatusDialog';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function BookingDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -131,7 +132,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Booking Date</p>
-              <p className="font-bold text-sm text-gray-700">{new Date(booking.bookingDate).toLocaleDateString('en-IN')}</p>
+              <p className="font-bold text-sm text-gray-700">{formatDate(booking.bookingDate)}</p>
             </div>
             <div>
               <p className="text-xs text-gray-400 font-bold uppercase">Booking Branch</p>

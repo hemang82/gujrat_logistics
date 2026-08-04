@@ -13,6 +13,7 @@ import Pagination from '@/components/admin/Pagination';
 import ListActions from '@/components/admin/ListActions';
 import ExpensesFilter from '@/components/admin/ExpensesFilter';
 import StatusFilter from '@/components/admin/StatusFilter';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -220,7 +221,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                   expenses.map((expense: any) => (
                     <tr key={expense._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
                       <td className="p-4 text-sm text-gray-600">
-                        {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {formatDate(expense.date)}
                       </td>
                       <td className="p-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border inline-block ${getExpenseColor(expense.expenseType)}`}>
@@ -291,7 +292,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                     <span className="font-semibold text-brand-text-primary text-sm">{expense.vehicle?.vehicleNumber || 'N/A'}</span>
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                       <CalendarIcon className="w-3 h-3" />
-                      {new Date(expense.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      {formatDate(expense.date)}
                     </span>
                   </div>
                   <div className="flex justify-end pt-2 border-t border-gray-50">

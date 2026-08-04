@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Truck, Users, AlertTriangle, CheckCircle, Clock, Wrench } from 'lucide-react';
 import Link from 'next/link';
 import StatusFilter from '@/components/admin/StatusFilter';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -199,7 +200,7 @@ export default async function FleetDashboard({ searchParams }: { searchParams: P
                       <p className="text-sm text-red-600 font-medium">Insurance Expiring</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">{new Date(v.insuranceExpiry).toLocaleDateString()}</p>
+                      <p className="font-bold">{formatDate(v.insuranceExpiry)}</p>
                     </div>
                   </div>
                 ))}
@@ -210,7 +211,7 @@ export default async function FleetDashboard({ searchParams }: { searchParams: P
                       <p className="text-sm text-red-600 font-medium">Fitness Certificate Expiring</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">{new Date(v.fitnessExpiry).toLocaleDateString()}</p>
+                      <p className="font-bold">{formatDate(v.fitnessExpiry)}</p>
                     </div>
                   </div>
                 ))}
@@ -221,7 +222,7 @@ export default async function FleetDashboard({ searchParams }: { searchParams: P
                       <p className="text-sm text-red-600 font-medium">License Expiring</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold">{new Date(d.licenseExpiry).toLocaleDateString()}</p>
+                      <p className="font-bold">{formatDate(d.licenseExpiry)}</p>
                     </div>
                   </div>
                 ))}

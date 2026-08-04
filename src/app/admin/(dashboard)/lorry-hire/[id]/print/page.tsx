@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db';
 import LorryHire from '@/models/LorryHire';
 import { Truck } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function LorryHirePrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -76,7 +77,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
           </div>
           <div className="p-3 border border-gray-200 rounded-lg">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Date</p>
-            <p className="font-bold text-base text-gray-800">{new Date(lorryHire.date).toLocaleDateString('en-IN')}</p>
+            <p className="font-bold text-base text-gray-800">{formatDate(lorryHire.date)}</p>
           </div>
           <div className="p-3 border border-gray-200 rounded-lg">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Truck No</p>

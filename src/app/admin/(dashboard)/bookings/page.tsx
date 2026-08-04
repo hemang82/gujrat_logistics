@@ -15,6 +15,7 @@ import BookingStatusDropdown from '@/components/admin/BookingStatusDropdown';
 import ExportBookings from '@/components/admin/ExportBookings';
 import Branch from '@/models/Branch';
 import User from '@/models/User';
+import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -239,7 +240,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       </td>
                       <td className="p-3 font-bold text-brand-primary">LR-{booking.lrNumber}</td>
                       <td className="p-3 text-sm text-gray-600">
-                        {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {formatDate(booking.bookingDate)}
                       </td>
                       <td className="p-3 text-sm font-medium text-brand-text-primary max-w-[200px] truncate" title={booking.consignor?.name}>
                         {booking.consignor?.name || <span className="text-gray-300 font-normal">N/A</span>}
@@ -308,7 +309,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                       <span className="font-extrabold text-brand-text-primary text-sm tracking-tight">LR-{booking.lrNumber}</span>
                       <span className="text-xs text-gray-400 flex items-center gap-1">
                         <CalendarIcon className="w-3.5 h-3.5" />
-                        {new Date(booking.bookingDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {formatDate(booking.bookingDate)}
                       </span>
                     </div>
                     <div className="font-bold text-brand-primary text-xs bg-brand-primary/5 px-2 py-0.5 rounded-md">

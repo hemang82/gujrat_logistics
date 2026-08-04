@@ -24,6 +24,15 @@ export default function LorryHireEditForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [voucherNo, setVoucherNo] = useState('Loading...');
   
+  const canEdit = user?.role === 'superadmin' || user?.permissions?.challans?.canEdit !== false;
+
+  useEffect(() => {
+    if (user && !canEdit) {
+      toast.error('You do not have permission to edit Lorry Hire');
+      router.push('/admin/lorry-hire');
+    }
+  }, [user, canEdit, router]);
+  
   const [branches, setBranches] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [challans, setChallans] = useState<any[]>([]);

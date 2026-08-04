@@ -45,6 +45,20 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", class
           selected={date}
           onSelect={(d) => onChange?.(d ? format(d, 'yyyy-MM-dd') : '')}
         />
+        <div className="flex items-center justify-between p-2 border-t border-gray-100 bg-gray-50/50">
+          <button 
+            onClick={() => onChange?.('')}
+            className="text-xs font-semibold text-gray-500 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+          >
+            Clear
+          </button>
+          <button 
+            onClick={() => onChange?.(format(new Date(), 'yyyy-MM-dd'))}
+            className="text-xs font-bold text-brand-primary hover:text-brand-primary-dark px-3 py-1 bg-brand-primary/10 rounded hover:bg-brand-primary/20 transition-colors cursor-pointer"
+          >
+            Today
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
   )

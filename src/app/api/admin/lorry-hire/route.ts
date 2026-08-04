@@ -34,6 +34,8 @@ export async function GET(request: Request) {
     await connectDB();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
+    const status = searchParams.get('status');
+    const dateStr = searchParams.get('date');
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const skip = (page - 1) * limit;
@@ -53,17 +55,50 @@ export async function GET(request: Request) {
       }
     }
 
+    if (status) {
+      query.status = status;
+    }
+
+    if (dateStr) {
+      const selectedDate = new Date(dateStr);
+      if (!isNaN(selectedDate.getTime())) {
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query.date = {
+          $gte: selectedDate.toISOString(),
+          $lt: nextDay.toISOString()
+        };
+      }
+    }
+
     if (search) {
-      const searchRegex = { $regex: search, $options: 'i' };
+      const searchRegex = new RegExp(search, 'i');
+      
+      const matchingVehicles = await Vehicle.find({ vehicleNumber: searchRegex }, '_id').lean();
+      const matchingBranches = await Branch.find({ 
+        $or: [ { name: searchRegex }, { code: searchRegex } ] 
+      }, '_id').lean();
+
+      const vehicleIds = matchingVehicles.map(v => v._id);
+      const branchIds = matchingBranches.map(b => b._id);
+
+      const searchConditions: any[] = [
+        { voucherNo: searchRegex }
+      ];
+
+      if (vehicleIds.length > 0) searchConditions.push({ truckNo: { $in: vehicleIds } });
+      if (branchIds.length > 0) searchConditions.push({ fromBranch: { $in: branchIds } });
+      if (branchIds.length > 0) searchConditions.push({ toBranch: { $in: branchIds } });
+
       if (query.$or) {
-        // If $or already exists (from branch filter), we need to use $and to combine them
+        // If $or already exists (from branch filter), use $and
         query.$and = [
           { $or: query.$or },
-          { voucherNo: searchRegex }
+          { $or: searchConditions }
         ];
         delete query.$or;
       } else {
-        query.voucherNo = searchRegex;
+        query.$or = searchConditions;
       }
     }
 

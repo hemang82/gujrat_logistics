@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
+    const dateStr = searchParams.get('date') || '';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const skip = (page - 1) * limit;
@@ -54,6 +55,18 @@ export async function GET(request: Request) {
 
     if (branch && (session.user as any).role !== 'branch') {
       query.branch = branch;
+    }
+
+    if (dateStr) {
+      const selectedDate = new Date(dateStr);
+      if (!isNaN(selectedDate.getTime())) {
+        const nextDay = new Date(selectedDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        query.challanDate = {
+          $gte: selectedDate.toISOString(),
+          $lt: nextDay.toISOString()
+        };
+      }
     }
 
     if (search) {

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Truck, CalendarClock, ShieldAlert, FileText, UserCircle, Settings, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { formatDate } from '@/lib/dateUtils';
 
 export default async function ViewVehiclePage({ params }: { params: Promise<{ id: string }> }) {
   await getServerSession(authOptions);
@@ -181,7 +182,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                         <div className="flex items-center gap-1.5">
                           <CalendarClock className={`w-4 h-4 ${expired ? 'text-red-500' : expiring ? 'text-orange-500' : 'text-gray-400'}`} />
                           <p className={`font-bold ${expired ? 'text-red-700' : expiring ? 'text-orange-700' : 'text-gray-800'}`}>
-                            {doc.date ? new Date(doc.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric'}) : 'Not Set'}
+                            {doc.date ? formatDate(doc.date) : 'Not Set'}
                           </p>
                         </div>
                       </div>
