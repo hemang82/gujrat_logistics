@@ -1,9 +1,10 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function PricingPage() {
   return (
-    <div className="pt-28 pb-20 bg-white min-h-screen">
+    <main className="pt-28 pb-20 bg-white min-h-screen">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">Simple, Transparent Pricing</h1>
@@ -40,6 +41,14 @@ export default function PricingPage() {
           ))}
         </div>
       </div>
-    </div>
-  );
-}
+    </main>
+  );}
+
+
+export const metadata: Metadata = {
+  title: 'Pricing - Affordable Logistics Software in India',
+  description: 'Flexible and affordable pricing plans for Trust Logistic. Find the right TMS plan for your transport business size.',
+  alternates: {
+    canonical: 'https://trustlogistic.in/pricing',
+  }
+};

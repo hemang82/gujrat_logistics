@@ -1,16 +1,18 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import { Truck, Scissors, ArrowLeft } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
-import React from 'react';
+import QRCodeDisplay from '@/components/admin/QRCodeDisplay';
 import Link from 'next/link';
 import { formatDate } from '@/lib/dateUtils';
+import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 
 // Reusable component for a single half-page LR Copy
-const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
+const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any, copyType: string, trackingUrl: string, logisticName: string }) => {
   return (
     <div className="w-full flex flex-col h-[14cm] p-4 bg-white relative">
       
@@ -22,19 +24,25 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
             <Truck className="w-7 h-7 text-white print:text-brand-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-brand-text-primary uppercase tracking-wide m-0 leading-tight">TRUST LOGISTIC</h1>
+            <h1 className="text-xl font-bold text-brand-text-primary uppercase tracking-wide m-0 leading-tight">{logisticName}</h1>
             <p className="text-[10px] text-gray-500 font-medium m-0">Fast, Safe & Reliable Transport Services</p>
             <p className="text-[10px] text-gray-400 m-0">H.O: Ahmedabad, Gujarat, India</p>
           </div>
         </div>
 
         {/* Right: LR Number & Date */}
-        <div className="text-right flex flex-col items-end">
-          <div className="border border-brand-primary rounded px-3 py-1 mb-1">
-            <h2 className="text-xs font-bold text-brand-primary uppercase m-0 leading-tight">CONSIGNMENT NOTE</h2>
-            <p className="text-[9px] text-gray-500 font-bold m-0 uppercase tracking-widest text-center">({copyType})</p>
+        <div className="flex gap-4 items-start">
+          <div className="flex flex-col items-center">
+            <QRCodeDisplay value={trackingUrl} size={50} />
+            <span className="text-[7px] text-gray-500 font-bold mt-0.5 tracking-wider uppercase">Scan to Track</span>
           </div>
-          <div className="flex gap-4 text-xs font-bold text-gray-800">
+          
+          <div className="text-right flex flex-col items-end">
+            <div className="border border-brand-primary rounded px-3 py-1 mb-1">
+              <h2 className="text-xs font-bold text-brand-primary uppercase m-0 leading-tight">CONSIGNMENT NOTE</h2>
+              <p className="text-[9px] text-gray-500 font-bold m-0 uppercase tracking-widest text-center">({copyType})</p>
+            </div>
+            <div className="flex gap-4 text-xs font-bold text-gray-800">
             <div>
               <span className="text-[10px] text-gray-500 block uppercase font-normal">LR No</span>
               <span className="text-brand-primary text-sm">{booking.lrNumber}</span>
@@ -44,6 +52,7 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
               <span className="text-sm">{formatDate(booking.bookingDate)}</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -175,7 +184,7 @@ const LRCopy = ({ booking, copyType }: { booking: any, copyType: string }) => {
         <div className="flex gap-12 text-[10px] font-bold text-gray-700 uppercase text-center pr-4 pb-1">
           <div className="border-t border-gray-400 pt-1 w-24">Receiver Sign</div>
           <div className="border-t border-gray-400 pt-1 w-24">Driver Sign</div>
-          <div className="border-t border-gray-400 pt-1 w-32">For, Trust Logistic</div>
+          <div className="border-t border-gray-400 pt-1 w-32">For, {logisticName || 'Trust Logistic'}</div>
         </div>
       </div>
     </div>
@@ -189,17 +198,29 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
     redirect('/admin/login');
   }
 
+  const sessionLogisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+  const appUrl = `${protocol}://${host}`;
+
   await connectToDatabase();
   const booking = await Booking.findById(id)
     .populate('branch', 'name code')
     .populate('bookingBranch', 'name code')
     .populate('destinationBranch', 'name code')
     .populate('vehicle', 'vehicleNumber vehicleType')
+    .populate('logisticId', 'name companyLogo')
     .lean() as any;
 
   if (!booking) {
     return <div className="p-8 text-center text-red-500 font-semibold text-lg">Booking/LR not found.</div>;
   }
+
+  const logisticName = booking.logisticId?.name || sessionLogisticName;
+
+  const trackingUrl = `${appUrl}/track?lr=${booking.lrNumber}`;
 
   return (
     <div className="w-full mx-auto print:p-0 print:m-0 print:max-w-none bg-gray-100 print:bg-white min-h-screen py-8">
@@ -222,7 +243,7 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
       >
         
         {/* Consignor Copy (Top Half) */}
-        <LRCopy booking={booking} copyType="Consignor Copy" />
+        <LRCopy booking={booking} copyType="Consignor Copy" trackingUrl={trackingUrl} logisticName={logisticName} />
 
         {/* Cut Line */}
         <div className="flex items-center justify-center my-1 print:my-0 text-gray-300 overflow-hidden opacity-50">
@@ -231,7 +252,7 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Driver / Office Copy (Bottom Half) */}
-        <LRCopy booking={booking} copyType="Driver / Office Copy" />
+        <LRCopy booking={booking} copyType="Driver / Office Copy" trackingUrl={trackingUrl} logisticName={logisticName} />
 
       </div>
     </div>

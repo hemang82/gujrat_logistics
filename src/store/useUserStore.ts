@@ -11,6 +11,7 @@ interface User {
   bookingBranch: string;
   bookingBranchName?: string;
   ewbApiAccess?: boolean;
+  logisticName?: string;
   permissions?: any;
 }
 

@@ -1,9 +1,10 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function HowItWorksPage() {
   return (
-    <div className="pt-28 pb-20 bg-white min-h-screen">
+    <main className="pt-28 pb-20 bg-white min-h-screen">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">How Trust Logistic Works</h1>
@@ -38,6 +39,14 @@ export default function HowItWorksPage() {
           </Link>
         </div>
       </div>
-    </div>
-  );
-}
+    </main>
+  );}
+
+
+export const metadata: Metadata = {
+  title: 'How It Works - Trust Logistic',
+  description: 'Discover how Trust Logistic simplifies your transport operations step-by-step from booking to delivery and accounting.',
+  alternates: {
+    canonical: 'https://trustlogistic.in/how-it-works',
+  }
+};

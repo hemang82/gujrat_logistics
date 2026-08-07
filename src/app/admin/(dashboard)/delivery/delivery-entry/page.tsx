@@ -4,12 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, MapPin, Handshake, Info, CreditCard, PackageCheck, CheckCircle } from 'lucide-react';
+import { Search, MapPin, Handshake, Info, CreditCard, PackageCheck, CheckCircle, MessageCircle } from 'lucide-react';
+import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { formatDate } from '@/lib/dateUtils';
+import { useUserStore } from '@/store/useUserStore';
 
 export default function DeliveryEntryPage() {
+  const { user } = useUserStore();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,9 +228,28 @@ export default function DeliveryEntryPage() {
                             Deliver Goods
                           </Button>
                         ) : (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100">
-                            <CheckCircle className="w-4 h-4" />
-                            Delivered
+                          <div className="flex items-center justify-end gap-2">
+                            {bk.consignee?.phone && bk.consignee.phone !== '0000000000' && bk.consignee.phone.length >= 10 && (
+                              <a 
+                                href={(() => {
+                                  const logisticNameStr = user?.logisticName || 'Trust Logistic';
+                                  return getWhatsAppShareLink(
+                                    bk.consignee.phone, 
+                                    `Hello ${bk.consignee?.name || 'Customer'},\nYour goods for LR No: ${bk.lrNumber} have been successfully delivered by ${logisticNameStr}. Thank you for using our services!`
+                                  );
+                                })()}
+                                target="whatsapp_share_tab"
+                                rel="noopener noreferrer"
+                                className="p-2 bg-green-50 text-green-600 rounded-lg border border-green-100 hover:bg-green-100 transition-colors"
+                                title="Share status on WhatsApp"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                              </a>
+                            )}
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100">
+                              <CheckCircle className="w-4 h-4" />
+                              Delivered
+                            </div>
                           </div>
                         )}
                       </td>

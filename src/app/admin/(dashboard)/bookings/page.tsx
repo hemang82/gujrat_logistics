@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { headers } from 'next/headers';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
@@ -23,6 +24,12 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const session = await getServerSession(authOptions);
   await connectToDatabase();
   const role = (session?.user as any)?.role;
+  const logisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+  
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+  const appUrl = `${protocol}://${host}`;
 
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
@@ -268,7 +275,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                             moduleName="bookings"
                             viewUrl={`/admin/bookings/${booking._id}`}
                             editUrl={`/admin/bookings/${booking._id}/edit`}
-                            printUrl={`/admin/bookings/${booking._id}/print`}
+                            printUrl={`/admin/bookings/${booking._id}/print?print=true`}
                             hideEdit={!canEditBooking}
                             hideDelete={!canDeleteBooking}
                           />
@@ -352,9 +359,11 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         moduleName="bookings"
                         viewUrl={`/admin/bookings/${booking._id}`}
                         editUrl={`/admin/bookings/${booking._id}/edit`}
-                        printUrl={`/admin/bookings/${booking._id}/print`}
+                        printUrl={`/admin/bookings/${booking._id}/print?print=true`}
                         hideEdit={!canEditBooking}
                         hideDelete={!canDeleteBooking}
+                        whatsappPhone={booking.consignor?.phone}
+                        whatsappMessage={`Hello ${booking.consignor?.name || 'Customer'},\nYour Booking (LR No: ${booking.lrNumber}) via ${logisticName} is confirmed. Track it here: ${appUrl}/track?lr=${booking.lrNumber}`}
                       />
                     </div>
                   </div>

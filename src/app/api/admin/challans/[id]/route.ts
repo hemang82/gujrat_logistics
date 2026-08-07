@@ -37,6 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .populate('branch', 'name code')
       .populate('lrToBranch', 'name code')
       .populate('memoDestinationBranch', 'name code')
+      .populate('logisticId', 'name companyLogo')
       .lean();
 
     if (!challan) {
@@ -129,6 +130,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Mark added bookings as 'in_transit'
     if (addedBookings.length > 0) {
+      let truckNumberName = data.truckNo || oldChallan.truckNo || 'N/A';
+      if (truckNumberName && String(truckNumberName).match(/^[0-9a-fA-F]{24}$/)) {
+        const vehicleDoc = await Vehicle.findById(truckNumberName).select('vehicleNumber').lean();
+        if (vehicleDoc) {
+          truckNumberName = (vehicleDoc as any).vehicleNumber || truckNumberName;
+        }
+      }
+
       await Booking.updateMany(
         { _id: { $in: addedBookings } },
         { 
@@ -137,7 +146,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             trackingHistory: { 
               status: 'in_transit', 
               timestamp: new Date(),
-              remarks: `Added to Challan No: ${oldChallan.challanNumber} with truck ${data.truckNo || 'N/A'}`
+              remarks: `Added to Challan No: ${oldChallan.challanNumber} with truck ${truckNumberName}`
             } 
           }
         }

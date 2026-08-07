@@ -22,6 +22,7 @@ export default function ViewChallanPage() {
 
   const user = useUserStore((state) => state.user);
   const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
+  const sessionLogisticName = user?.logisticName || 'Trust Logistic';
 
   useEffect(() => {
     async function fetchChallan() {
@@ -38,6 +39,8 @@ export default function ViewChallanPage() {
     }
     if (id) fetchChallan();
   }, [id]);
+
+  const logisticName = challan?.logisticId?.name || sessionLogisticName;
 
   const handlePrint = () => {
     window.print();
@@ -153,7 +156,7 @@ export default function ViewChallanPage() {
               </div>
             </div>
             <div className="text-center flex-1">
-              <h1 className="text-2xl font-bold text-[#0F3B8C] tracking-wide mb-1">TRUST LOGISTIC</h1>
+              <h1 className="text-2xl font-bold text-[#0F3B8C] tracking-wide mb-1 uppercase">{logisticName}</h1>
               <p className="text-[13px] text-[#0F3B8C] font-medium">1977, Gurukrupa Estate, Aslali Gam, Ahmedabad.</p>
             </div>
             <div className="w-16 h-16 shrink-0"></div> {/* Spacer for symmetry */}
@@ -319,7 +322,7 @@ export default function ViewChallanPage() {
           </div>
           <div className="space-y-8">
             <div className="w-40 mx-auto border-b border-gray-300"></div>
-            <span className="uppercase text-brand-primary tracking-wider">For Trust Logistic</span>
+            <span className="uppercase text-brand-primary tracking-wider">For {logisticName}</span>
           </div>
         </div>
 

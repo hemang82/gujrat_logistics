@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, Edit, Trash2, Printer, AlertTriangle } from 'lucide-react';
+import { Eye, Edit, Trash2, Printer, AlertTriangle, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { openWhatsAppShare } from '@/lib/whatsappShare';
 import {
   Dialog,
   DialogContent,
@@ -24,9 +25,11 @@ interface ListActionsProps {
   onDeleted?: () => void; // optional callback after delete
   hideEdit?: boolean;
   hideDelete?: boolean;
+  whatsappPhone?: string;
+  whatsappMessage?: string;
 }
 
-export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted, hideEdit, hideDelete }: ListActionsProps) {
+export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted, hideEdit, hideDelete, whatsappPhone, whatsappMessage }: ListActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -91,6 +94,20 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
               <Edit className="w-4 h-4" />
             </button>
           </Link>
+        )}
+
+        {whatsappPhone && whatsappPhone !== '0000000000' && whatsappPhone.length >= 10 && whatsappMessage && (
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openWhatsAppShare(whatsappPhone, whatsappMessage);
+            }}
+            className="p-2 text-green-500 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer" 
+            title="Share on WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4" />
+          </button>
         )}
 
         {!hideDelete && (

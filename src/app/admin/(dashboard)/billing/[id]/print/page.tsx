@@ -22,11 +22,14 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
   await connectToDatabase();
   Booking.init(); // Prevent tree shaking
 
-  const invoice = await Invoice.findById(id).populate('bookings').lean() as any;
+  const invoice = await Invoice.findById(id).populate('bookings').populate('logisticId', 'name companyLogo').lean() as any;
 
   if (!invoice || invoice.isDeleted) {
     notFound();
   }
+
+  const sessionLogisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+  const logisticName = invoice.logisticId?.name || sessionLogisticName;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10 print:p-0 print:m-0 print:max-w-none">
@@ -59,8 +62,8 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
               <Truck className="w-10 h-10 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">TRUST LOGISTIC</h1>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary uppercase">{logisticName}</h1>
+              <p className="text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
               <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               <p className="text-xs font-bold text-gray-700 mt-1">GSTIN: 24AAAAA1234A1Z5</p>
             </div>
@@ -149,7 +152,7 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
              
              <h4 className="font-bold text-xs uppercase text-gray-500 mb-2 mt-4 border-t border-gray-200 pt-4">Bank Details</h4>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">Bank:</span> HDFC Bank</p>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C Name:</span> Trust Logistic</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C Name:</span> {logisticName}</p>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C No:</span> 50200012345678</p>
              <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">IFSC:</span> HDFC0001234</p>
           </div>
@@ -192,10 +195,10 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
 
         {/* Footer & Signatures */}
         <div className="flex justify-end pt-12 border-t border-gray-100 mt-10">
-          <div className="text-center w-64">
-            <div className="w-full mx-auto border-b border-gray-400 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For Trust Logistic</p>
-            <p className="text-xs text-gray-400 mt-1">Authorized Signatory</p>
+          <div className="text-center w-48 mt-6">
+            <div className="border-b-2 border-gray-400 mb-2"></div>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Authorized Signatory</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For {logisticName}</p>
           </div>
         </div>
 

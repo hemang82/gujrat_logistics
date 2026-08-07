@@ -15,12 +15,17 @@ export default function PrintButton() {
     }
   }, []);
 
+  const handleAction = () => {
+    window.print();
+  };
+
   return (
     <Button 
       className="h-10 px-6 rounded-xl bg-brand-primary hover:bg-brand-primary-dark text-white flex items-center gap-2"
-      onClick={() => window.print()}
+      onClick={handleAction}
     >
-      <Printer className="w-4 h-4" /> Print Bilty
+      <Printer className="w-4 h-4" /> 
+      Print Bilty
     </Button>
   );
 }

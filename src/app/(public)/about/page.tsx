@@ -1,8 +1,9 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 
 export default function AboutPage() {
   return (
-    <div className="pt-28 pb-20 bg-white min-h-screen">
+    <main className="pt-28 pb-20 bg-white min-h-screen">
       <div className="container mx-auto px-4 max-w-3xl">
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8 text-center">Digitizing Gujarat's Transport Industry</h1>
         
@@ -26,6 +27,14 @@ export default function AboutPage() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    </main>
+  );}
+
+
+export const metadata: Metadata = {
+  title: "About Trust Logistic - India's Top TMS",
+  description: 'Learn about Trust Logistic, the leading transport management system built to solve the complex needs of Indian logistics companies.',
+  alternates: {
+    canonical: 'https://trustlogistic.in/about',
+  }
+};

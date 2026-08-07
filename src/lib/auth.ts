@@ -34,11 +34,13 @@ export const authOptions: NextAuthOptions = {
         }
         
         let hasEwbAccess = user.ewbApiAccess || false;
+        let logisticName = user.role === 'logistic' ? user.name : '';
         
         if (user.role === 'branch' && user.logisticId) {
-          const parentLogistic = await User.findById(user.logisticId).select('ewbApiAccess').lean();
+          const parentLogistic = await User.findById(user.logisticId).select('ewbApiAccess name').lean();
           if (parentLogistic) {
             hasEwbAccess = !!parentLogistic.ewbApiAccess;
+            logisticName = parentLogistic.name;
           }
         }
         
@@ -51,6 +53,7 @@ export const authOptions: NextAuthOptions = {
           branch: user.branch ? user.branch.toString() : '',
           bookingBranch: user.bookingBranch ? user.bookingBranch.toString() : '',
           ewbApiAccess: hasEwbAccess,
+          logisticName,
           permissions: user.permissions || {},
         };
       }
@@ -65,6 +68,7 @@ export const authOptions: NextAuthOptions = {
         token.branch = (user as any).branch;
         token.bookingBranch = (user as any).bookingBranch;
         token.ewbApiAccess = (user as any).ewbApiAccess;
+        token.logisticName = (user as any).logisticName;
         token.permissions = (user as any).permissions;
       } else if (token.id) {
         // Fetch fresh branch/bookingBranch details from the database on refresh
@@ -78,13 +82,16 @@ export const authOptions: NextAuthOptions = {
             token.role = dbUser.role;
             
             let hasEwbAccess = dbUser.ewbApiAccess || false;
+            let logisticName = dbUser.role === 'logistic' ? dbUser.name : '';
             if (dbUser.role === 'branch' && dbUser.logisticId) {
-              const parentLogistic = await User.findById(dbUser.logisticId).select('ewbApiAccess').lean();
+              const parentLogistic = await User.findById(dbUser.logisticId).select('ewbApiAccess name').lean();
               if (parentLogistic) {
                 hasEwbAccess = !!parentLogistic.ewbApiAccess;
+                logisticName = parentLogistic.name;
               }
             }
             token.ewbApiAccess = hasEwbAccess;
+            token.logisticName = logisticName;
             token.permissions = dbUser.permissions || {};
           }
         } catch (err) {
@@ -101,6 +108,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).branch = token.branch;
         (session.user as any).bookingBranch = token.bookingBranch;
         (session.user as any).ewbApiAccess = token.ewbApiAccess;
+        (session.user as any).logisticName = token.logisticName;
         (session.user as any).permissions = token.permissions;
       }
       return session;

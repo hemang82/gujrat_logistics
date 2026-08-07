@@ -1,10 +1,13 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
 import { Button } from '@/components/ui/button';
-import { Truck, ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Truck, MessageCircle } from 'lucide-react';
+import { getWhatsAppShareLink } from '@/lib/whatsappShare';
+import QRCodeDisplay from '@/components/admin/QRCodeDisplay';
 import Link from 'next/link';
 
 import PrintButton from '@/components/admin/PrintButton';
@@ -18,16 +21,27 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
     redirect('/admin/login');
   }
 
+  const sessionLogisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+  const appUrl = `${protocol}://${host}`;
+
   await connectToDatabase();
   const booking = await Booking.findById(id)
     .populate('branch')
     .populate('bookingBranch')
-    .populate('destinationBranch')
+    .populate('destinationBranch', 'name code')
+    .populate('vehicle', 'vehicleNumber vehicleType')
+    .populate('logisticId', 'name companyLogo')
     .lean() as any;
 
   if (!booking) {
     return <div className="p-8 text-center text-red-500">Booking not found.</div>;
   }
+
+  const logisticName = booking.logisticId?.name || sessionLogisticName;
 
   // Handle dynamic items array or fallback to legacy material model fields
   const itemsList = booking.items && booking.items.length > 0 
@@ -66,17 +80,33 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+          {booking.consignor?.phone && booking.consignor.phone !== '0000000000' && booking.consignor.phone.length >= 10 ? (
+            <a 
+              href={getWhatsAppShareLink(
+                booking.consignor?.phone, 
+                `Hello ${booking.consignor?.name || 'Customer'},\nYour Booking (LR No: ${booking.lrNumber}) via ${logisticName} is confirmed. Track it here: ${appUrl}/track?lr=${booking.lrNumber}`
+              )}
+              target="whatsapp_share_tab"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none"
+            >
+              <Button variant="outline" className="w-full h-10 rounded-xl bg-green-50 text-green-700 border-green-200 hover:bg-green-100 flex items-center justify-center gap-2">
+                <MessageCircle className="w-4 h-4" />
+                Share
+              </Button>
+            </a>
+          ) : null}
           <Link href={`/admin/bookings/${id}/edit`} className="flex-1 sm:flex-none">
             <Button variant="outline" className="w-full h-10 rounded-xl bg-white text-gray-700 border-gray-200 hover:bg-gray-50 flex items-center justify-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-              Edit Booking
+              Edit
             </Button>
           </Link>
           <div className="flex-1 sm:flex-none flex justify-center">
             <UpdateStatusDialog bookingId={id} currentStatus={booking.status || 'pending'} />
           </div>
           <div className="w-full sm:w-auto flex justify-center mt-2 sm:mt-0">
-            <Link href={`/admin/bookings/${id}/print`}>
+            <Link href={`/admin/bookings/${id}/print?print=true`}>
               <Button className="h-10 rounded-xl bg-brand-primary hover:bg-brand-primary-dark text-white shadow-md shadow-brand-primary/20 flex items-center gap-2 px-6">
                 <Printer className="w-4 h-4" /> Print Bilty
               </Button>
@@ -100,14 +130,20 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
                 <Truck className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">TRUST LOGISTIC</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary uppercase">{logisticName}</h1>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
                 <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               </div>
             </div>
             <div className="text-left sm:text-right flex flex-col items-start sm:items-end w-full sm:w-auto">
-              <h2 className="text-xl sm:text-2xl font-bold text-brand-primary">LORRY RECEIPT (BILTY)</h2>
-              <div className="mt-2 mb-2">
+              <div className="flex gap-4 items-center">
+                <div className="flex flex-col items-center">
+                  <QRCodeDisplay value={`${appUrl}/track?lr=${booking.lrNumber}`} size={56} />
+                  <span className="text-[8px] text-gray-500 font-bold mt-1 tracking-wider uppercase">Scan to Track</span>
+                </div>
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-brand-primary">LORRY RECEIPT (BILTY)</h2>
+                  <div className="mt-2 mb-2">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold capitalize inline-block border
                   ${booking.status === 'pending' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : ''}
                   ${booking.status === 'in_transit' ? 'bg-blue-50 text-brand-info border-blue-200' : ''}
@@ -119,6 +155,8 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
           {/* New branch details meta bar */}
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 w-full text-left grid grid-cols-2 sm:grid-cols-6 gap-4 mt-6">
@@ -273,7 +311,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
 
           <div className="text-center w-full sm:w-auto">
             <div className="w-40 mx-auto border-b border-gray-300 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">For Trust Logistic</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">For {logisticName}</p>
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FileText, Truck, Map, ShieldCheck, MapPin, Users, Calculator, CreditCard, Building2, BarChart3 } from 'lucide-react';
@@ -19,7 +20,7 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="pt-28 pb-20 bg-gray-50 min-h-screen">
+    <main className="pt-28 pb-20 bg-gray-50 min-h-screen">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">Powerful Features Built for Indian Transport</h1>
@@ -49,6 +50,14 @@ export default function FeaturesPage() {
           </Link>
         </div>
       </div>
-    </div>
-  );
-}
+    </main>
+  );}
+
+
+export const metadata: Metadata = {
+  title: 'Features - Trust Logistic Software',
+  description: 'Explore the powerful features of Trust Logistic: E-way bill integration, fleet tracking, branch accounting, and seamless booking management.',
+  alternates: {
+    canonical: 'https://trustlogistic.in/features',
+  }
+};

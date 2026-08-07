@@ -20,6 +20,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
     .populate('toBranch', 'name code')
     .populate('truckNo', 'vehicleNumber vehicleType')
     .populate('balancePaidBy', 'name code')
+    .populate('logisticId', 'name companyLogo')
     .populate({
       path: 'challans',
       populate: [
@@ -34,6 +35,8 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
   }
 
   const challans = lorryHire.challans || [];
+  const sessionLogisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+  const logisticName = lorryHire.logisticId?.name || sessionLogisticName;
 
   return (
     <div className="w-full mx-auto pb-10 print:p-0 print:m-0 print:max-w-none bg-white">
@@ -58,7 +61,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
                 <Truck className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary uppercase tracking-wide">TRUST LOGISTIC</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary uppercase tracking-wide">{logisticName}</h1>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
                 <p className="text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
               </div>
@@ -225,7 +228,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
           <div className="text-center w-48">
             <div className="border-b-2 border-gray-400 mb-2"></div>
             <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Authorized Signatory</p>
-            <p className="text-[10px] text-gray-400 mt-1">For TRUST LOGISTIC</p>
+            <p className="text-[10px] text-gray-400 mt-1">For {logisticName}</p>
           </div>
         </div>
 

@@ -247,6 +247,14 @@ export async function POST(request: Request) {
 
     await newChallan.save();
 
+    let truckNumberName = data.truckNo || 'N/A';
+    if (data.truckNo && String(data.truckNo).match(/^[0-9a-fA-F]{24}$/)) {
+      const vehicleDoc = await Vehicle.findById(data.truckNo).select('vehicleNumber').lean();
+      if (vehicleDoc) {
+        truckNumberName = (vehicleDoc as any).vehicleNumber || truckNumberName;
+      }
+    }
+
     // Update loaded bookings status to 'in_transit'
     if (data.bookings && data.bookings.length > 0) {
       await Booking.updateMany(
@@ -257,7 +265,7 @@ export async function POST(request: Request) {
             trackingHistory: { 
               status: 'in_transit', 
               timestamp: new Date(),
-              remarks: `Loaded on Challan No: ${challanNumber} with truck ${data.truckNo || 'N/A'}`
+              remarks: `Loaded on Challan No: ${challanNumber} with truck ${truckNumberName}`
             } 
           }
         }

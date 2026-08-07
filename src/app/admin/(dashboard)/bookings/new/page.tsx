@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, ShieldCheck, ChevronDown, MapPin, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, RefreshCw, ShieldCheck, ChevronDown, MapPin, AlertTriangle } from 'lucide-react';
+import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
@@ -766,7 +767,16 @@ function NewBookingForm() {
 
         router.refresh();
         if (submitAction === 'print') {
-          router.push(`/admin/bookings/${bookingId}?print=true`);
+          if (formData.consignorPhone && formData.consignorPhone !== '0000000000' && formData.consignorPhone.length >= 10) {
+            const logisticNameStr = user?.logisticName || 'Trust Logistic';
+            const appUrl = window.location.origin;
+            const waLink = getWhatsAppShareLink(
+              formData.consignorPhone,
+              `Hello ${formData.consignorName || 'Customer'},\nYour Booking (LR No: ${formData.grNo}) via ${logisticNameStr} is confirmed. Track it here: ${appUrl}/track?lr=${formData.grNo}`
+            );
+            window.open(waLink, 'whatsapp_share_tab');
+          }
+          router.push(`/admin/bookings/${bookingId}/print?print=true`);
         } else {
           router.push('/admin/bookings');
         }
@@ -1506,7 +1516,7 @@ function NewBookingForm() {
           >
             {isLoading && submitAction === 'print' ? 'Printing...' : (
               <>
-                <Printer className="w-4 h-4" /> Save & Print
+                <Printer className="w-4 h-4" /> Save, Print & Share
               </>
             )}
           </Button>

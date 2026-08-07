@@ -26,8 +26,8 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
     .populate('truckNo', 'vehicleNumber')
     .populate('driverName', 'name phone')
     .populate('branch', 'name code')
-    .populate('lrToBranch', 'name code')
     .populate('memoDestinationBranch', 'name code')
+    .populate('logisticId', 'name companyLogo')
     .lean();
 
   if (!challan) {
@@ -47,6 +47,9 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
   const totalPkg = bookings.reduce((acc: number, curr: any) => acc + (Number(curr.pkg) || 0), 0);
   const totalWeight = bookings.reduce((acc: number, curr: any) => acc + (Number(curr.weight) || 0), 0);
   const totalFreight = bookings.reduce((acc: number, curr: any) => acc + (Number(curr.freight) || 0), 0);
+
+  const sessionLogisticName = (session?.user as any)?.logisticName || 'Trust Logistic';
+  const logisticName = ch.logisticId?.name || sessionLogisticName;
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 print:p-0 print:bg-white font-sans text-gray-900">
@@ -75,7 +78,7 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
                 <Truck className="w-8 h-8 text-white print:text-brand-primary" />
               </div>
               <div>
-                <h1 className="text-2xl font-black text-brand-text-primary uppercase tracking-wide m-0 leading-tight">TRUST LOGISTIC</h1>
+                <h1 className="text-2xl font-black text-brand-text-primary uppercase tracking-wide m-0 leading-tight">{logisticName}</h1>
                 <p className="text-xs text-gray-500 font-semibold m-0">TRUCK CHALLAN / LORRY MEMO</p>
                 <p className="text-[10px] text-gray-400 m-0">H.O: Ahmedabad, Gujarat, India</p>
               </div>
@@ -225,7 +228,7 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
             </div>
             <div className="text-center">
               <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
-              <p className="text-xs font-bold text-brand-primary uppercase">For, TRUST LOGISTIC</p>
+              <p className="text-xs font-bold text-brand-primary uppercase">For, {logisticName}</p>
               <p className="text-[10px] text-gray-500 mt-0.5">Authorised Signatory</p>
             </div>
           </div>
