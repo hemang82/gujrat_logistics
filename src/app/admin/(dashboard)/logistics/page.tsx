@@ -114,6 +114,7 @@ export default function LogisticsManagementPage() {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 font-medium">
               <tr>
+                <th className="px-6 py-4 w-20 text-center">Sr. No.</th>
                 <th className="px-6 py-4">COMPANY DETAILS</th>
                 <th className="px-6 py-4">STATUTORY INFO</th>
                 <th className="px-6 py-4">CONTACT</th>
@@ -123,14 +124,14 @@ export default function LogisticsManagementPage() {
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
                     Loading companies...
                   </td>
                 </tr>
               ) : logistics.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                         <Building2 className="w-6 h-6 text-gray-400" />
@@ -142,8 +143,9 @@ export default function LogisticsManagementPage() {
                   </td>
                 </tr>
               ) : (
-                logistics.map((logistic) => (
-                  <tr key={logistic._id} className="hover:bg-gray-50/50 transition-colors">
+                logistics.map((logistic, index) => (
+                  <tr key={logistic._id} className="hover:bg-gray-50/80 transition-colors group">
+                    <td className="px-6 py-4 text-center font-bold text-gray-500">{index + 1}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0 border border-brand-primary/20 overflow-hidden">

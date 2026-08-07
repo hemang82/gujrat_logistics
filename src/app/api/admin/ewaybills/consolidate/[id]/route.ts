@@ -14,7 +14,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
     await dbConnect();
     Branch.init(); // ensure branch is initialized for populate
-    const bill = await ConsolidatedEwayBill.findById(id).lean();
+    const bill = await ConsolidatedEwayBill.findById(id).populate('branch', 'code name').lean();
     if (!bill) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     if (bill.ewbNoDetails && bill.ewbNoDetails.length > 0) {

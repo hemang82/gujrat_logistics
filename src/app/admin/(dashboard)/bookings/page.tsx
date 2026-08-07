@@ -107,7 +107,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   let totalPages = 0;
 
   const isLogisticAdmin = role === 'logistic' || role === 'superadmin';
-  
+
   let canViewBooking = true;
   let canAddBooking = true;
   let canEditBooking = true;
@@ -174,7 +174,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
           <ExportBookings search={search} date={dateStr} branch={filterBranch} />
-          
+
           {canCreate && (
             <div className="flex gap-3 w-full sm:w-auto">
               <Link href="/admin/bookings/new" className="flex-1 sm:flex-none">

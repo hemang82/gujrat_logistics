@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Branch from '@/models/Branch';
+import User from '@/models/User';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, FileText, Download, MapPin } from 'lucide-react';
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic';
 export default async function BranchesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; state?: string; page?: string }>;
+  searchParams: Promise<{ search?: string; state?: string; page?: string; hasLogin?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   await connectToDatabase();
@@ -23,6 +24,7 @@ export default async function BranchesPage({
   const resolvedParams = await searchParams;
   const search = resolvedParams?.search || '';
   const state = resolvedParams?.state || '';
+  const hasLogin = resolvedParams?.hasLogin || '';
   const page = parseInt(resolvedParams?.page || '1', 10);
   const limit = 15;
 
@@ -45,6 +47,16 @@ export default async function BranchesPage({
 
   if (state) {
     query.state = state;
+  }
+
+  if (hasLogin === 'true') {
+    const usersWithBranch = await User.find({ role: 'branch', branch: { $exists: true } }).select('branch');
+    const branchIds = usersWithBranch.map(u => u.branch);
+    query._id = { $in: branchIds };
+  } else if (hasLogin === 'false') {
+    const usersWithBranch = await User.find({ role: 'branch', branch: { $exists: true } }).select('branch');
+    const branchIds = usersWithBranch.map(u => u.branch);
+    query._id = { $nin: branchIds };
   }
 
   const skip = (page - 1) * limit;
@@ -89,6 +101,7 @@ export default async function BranchesPage({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
+                  <th className="font-semibold p-4 w-20 text-center">Sr. No.</th>
                   <th className="font-semibold p-4">Code</th>
                   <th className="font-semibold p-4">Branch Name</th>
                   <th className="font-semibold p-4">State</th>
@@ -101,7 +114,7 @@ export default async function BranchesPage({
               <tbody className="divide-y divide-gray-50">
                 {branches.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                    <td colSpan={8} className="p-8 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center">
                         <MapPin className="w-12 h-12 text-gray-300 mb-3" />
                         <p>No branches found. Add a new branch to get started.</p>
@@ -109,8 +122,9 @@ export default async function BranchesPage({
                     </td>
                   </tr>
                 ) : (
-                  branches.map((br: any) => (
+                  branches.map((br: any, index: number) => (
                     <tr key={br._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
+                      <td className="p-4 text-center font-bold text-gray-500">{(page - 1) * limit + index + 1}</td>
                       <td className="p-4 font-bold text-brand-primary uppercase">{br.code}</td>
                       <td className="p-4 text-sm font-semibold text-brand-text-primary">{br.name}</td>
                       <td className="p-4 text-sm text-gray-600">{br.state}</td>

@@ -29,6 +29,7 @@ export default function CEWBDetailsPage() {
   const [newValidUpto, setNewValidUpto] = useState('');
   const [extendReason, setExtendReason] = useState('');
   const [isExtending, setIsExtending] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   // Editable Form States
   const [vehicleNo, setVehicleNo] = useState('');
@@ -44,7 +45,7 @@ export default function CEWBDetailsPage() {
       const res = await fetch(`/api/admin/ewaybills/consolidate/${id}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       setBill(data.data);
       // Initialize edit states
       setVehicleNo(data.data.vehicleNo || '');
@@ -53,7 +54,7 @@ export default function CEWBDetailsPage() {
       setTransMode(data.data.transMode || '1');
       setTransDocNo(data.data.transDocNo || '');
       setTransDocDate(data.data.transDocDate || '');
-      
+
       if (searchParams.get('print') === 'true') {
         setTimeout(() => window.print(), 500);
       }
@@ -70,7 +71,7 @@ export default function CEWBDetailsPage() {
 
   const handleUpdate = async () => {
     if (!vehicleNo) return toast.error("Please enter Vehicle Number");
-    
+
     try {
       setIsSaving(true);
       const payload = { vehicleNo, fromPlace, fromState, transMode, transDocNo, transDocDate };
@@ -79,10 +80,10 @@ export default function CEWBDetailsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       toast.success("CEWB updated successfully!");
       setBill(data.data);
       setIsEditing(false);
@@ -104,7 +105,7 @@ export default function CEWBDetailsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      
+
       toast.success('CEWB validity extended successfully');
       setExtendModalOpen(false);
       fetchBill();
@@ -120,24 +121,28 @@ export default function CEWBDetailsPage() {
   }
 
   if (!bill) {
-    return <div className="p-12 text-center text-red-500">Master EWB Not Found!</div>;
+    return <div className="p-12 text-center text-red-500">CEWB Not Found!</div>;
   }
 
   return (
     <div className="space-y-6 print:space-y-4">
       {/* Premium Print Header containing QR */}
       <div className="hidden print:flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+
         <div>
-          <h1 className="text-3xl font-bold uppercase tracking-widest text-black">Master E-Way Bill</h1>
+          <h1 className="text-3xl font-bold uppercase tracking-widest text-black">Consolidated E-Way Bill</h1>
           <p className="text-lg font-mono font-bold mt-2 text-black">CEWB NO: {bill.cEwbNo}</p>
           <p className="text-sm text-gray-600 mt-1 font-medium">Generated On: {formatDate(bill.createdAt)}</p>
         </div>
+
         <div className="bg-white p-2 border border-gray-200 rounded">
           <QRCode value={bill.cEwbNo} size={80} level="M" />
         </div>
+
       </div>
 
       <div className="flex items-center justify-between print:hidden">
+
         <div className="flex items-center gap-4">
           <Link href="/admin/ewaybills/consolidated">
             <Button variant="outline" size="icon" className="h-9 w-9">
@@ -145,22 +150,37 @@ export default function CEWBDetailsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Master CEWB Details</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bills Details</h1>
             <p className="text-sm text-gray-500 font-mono mt-1">CEWB No: {bill.cEwbNo}</p>
           </div>
         </div>
+
         <div className="flex gap-3 mt-4 sm:mt-0">
           {/* Show QR code on screen too in a small button or just placed nicely */}
-          <div className="hidden sm:flex items-center justify-center p-1 bg-white border rounded shadow-sm mr-2">
-             <QRCode value={bill.cEwbNo} size={40} level="L" />
+          <div
+            className="hidden sm:flex flex-col items-center justify-center p-1.5 bg-white border rounded-md shadow-sm mr-2 group relative cursor-pointer hover:border-brand-primary transition-colors"
+            onClick={() => setShowQRModal(true)}
+          >
+            <QRCode value={bill.printUrl ? `${window.location.origin}/api/proxy-pdf?url=https://${bill.printUrl}` : bill.cEwbNo} size={48} level="L" />
+            <span className="absolute -bottom-8 bg-gray-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Click to Enlarge</span>
           </div>
-          <Button variant="outline" className="flex items-center gap-2 font-medium" onClick={() => window.print()}>
+          <Button
+            variant="outline"
+            className="flex items-center gap-2 font-medium"
+            onClick={() => {
+              if (bill.printUrl) {
+                window.open(`/api/proxy-pdf?url=https://${bill.printUrl}`, '_blank');
+              } else {
+                window.print();
+              }
+            }}
+          >
             <Printer className="w-4 h-4" /> Print
           </Button>
           {!isEditing ? (
             <>
-              <Button 
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white" 
+              <Button
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={() => {
                   setNewValidUpto('');
                   setExtendReason('');
@@ -184,10 +204,11 @@ export default function CEWBDetailsPage() {
             </>
           )}
         </div>
+
       </div>
 
       <div className="space-y-6">
-        
+
         {/* Top Section - Transport Details */}
         <div className="space-y-6">
           <Card className="border-gray-200 shadow-sm print:shadow-none print:border-black">
@@ -199,10 +220,17 @@ export default function CEWBDetailsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-y-6 gap-x-8">
-                
+
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Challan Ref</Label>
-                  <p className="font-semibold text-lg font-mono text-brand-primary">{bill.challanNo || 'N/A'}</p>
+                  <p className="font-semibold text-lg font-mono text-brand-primary">
+                    {bill.branch?.code ? `${bill.branch.code}-${bill.challanNo}` : (bill.challanNo || 'N/A')}
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-gray-500 text-xs uppercase tracking-wider">Branch</Label>
+                  <p className="font-semibold text-lg">{bill.branch?.name ? `${bill.branch.name} (${bill.branch.code})` : 'N/A'}</p>
                 </div>
 
                 <div className="space-y-1">
@@ -218,13 +246,19 @@ export default function CEWBDetailsPage() {
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Mode of Transport</Label>
                   {isEditing ? (
                     <select value={transMode} onChange={(e) => setTransMode(e.target.value)} className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary">
-                      <option value="Road">Road</option>
-                      <option value="Rail">Rail</option>
-                      <option value="Air">Air</option>
-                      <option value="Ship">Ship</option>
+                      <option value="1">Road</option>
+                      <option value="2">Rail</option>
+                      <option value="3">Air</option>
+                      <option value="4">Ship</option>
                     </select>
                   ) : (
-                    <p className="font-semibold text-lg">{bill.transMode || 'Road'}</p>
+                    <p className="font-semibold text-lg">
+                      {bill.transMode === '1' ? 'Road' :
+                        bill.transMode === '2' ? 'Rail' :
+                          bill.transMode === '3' ? 'Air' :
+                            bill.transMode === '4' ? 'Ship' :
+                              (bill.transMode || 'Road')}
+                    </p>
                   )}
                 </div>
 
@@ -244,21 +278,21 @@ export default function CEWBDetailsPage() {
                   {isEditing ? (
                     <Input value={fromState} onChange={(e) => setFromState(e.target.value)} className="h-10" />
                   ) : (
-                    <p className="font-medium">{bill.fromState || 'N/A'}</p>
+                    <p className="font-semibold text-lg">{bill.fromState || 'N/A'}</p>
                   )}
                 </div>
-                
+
                 <div className="space-y-1">
                   <Label className="text-gray-500 text-xs uppercase tracking-wider">Valid Upto</Label>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-700">{formatDate(bill.validUpto)}</p>
+                    <p className="font-semibold text-lg text-gray-800">{formatDate(bill.validUpto)}</p>
                     {bill.validUpto && (() => {
                       const validUpto = new Date(bill.validUpto);
-                      validUpto.setHours(0,0,0,0);
+                      validUpto.setHours(0, 0, 0, 0);
                       const today = new Date();
-                      today.setHours(0,0,0,0);
+                      today.setHours(0, 0, 0, 0);
                       const diffDays = Math.ceil((validUpto.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                      
+
                       if (diffDays < 0) {
                         return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 uppercase tracking-wider">Expired</span>;
                       } else if (diffDays === 0) {
@@ -383,16 +417,16 @@ export default function CEWBDetailsPage() {
                 <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">CEWB NO</Label>
                 <p className="font-mono font-medium text-lg text-brand-primary">{bill.cEwbNo}</p>
               </div>
-              
+
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Current Validity</Label>
                 <p className="font-medium text-gray-700">{formatDate(bill.validUpto)}</p>
               </div>
-              
+
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">New Validity Date</Label>
-                <DatePicker 
-                  className="h-10 w-full" 
+                <DatePicker
+                  className="h-10 w-full"
                   value={newValidUpto}
                   onChange={(date: string) => setNewValidUpto(date)}
                 />
@@ -400,8 +434,8 @@ export default function CEWBDetailsPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Reason for Extension</Label>
-                <Input 
-                  placeholder="e.g. Vehicle Breakdown" 
+                <Input
+                  placeholder="e.g. Vehicle Breakdown"
                   className="h-10"
                   value={extendReason}
                   onChange={(e) => setExtendReason(e.target.value)}
@@ -417,7 +451,24 @@ export default function CEWBDetailsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* QR Code Modal */}
+        <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
+          <DialogContent className="max-w-sm flex flex-col items-center justify-center p-8 space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-center">Scan to open PDF</DialogTitle>
+            </DialogHeader>
+            <div className="bg-white p-4 rounded-xl border shadow-sm">
+              {showQRModal && (
+                <QRCode value={bill.printUrl ? `${window.location.origin}/api/proxy-pdf?url=https://${bill.printUrl}` : bill.cEwbNo} size={250} level="L" />
+              )}
+            </div>
+            <p className="text-sm text-gray-500 font-mono mt-2 text-center">CEWB: {bill.cEwbNo}</p>
+          </DialogContent>
+        </Dialog>
+
       </div>
+      
     </div>
   );
 }

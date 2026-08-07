@@ -14,6 +14,7 @@ export default function BranchesFilter() {
 
   const currentSearch = searchParams.get('search') || '';
   const currentState = searchParams.get('state') || '';
+  const currentHasLogin = searchParams.get('hasLogin') || '';
 
   const [searchValue, setSearchValue] = useState(currentSearch);
 
@@ -49,6 +50,12 @@ export default function BranchesFilter() {
     { value: 'Uttar Pradesh', label: 'Uttar Pradesh' },
     { value: 'Karnataka', label: 'Karnataka' },
     { value: 'Tamil Nadu', label: 'Tamil Nadu' }
+  ];
+
+  const loginStatuses = [
+    { value: '', label: 'All Logins' },
+    { value: 'true', label: 'Login Created' },
+    { value: 'false', label: 'No Login' }
   ];
 
   return (
@@ -88,7 +95,18 @@ export default function BranchesFilter() {
         />
       </div>
 
-      {(currentSearch || currentState) && (
+      {/* Login Filter */}
+      <div className="w-full sm:w-44">
+        <ThemeSelect
+          name="hasLogin"
+          value={currentHasLogin}
+          onChange={(e) => handleUpdate('hasLogin', e.target.value)}
+          options={loginStatuses}
+          className="flex h-10 w-full rounded-xl border border-gray-200 px-3 text-sm focus-visible:outline-none"
+        />
+      </div>
+
+      {(currentSearch || currentState || currentHasLogin) && (
         <Button 
           variant="ghost" 
           onClick={() => {

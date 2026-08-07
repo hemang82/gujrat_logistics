@@ -7,6 +7,7 @@ import Booking from '@/models/Booking';
 import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
+import Client from '@/models/Client';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { addCashTransaction } from '@/lib/ledgerUtils';
 import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
@@ -200,6 +201,33 @@ export async function POST(req: Request) {
     });
     
     await newBooking.save();
+
+    // Auto-save Consignor and Consignee as Clients
+    const logisticId = await getLogisticIdForCreate();
+    const handleClientAutoSave = async (clientData: any) => {
+      if (!clientData || !clientData.name || clientData.name.trim() === '') return;
+      try {
+        const existingClient = await Client.findOne({ 
+          name: { $regex: new RegExp(`^${clientData.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+          logisticId 
+        });
+        if (!existingClient) {
+          await Client.create({
+            name: clientData.name.trim(),
+            phone: clientData.phone || '',
+            address: clientData.address || '',
+            gstin: clientData.gstNumber || '',
+            logisticId,
+            createdBy: session?.user?.id
+          });
+        }
+      } catch (e) {
+        console.error('Error auto-saving client:', e);
+      }
+    };
+
+    if (data.consignor) await handleClientAutoSave(data.consignor);
+    if (data.consignee) await handleClientAutoSave(data.consignee);
 
     // Mark Vehicle and Driver as on-trip
     if (data.vehicle) {

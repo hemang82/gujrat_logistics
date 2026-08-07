@@ -106,7 +106,7 @@ export default function ExportChallans({ search = '', status = '', branch = '', 
         return s.length > len ? s.substring(0, len) + '...' : s;
       };
 
-      const pdfRows = data.rows.map(row => {
+      const pdfRows = data.rows.map((row: any[]) => {
         const newRow = row.slice(0, 15);
         // Truncate From Branch (index 2)
         newRow[2] = truncate(newRow[2] as string, 12);

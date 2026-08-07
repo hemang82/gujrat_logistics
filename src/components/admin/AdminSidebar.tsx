@@ -105,7 +105,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
 
     // For logistic and branch_user
-    const bookingChildren = [
+    const bookingChildren: { name: string; href: string; exact: boolean; excludePaths?: string[] }[] = [
       { name: 'LR / Bilti', href: '/admin/bookings', exact: false }
     ];
 
@@ -114,6 +114,10 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         { name: 'Lorry Challan', href: '/admin/challans', exact: false, excludePaths: ['/admin/challans/crossing'] },
         { name: 'Crossing Memo', href: '/admin/challans/crossing', exact: false }
       );
+    }
+
+    if (user?.ewbApiAccess) {
+      bookingChildren.push({ name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false });
     }
 
     bookingChildren.push({ name: 'Lorry Hire', href: '/admin/lorry-hire', exact: false });
@@ -167,7 +171,6 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         isActive: isFleetActive,
         children: [
           { name: 'Dashboard', href: '/admin/fleet', exact: true },
-          ...(user?.ewbApiAccess ? [{ name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false }] : []),
           { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
           { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
           { name: 'Truck Expenses', href: '/admin/expenses', exact: false },
@@ -211,7 +214,6 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
         isActive: isFleetActive,
         children: [
           { name: 'Dashboard', href: '/admin/fleet', exact: true },
-          ...(user?.ewbApiAccess ? [{ name: 'Consolidated EWB', href: '/admin/ewaybills/consolidated', exact: false }] : []),
           { name: 'All Trucks', href: '/admin/fleet/vehicles', exact: false },
           { name: 'All Drivers', href: '/admin/fleet/drivers', exact: false },
           { name: 'Truck Expenses', href: '/admin/expenses', exact: false },

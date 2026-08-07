@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     }
 
     // Fetch all consolidated E-Way bills, sorted by latest
-    const bills = await ConsolidatedEwayBill.find(query).sort({ createdAt: -1 });
+    const bills = await ConsolidatedEwayBill.find(query).populate('branch', 'name code').sort({ createdAt: -1 });
 
     return NextResponse.json({ data: bills }, { status: 200 });
   } catch (error: any) {
@@ -79,28 +79,39 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     
-    if (!body || !body.vehicle_number || !body.eway_bill_list || !Array.isArray(body.eway_bill_list)) {
-      return NextResponse.json({ error: 'Missing required CEWB fields or eway_bill_list' }, { status: 400 });
+    if (!body || !body.vehicle_number || !body.list_of_eway_bills || !Array.isArray(body.list_of_eway_bills)) {
+      return NextResponse.json({ error: 'Missing required CEWB fields or list_of_eway_bills' }, { status: 400 });
     }
 
     try {
       console.log('CEWB Generation Payload Received:', body);
-      console.log('Challan No Extracted:', body.challanNo, body.trip_no);
-      const cewbResponse = await EwayBillService.generateConsolidatedEwayBill(body);
+      const apiPayload = {
+        userGstin: body.userGstin || "05AAABC0181E1ZE",
+        place_of_consignor: body.place_of_consignor || "",
+        state_of_consignor: body.state_of_consignor || "",
+        vehicle_number: body.vehicle_number,
+        mode_of_transport: parseInt(body.mode_of_transport || "1"),
+        transporter_document_number: body.transporter_document_number || "",
+        transporter_document_date: body.transporter_document_date || new Date().toLocaleDateString('en-GB'),
+        data_source: "erp",
+        list_of_eway_bills: body.list_of_eway_bills
+      };
+      
+      const cewbResponse = await EwayBillService.generateConsolidatedEwayBill(apiPayload);
 
       // Create Database Record
       const newBill = await ConsolidatedEwayBill.create({
         cEwbNo: cewbResponse.cEwbNo,
-        challanNo: body.challanNo || body.trip_no || '',
-        vehicleNo: body.vehicle_number,
-        fromPlace: body.from_place,
-        fromState: body.from_state,
-        transMode: body.transportation_mode,
-        ewbNoDetails: body.eway_bill_list.map((item: any) => ({
-          ewbNo: parseInt(item.eway_bill_no, 10)
+        challanNo: apiPayload.transporter_document_number,
+        vehicleNo: apiPayload.vehicle_number,
+        fromPlace: apiPayload.place_of_consignor,
+        fromState: apiPayload.state_of_consignor,
+        transMode: apiPayload.mode_of_transport.toString(),
+        ewbNoDetails: apiPayload.list_of_eway_bills.map((item: any) => ({
+          ewbNo: parseInt(item.eway_bill_number, 10)
         })),
         cEwbDate: cewbResponse.cEwbDate,
-        validUpto: body.validUpto ? new Date(body.validUpto) : null,
+        printUrl: cewbResponse.url || null,
         status: 'Active',
         createdBy: dbUser._id,
         logisticId: (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId,
@@ -110,7 +121,7 @@ export async function POST(request: Request) {
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',
-        requestData: `Vehicle: ${body.vehicle_number}, EWBs: ${body.eway_bill_list?.length || 0}`,
+        requestData: `Vehicle: ${apiPayload.vehicle_number}, EWBs: ${apiPayload.list_of_eway_bills?.length || 0}`,
         responseStatus: 'success',
       });
 
@@ -120,7 +131,7 @@ export async function POST(request: Request) {
       await ApiLog.create({
         userId: dbUser._id,
         apiType: 'CEWB_GENERATE',
-        requestData: `Vehicle: ${body.vehicle_number}, EWBs: ${body.eway_bill_list?.length || 0}`,
+        requestData: `Vehicle: ${body.vehicle_number}, EWBs: ${body.list_of_eway_bills?.length || 0}`,
         responseStatus: 'failed',
         errorMessage: apiError.message,
       });

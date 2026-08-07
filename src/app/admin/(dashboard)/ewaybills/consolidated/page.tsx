@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileOutput, Plus, Loader2, Trash2, Eye, CalendarClock, Printer, Search } from 'lucide-react';
+import { FileOutput, Plus, Loader2, Trash2, Eye, CalendarClock, Printer, Search, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -13,13 +13,13 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { SearchSelect } from '@/components/ui/search-select';
 import { useUserStore } from '@/store/useUserStore';
 import { formatDate } from '@/lib/dateUtils';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 
 export default function CEWBListPage() {
   const [bills, setBills] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
   const [branches, setBranches] = useState<any[]>([]);
   
@@ -44,8 +44,10 @@ export default function CEWBListPage() {
       setIsLoading(true);
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      if (dateFilter) {
+        params.append('startDate', dateFilter);
+        params.append('endDate', dateFilter);
+      }
       if (selectedBranch) params.append('branchId', selectedBranch);
 
       const res = await fetch(`/api/admin/ewaybills/consolidate?${params.toString()}`);
@@ -128,7 +130,7 @@ export default function CEWBListPage() {
 
   useEffect(() => {
     fetchBills();
-  }, [searchQuery, startDate, endDate, selectedBranch]);
+  }, [searchQuery, dateFilter, selectedBranch]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this Master EWB?')) return;
@@ -169,7 +171,7 @@ export default function CEWBListPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Consolidated E-Way Bills (CEWB)</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage and generate master e-way bills for multiple parcels.</p>
+          <p className="text-sm text-gray-500 mt-1">Manage and generate consolidated e-way bills for multiple parcels.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           {canEdit && (
@@ -183,108 +185,78 @@ export default function CEWBListPage() {
         </div>
       </div>
 
-      <Card className="border-gray-200 shadow-sm">
-        <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-4">
-          <div className="flex flex-col xl:flex-row gap-4">
-            <div className="relative flex-1 w-full xl:max-w-sm">
+      <Card className="border-none shadow-sm rounded-xl bg-white overflow-visible">
+        <div className="border-b border-gray-100 p-4">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Recent CEWBs</h2>
+              <p className="text-xs text-gray-500 mt-0.5 max-w-2xl">
+                Manage your Consolidated E-Way Bills (CEWB) seamlessly. Generate a single master e-way bill for multiple consignments traveling in the same vehicle, extend document validities, and print government-approved PDFs directly from this portal.
+              </p>
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-3 items-center bg-gray-50/50 p-2 rounded-2xl border border-gray-100 w-full lg:w-auto">
+            <div className="relative w-full md:w-[280px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input 
                 placeholder="Search CEWB No or Vehicle..." 
-                className="pl-9 h-10 w-full"
+                className="pl-9 h-11 border-white bg-white shadow-sm rounded-xl focus-visible:ring-1 focus-visible:ring-brand-primary w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full xl:w-auto">
-              {isAdmin && (
-                <div className="w-full sm:w-48 relative">
-                  {branchSearch && branchSuggestions.length > 0 && branchSuggestions[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{branchSuggestions[0].name.slice(0, branchSearch.length)}</span>
-                      <span>{branchSuggestions[0].name.slice(branchSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    name="branch"
-                    value={branchSearch}
-                    onChange={(e) => handleBranchSearchChange(e.target.value)}
-                    onFocus={() => {
-                      setBranchSuggestions(branchSearch ? branches.filter(b => b.name.toLowerCase().includes(branchSearch.toLowerCase())) : branches);
-                      setShowBranchDropdown(true);
-                    }}
-                    onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
-                    onKeyDown={handleBranchKeyDown}
-                    placeholder="All Branches"
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
-                  />
-                  {showBranchDropdown && branchSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {branchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion._id}
-                          onMouseDown={() => {
-                            setSelectedBranch(suggestion._id);
-                            setBranchSearch(`${suggestion.name} (${suggestion.code})`);
-                            setShowBranchDropdown(false);
-                            setBranchHighlightIndex(-1);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          <span>{suggestion.name} ({suggestion.code})</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="w-full sm:w-auto">
-                <DatePicker 
-                  className="h-10 w-full sm:w-40" 
-                  placeholder="Start Date"
-                  value={startDate}
-                  onChange={(date) => setStartDate(date)}
-                />
-              </div>
-              <span className="text-gray-400 hidden sm:inline-block">to</span>
-              <div className="w-full sm:w-auto">
-                <DatePicker 
-                  className="h-10 w-full sm:w-40" 
-                  placeholder="End Date"
-                  value={endDate}
-                  onChange={(date) => setEndDate(date)}
-                />
-              </div>
-              {(searchQuery || startDate || endDate || selectedBranch) && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    setSearchQuery('');
-                    setStartDate('');
-                    setEndDate('');
-                    setSelectedBranch('');
-                    setBranchSearch('');
-                  }}
-                  className="h-10 text-gray-500 w-full sm:w-auto mt-2 sm:mt-0"
-                >
-                  Clear
-                </Button>
-              )}
+            <div className="w-full md:w-[150px]">
+              <DatePicker 
+                className="h-11 border-white bg-white shadow-sm rounded-xl w-full" 
+                placeholder="Filter Date"
+                value={dateFilter}
+                onChange={(date) => setDateFilter(date)}
+              />
             </div>
+            {isAdmin && (
+              <div className="w-full md:w-[180px] relative z-[60]">
+                <BranchAutocomplete
+                  name="branch"
+                  value={selectedBranch}
+                  onChange={(e) => setSelectedBranch(e.target.value)}
+                  options={[
+                    { label: 'All Branches', value: '' },
+                    ...branches.map(b => ({ label: b.name, value: b._id }))
+                  ]}
+                  placeholder="All Branches"
+                  className="!rounded-xl h-11 shadow-sm"
+                />
+              </div>
+            )}
+            
+            {(searchQuery || dateFilter || selectedBranch) && (
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  setSearchQuery('');
+                  setDateFilter('');
+                  setSelectedBranch('');
+                  setBranchSearch('');
+                }}
+                className="h-11 text-gray-500 hover:bg-gray-200 rounded-xl w-full md:w-auto px-4"
+              >
+                Clear
+              </Button>
+            )}
           </div>
-        </CardHeader>
+        </div>
+        </div>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
               <thead className="hidden lg:table-header-group bg-gray-50/50 border-b border-gray-100 text-gray-500 font-medium">
                 <tr className="text-xs uppercase tracking-wider text-gray-600 font-semibold">
+                  <th className="px-6 py-4">SR NO</th>
                   <th className="px-6 py-4">CEWB NO</th>
+                  <th className="px-6 py-4">FROM</th>
                   <th className="px-6 py-4">DATE</th>
                   <th className="px-6 py-4">VEHICLE NO</th>
                   <th className="px-6 py-4">VALID UPTO</th>
-                  <th className="px-6 py-4">FROM</th>
                   <th className="px-6 py-4">TOTAL EWBS</th>
                   <th className="px-6 py-4">STATUS</th>
                   <th className="px-6 py-4 text-right">ACTIONS</th>
@@ -293,14 +265,14 @@ export default function CEWBListPage() {
               <tbody className="flex flex-col lg:table-row-group divide-y lg:divide-y-0 divide-gray-100">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                       <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
                       Loading master bills...
                     </td>
                   </tr>
                 ) : bills.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                       <FileOutput className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                       <p>No Consolidated E-Way Bills found.</p>
                       {canEdit && (
@@ -311,11 +283,19 @@ export default function CEWBListPage() {
                     </td>
                   </tr>
                 ) : (
-                  bills.map((bill) => (
+                  bills.map((bill, index) => (
                     <tr key={bill._id} className="flex flex-col lg:table-row hover:bg-gray-50 transition-colors py-2 lg:py-0 border-b lg:border-b border-gray-100 last:border-0">
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600 font-medium">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">SR NO</span>
+                        <span className="text-right lg:text-left">{index + 1}</span>
+                      </td>
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">CEWB NO</span>
                         <span className="font-mono font-medium text-brand-primary text-right lg:text-left">{bill.cEwbNo}</span>
+                      </td>
+                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
+                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">FROM</span>
+                        <span className="text-right lg:text-left font-medium">{bill.branch?.name ? `${bill.branch.name} (${bill.branch.code})` : '-'}</span>
                       </td>
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">DATE</span>
@@ -350,10 +330,7 @@ export default function CEWBListPage() {
                           })()}
                         </div>
                       </td>
-                      <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
-                        <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">FROM</span>
-                        <span className="text-right lg:text-left">{bill.fromPlace ? `${bill.fromPlace} (${bill.fromState})` : '-'}</span>
-                      </td>
+
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell border-b border-dashed border-gray-100 lg:border-0 text-gray-600">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">TOTAL EWBS</span>
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 font-bold text-xs shrink-0">
@@ -376,42 +353,45 @@ export default function CEWBListPage() {
                       </td>
                       <td className="px-6 py-3 lg:py-4 flex justify-between items-center lg:table-cell">
                         <span className="lg:hidden font-semibold text-xs uppercase text-gray-500 mr-4 shrink-0">ACTIONS</span>
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
+                            <button className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer" title="View Details">
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          
+                          {bill.printUrl ? (
+                            <button 
+                              className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer"
+                              onClick={() => window.open(`/api/proxy-pdf?url=https://${bill.printUrl}`, '_blank')}
+                              title="Print CEWB"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <Link href={`/admin/ewaybills/consolidated/${bill._id}?print=true`}>
+                              <button className="p-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors cursor-pointer" title="Print CEWB">
+                                <Printer className="w-4 h-4" />
+                              </button>
+                            </Link>
+                          )}
+
                           {canEdit && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 text-xs px-2 sm:px-3"
+                            <button 
+                              className="p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
                               onClick={() => {
                                 setSelectedCEWB(bill);
                                 setNewValidUpto('');
                                 setExtendReason('');
                                 setExtendModalOpen(true);
                               }}
+                              title="Extend CEWB"
                             >
-                              <CalendarClock className="w-4 h-4 mr-1 hidden sm:inline-block" /> Extend
-                            </Button>
+                              <Edit className="w-4 h-4" />
+                            </button>
                           )}
-                          <Link href={`/admin/ewaybills/consolidated/${bill._id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/admin/ewaybills/consolidated/${bill._id}?print=true`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10">
-                              <Printer className="w-4 h-4" />
-                            </Button>
-                          </Link>
-                          {user?.role !== 'logistic' && canEdit && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
-                              onClick={() => handleDelete(bill._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
+
+
                         </div>
                       </td>
                     </tr>

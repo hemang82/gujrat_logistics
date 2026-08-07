@@ -28,11 +28,15 @@ const DIRECT_DATA_OPTIONS = [
 export default function NewBranchPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [stateSuggestions, setStateSuggestions] = useState<string[]>([]);
   const [showStateDropdown, setShowStateDropdown] = useState(false);
   const [stateHighlightIndex, setStateHighlightIndex] = useState(-1);
+
+  const [postOfficeOptions, setPostOfficeOptions] = useState<any[]>([]);
+  const [showPostOfficeDropdown, setShowPostOfficeDropdown] = useState(false);
 
   const [bookingInwardSearch, setBookingInwardSearch] = useState('B/I (Both)');
   const [bookingInwardSuggestions, setBookingInwardSuggestions] = useState<typeof BOOKING_INWARD_OPTIONS>([]);
@@ -69,7 +73,8 @@ export default function NewBranchPage() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    state: 'Gujarat',
+    state: '',
+    city: '',
     pincode: '',
     distance: '0',
     phone: '',
@@ -88,6 +93,42 @@ export default function NewBranchPage() {
     brnAmount: '0.00',
     directData: 'No'
   });
+
+  // Pincode Auto-fetch effect
+  useEffect(() => {
+    if (formData.pincode && formData.pincode.length === 6) {
+      setIsFetchingPincode(true);
+      fetch(`https://api.postalpincode.in/pincode/${formData.pincode}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data[0] && data[0].Status === 'Success') {
+            const offices = data[0].PostOffice;
+            setPostOfficeOptions(offices);
+            setShowPostOfficeDropdown(true);
+            if (offices.length === 1) {
+              setFormData(prev => ({
+                ...prev,
+                city: offices[0].District,
+                state: offices[0].State
+              }));
+              setShowPostOfficeDropdown(false);
+              toast.success(`Fetched: ${offices[0].District}, ${offices[0].State}`);
+            } else {
+              toast.success(`Found ${offices.length} locations. Please select one.`);
+            }
+          } else {
+            toast.error('Invalid Pincode or no data found.');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching pincode data:', err);
+          toast.error('Failed to fetch Pincode data.');
+        })
+        .finally(() => {
+          setIsFetchingPincode(false);
+        });
+    }
+  }, [formData.pincode]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let { name, value } = e.target;
@@ -510,7 +551,37 @@ export default function NewBranchPage() {
             </div>
 
             {/* Row 2 */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">PinCode</Label>
+                <div className="relative">
+                  <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm rounded-lg border-gray-200" />
+                  {isFetchingPincode && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>}
+                  {showPostOfficeDropdown && postOfficeOptions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Select Location</div>
+                      {postOfficeOptions.map((po, index) => (
+                        <div
+                          key={index}
+                          onMouseDown={() => {
+                            setFormData(prev => ({
+                              ...prev,
+                              city: po.District,
+                              state: po.State
+                            }));
+                            setShowPostOfficeDropdown(false);
+                          }}
+                          className="flex flex-col px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:bg-gray-50 text-gray-800"
+                        >
+                          <span className="font-bold">{po.Name}</span>
+                          <span className="text-[10px] text-gray-500">{po.District}, {po.State}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {renderError('pincode')}
+              </div>
               <div className="space-y-1 relative">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">State <span className="text-red-500">*</span></Label>
                 <div className="relative">
@@ -558,9 +629,8 @@ export default function NewBranchPage() {
                 {renderError('state')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">PinCode</Label>
-                <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm rounded-lg border-gray-200" />
-                {renderError('pincode')}
+                <Label className="text-xs font-semibold text-gray-600 uppercase">City / District</Label>
+                <Input name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g. Ahmedabad" className="h-10 text-sm rounded-lg border-gray-200" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Distance (KM)</Label>

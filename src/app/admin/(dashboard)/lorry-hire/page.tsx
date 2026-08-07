@@ -10,9 +10,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeSelect } from '@/components/ui/theme-select';
+import { Label } from '@/components/ui/label';
 import { useUserStore } from '@/store/useUserStore';
 import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
-import { useSWR } from 'swr';
 import { DatePicker } from '@/components/ui/date-picker';
 import ExportLorryHire from '@/components/admin/ExportLorryHire';
 import { formatDate } from '@/lib/dateUtils';
@@ -253,6 +253,7 @@ export default function LorryHireList() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="bg-gray-50 text-gray-500 border-b border-gray-100">
+                <th className="py-3 px-4 font-semibold w-20 text-center">Sr. No.</th>
                 <th className="py-3 px-4 font-semibold">Voucher No</th>
                 <th className="py-3 px-4 font-semibold">Date</th>
                 <th className="py-3 px-4 font-semibold">Truck No</th>
@@ -267,7 +268,7 @@ export default function LorryHireList() {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-gray-500">
+                  <td colSpan={10} className="p-8 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center gap-3">
                       <div className="w-6 h-6 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-sm font-medium">Loading vouchers...</span>
@@ -276,15 +277,16 @@ export default function LorryHireList() {
                 </tr>
               ) : vouchers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-16 text-center text-gray-500">
+                  <td colSpan={10} className="p-16 text-center text-gray-500">
                     <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-base font-semibold text-gray-900">No Vouchers Found</p>
                     <p className="text-sm mt-1 text-gray-500">Create a new lorry hire voucher to get started.</p>
                   </td>
                 </tr>
               ) : (
-                vouchers.map((v) => (
-                  <tr key={v._id} className="hover:bg-gray-50/80 transition-colors group">
+                vouchers.map((v: any, index: number) => (
+                  <tr key={v._id} className="hover:bg-brand-primary/5 transition-colors group">
+                    <td className="p-4 text-center font-bold text-gray-500">{(page - 1) * limit + index + 1}</td>
                     <td className="py-3 px-4">
                       <span className="font-semibold text-brand-primary bg-brand-primary/5 px-2.5 py-1 rounded-md border border-brand-primary/10">
                         {v.voucherNo}

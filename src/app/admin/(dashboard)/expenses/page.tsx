@@ -195,6 +195,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
+                  <th className="font-semibold p-4 w-20 text-center">Sr. No.</th>
                   <th className="font-semibold p-4">Date</th>
                   <th className="font-semibold p-4">Type</th>
                   <th className="font-semibold p-4">Vehicle</th>
@@ -210,7 +211,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
               <tbody className="divide-y divide-gray-50">
                 {expenses.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-gray-500">
+                    <td colSpan={8} className="p-8 text-center text-gray-500">
                       <div className="flex flex-col items-center justify-center">
                         <FileText className="w-12 h-12 text-gray-300 mb-3" />
                         <p>No expenses logged yet.</p>
@@ -218,8 +219,9 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                     </td>
                   </tr>
                 ) : (
-                  expenses.map((expense: any) => (
+                  expenses.map((expense: any, index: number) => (
                     <tr key={expense._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
+                      <td className="p-4 text-center font-bold text-gray-500">{(page - 1) * limit + index + 1}</td>
                       <td className="p-4 text-sm text-gray-600">
                         {formatDate(expense.date)}
                       </td>

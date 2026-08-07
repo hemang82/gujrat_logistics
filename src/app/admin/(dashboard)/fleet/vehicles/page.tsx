@@ -113,6 +113,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-100">
+                      <th className="font-semibold p-4 w-20 text-center">Sr. No.</th>
                       <th className="font-semibold p-4">Vehicle Details</th>
                       <th className="font-semibold p-4">Type & Capacity</th>
                       {(session?.user as any)?.role === 'logistic' && (
@@ -125,10 +126,11 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {vehicles.map((v: any) => {
+                    {vehicles.map((v: any, index: number) => {
                       const isInsuranceExpiring = v.insuranceExpiry && new Date(v.insuranceExpiry) < new Date(Date.now() + 30*24*60*60*1000);
                       return (
                         <tr key={v._id.toString()} className="hover:bg-brand-primary/5 transition-colors">
+                          <td className="p-4 text-center font-bold text-gray-500">{index + 1}</td>
                           <td className="p-4">
                             <p className="font-bold text-brand-primary text-lg tracking-wide">{v.vehicleNumber}</p>
                             <p className="text-xs text-gray-500 font-medium mt-0.5">{v.make || 'Unknown Make'} {v.model}</p>

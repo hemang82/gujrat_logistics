@@ -110,6 +110,7 @@ export default function UsersPage() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-500 bg-gray-50 uppercase tracking-wider border-b border-gray-100">
                 <tr>
+                  <th className="px-4 py-3 font-semibold w-20 text-center">Sr. No.</th>
                   <th className="px-4 py-3 font-semibold">Name & Email</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
                   <th className="px-4 py-3 font-semibold">Assigned Branch</th>
@@ -120,11 +121,11 @@ export default function UsersPage() {
               <tbody className="divide-y divide-gray-50">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">Loading branch logins...</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">Loading branch logins...</td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                    <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <UserIcon className="w-8 h-8 text-gray-300" />
                         <p>No branch logins found</p>
@@ -132,8 +133,9 @@ export default function UsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  users.map((u) => (
+                  users.map((u, index) => (
                     <tr key={u._id} className="hover:bg-brand-primary/5 transition-colors group">
+                      <td className="px-4 py-3 text-center text-gray-500 font-bold">{index + 1}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col">
                           <span className="font-bold text-gray-900 group-hover:text-brand-primary transition-colors">

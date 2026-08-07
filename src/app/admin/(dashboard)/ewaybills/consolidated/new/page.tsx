@@ -10,6 +10,14 @@ import { toast } from 'sonner';
 import { Truck, FileOutput, CheckCircle2, ListFilter, Loader2, AlertCircle } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { ThemeSelect } from '@/components/ui/theme-select';
+
+const TRANSPORT_MODE_OPTIONS = [
+  { value: "1", label: "Road" },
+  { value: "2", label: "Rail" },
+  { value: "3", label: "Air" },
+  { value: "4", label: "Ship" }
+];
 
 export default function ConsolidatedEwayBillPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,23 +39,21 @@ export default function ConsolidatedEwayBillPage() {
 
   // Form states
   const [vehicleNo, setVehicleNo] = useState('');
-  const [vehicleType, setVehicleType] = useState('Regular');
   const [fromPlace, setFromPlace] = useState('');
   const [fromState, setFromState] = useState('');
-  const [transMode, setTransMode] = useState('Road'); 
-  const [approxDistance, setApproxDistance] = useState('');
-  const [validUpto, setValidUpto] = useState('');
+  const [transMode, setTransMode] = useState('1'); 
   const [vehicleError, setVehicleError] = useState('');
 
-  // Fetch Suggestions
+  // Fetch Suggestions - auto-load on focus, filter on type
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      if (challanNo && showChallanDropdown) {
-        fetch(`/api/admin/challans?status=pending&limit=15&search=${challanNo}`)
+      if (showChallanDropdown) {
+        const searchParam = challanNo ? `&search=${challanNo}` : '';
+        fetch(`/api/admin/challans?status=pending&limit=20${searchParam}`)
           .then(res => res.json())
           .then(data => {
-            if (data.data) {
-              setChallanSuggestions(data.data);
+            if (data.challans) {
+              setChallanSuggestions(data.challans);
             }
           })
           .catch(err => console.error(err));
@@ -59,20 +65,7 @@ export default function ConsolidatedEwayBillPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [challanNo, showChallanDropdown]);
 
-  // Auto-calculate Validity Date
-  useEffect(() => {
-    if (approxDistance && !isNaN(Number(approxDistance))) {
-      const dist = Number(approxDistance);
-      const isODC = vehicleType === 'ODC';
-      // Rule: 1 day per 200 km for regular, 20 km for ODC
-      const kmPerDay = isODC ? 20 : 200;
-      const days = Math.ceil(dist / kmPerDay) || 1;
-      
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + days);
-      setValidUpto(futureDate.toISOString());
-    }
-  }, [approxDistance, vehicleType]);
+
 
   useEffect(() => {
     setChallanHighlightIndex(-1);
@@ -82,16 +75,11 @@ export default function ConsolidatedEwayBillPage() {
     if (e.key === 'Tab') {
       const firstMatch = challanSuggestions[0];
       if (firstMatch && challanNo) {
-        const hasMatch = firstMatch.challanNumber.toLowerCase().startsWith(challanNo.toLowerCase());
-        if (hasMatch) {
-          setChallanNo(firstMatch.challanNumber);
-          setShowChallanDropdown(false);
-          setChallanHighlightIndex(-1);
-          if (firstMatch.challanNumber.toLowerCase() !== challanNo.toLowerCase()) {
-            e.preventDefault();
-          }
-          return;
-        }
+        setChallanNo(firstMatch.challanNumber);
+        setShowChallanDropdown(false);
+        setChallanHighlightIndex(-1);
+        e.preventDefault();
+        return;
       }
     }
 
@@ -144,7 +132,8 @@ export default function ConsolidatedEwayBillPage() {
       // Auto-fill details
       if (data.challanDetails) {
         if (data.challanDetails.vehicleNo) setVehicleNo(data.challanDetails.vehicleNo);
-        if (data.challanDetails.branchName) setFromPlace(data.challanDetails.branchName);
+        if (data.challanDetails.branchCity) setFromPlace(data.challanDetails.branchCity);
+        if (data.challanDetails.branchState) setFromState(data.challanDetails.branchState);
       }
       
     } catch (err: any) {
@@ -190,20 +179,15 @@ export default function ConsolidatedEwayBillPage() {
     // Get selected EWBs
     const selectedEwbs = bookings
       .filter(b => selectedBookingIds.has(b._id) && b.ewayBillNo)
-      .map(b => ({ eway_bill_no: b.ewayBillNo }));
+      .map(b => ({ eway_bill_number: b.ewayBillNo }));
 
     const payload = {
-      challanNo: challanNo,
-      userGstin: "05AAABC0181E1ZE",
-      transporter_id: "05AAABB0639G1Z8",
-      trip_no: challanNo || "TRIP1001",
+      transporter_document_number: challanNo,
       vehicle_number: vehicleNo,
-      vehicle_type: vehicleType,
-      transportation_mode: transMode,
-      from_place: fromPlace,
-      from_state: fromState,
-      validUpto: validUpto || undefined,
-      eway_bill_list: selectedEwbs
+      mode_of_transport: transMode,
+      place_of_consignor: fromPlace,
+      state_of_consignor: fromState,
+      list_of_eway_bills: selectedEwbs
     };
 
     try {
@@ -244,7 +228,13 @@ export default function ConsolidatedEwayBillPage() {
             <p className="text-sm text-gray-600">Generated on: {successData.cEwbDate}</p>
             <div className="pt-4 flex flex-col sm:flex-row gap-4 w-full px-4">
               <Button className="flex-1" variant="outline" onClick={() => setSuccessData(null)}>Generate Another</Button>
-              <Button className="flex-1" onClick={() => window.print()}>Print CEWB</Button>
+              <Button className="flex-1" onClick={() => {
+                if (successData.printUrl) {
+                  window.open(`/api/proxy-pdf?url=https://${successData.printUrl}`, '_blank');
+                } else {
+                  window.print();
+                }
+              }}>Print CEWB</Button>
             </div>
             <Link href="/admin/ewaybills/consolidated" className="text-sm text-brand-primary hover:underline mt-2">
               &larr; Back to CEWB List
@@ -260,13 +250,13 @@ export default function ConsolidatedEwayBillPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Generate CEWB</h1>
-          <p className="text-sm text-gray-500 mt-1">Select Pending LRs to group into a master e-way bill.</p>
+          <p className="text-sm text-gray-500 mt-1">Select Pending LRs to group into a Consolidated E-Way Bill (CEWB).</p>
         </div>
       </div>
 
       {/* Challan Selection Row */}
-      <Card className="border-brand-primary/20 bg-brand-primary/5 shadow-sm">
-        <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
+      <Card className="border-brand-primary/20 bg-brand-primary/5 shadow-sm overflow-visible">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4 overflow-visible">
           <Label className="text-xs uppercase tracking-wider text-brand-primary font-bold whitespace-nowrap">Load from Challan</Label>
           <div className="relative max-w-xs w-full">
             <Input 
@@ -290,12 +280,15 @@ export default function ConsolidatedEwayBillPage() {
               }}
             />
             {showChallanDropdown && challanSuggestions.length > 0 && (
-              <ul className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden py-1 max-h-60 overflow-y-auto">
+              <ul className="absolute z-50 w-full sm:w-[420px] mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden py-1 max-h-72 overflow-y-auto">
+                <li className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-400 font-bold border-b border-gray-100 bg-gray-50/50">
+                  Pending Challans ({challanSuggestions.length})
+                </li>
                 {challanSuggestions.map((suggestion, index) => (
                   <li 
                     key={suggestion._id}
-                    className={`px-3 py-2 cursor-pointer transition-colors text-sm ${
-                      index === challanHighlightIndex ? 'bg-brand-primary text-white' : 'hover:bg-brand-primary/10 text-gray-700'
+                    className={`px-3 py-2.5 cursor-pointer transition-colors border-b border-gray-50 last:border-0 ${
+                      index === challanHighlightIndex ? 'bg-brand-primary/10' : 'hover:bg-gray-50'
                     }`}
                     onMouseDown={(e) => {
                       e.preventDefault();
@@ -303,16 +296,32 @@ export default function ConsolidatedEwayBillPage() {
                       setShowChallanDropdown(false);
                     }}
                   >
-                    <div className="flex flex-col">
-                      {challanNo && suggestion.challanNumber.toLowerCase().startsWith(challanNo.toLowerCase()) ? (
-                        <div className="font-semibold">
-                          <span className="opacity-40">{suggestion.challanNumber.slice(0, challanNo.length)}</span>
-                          <span>{suggestion.challanNumber.slice(challanNo.length)}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold text-sm ${index === challanHighlightIndex ? 'text-brand-primary' : 'text-gray-900'}`}>
+                            {suggestion.branch?.code || 'GL'}-{suggestion.challanNumber}
+                          </span>
+                          <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded uppercase">
+                            Pending
+                          </span>
                         </div>
-                      ) : (
-                        <div className="font-semibold">{suggestion.challanNumber}</div>
-                      )}
-                      {suggestion.truckNo && <span className="text-xs opacity-75">{suggestion.truckNo}</span>}
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                          <span>{suggestion.challanDate ? new Date(suggestion.challanDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
+                          <span className="text-gray-300">•</span>
+                          <span className="font-medium text-gray-600">{suggestion.truckNo?.vehicleNumber || 'No Truck'}</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-xs text-gray-500">
+                          <span className="font-medium">{suggestion.branch?.name || 'N/A'}</span>
+                          <span className="mx-1 text-brand-primary">→</span>
+                          <span className="font-medium">{suggestion.memoDestinationBranch?.name || 'N/A'}</span>
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          {suggestion.bookings?.length || 0} LRs loaded
+                        </div>
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -358,28 +367,14 @@ export default function ConsolidatedEwayBillPage() {
                 {vehicleError && <p className="text-xs text-red-500 font-medium mt-1">{vehicleError}</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Vehicle Type</Label>
-                <select 
-                  value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value)}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                >
-                  <option value="Regular">Regular</option>
-                  <option value="ODC">ODC (Over Dimensional Cargo)</option>
-                </select>
-              </div>
-              <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Mode of Transport</Label>
-                <select 
+                <ThemeSelect 
+                  name="transMode"
                   value={transMode}
                   onChange={(e) => setTransMode(e.target.value)}
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-                >
-                  <option value="Road">Road</option>
-                  <option value="Rail">Rail</option>
-                  <option value="Air">Air</option>
-                  <option value="Ship">Ship</option>
-                </select>
+                  options={TRANSPORT_MODE_OPTIONS}
+                  className="h-10 w-full"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">From Place</Label>
@@ -397,24 +392,6 @@ export default function ConsolidatedEwayBillPage() {
                   value={fromState}
                   onChange={(e) => setFromState(e.target.value)}
                   className="h-10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Approx Distance (KM)</Label>
-                <Input 
-                  type="number"
-                  placeholder="e.g. 450" 
-                  value={approxDistance}
-                  onChange={(e) => setApproxDistance(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Validity End Date (Auto-calculated)</Label>
-                <DatePicker 
-                  value={validUpto}
-                  onChange={(date: string) => setValidUpto(date)}
-                  className="h-10 w-full"
                 />
               </div>
             </div>
@@ -491,8 +468,8 @@ export default function ConsolidatedEwayBillPage() {
                           {booking.destinationBranch?.name || 'N/A'}
                         </td>
                         <td className="px-4 py-3 text-gray-600 text-xs">
-                          {booking.material?.itemName || 'N/A'} <br/>
-                          <span className="text-gray-400">({booking.material?.chargedWeight || 0} kg)</span>
+                          {booking.items?.[0]?.description || booking.material?.itemName || 'N/A'} <br/>
+                          <span className="text-gray-400">({booking.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || booking.material?.chargedWeight || 0} kg)</span>
                         </td>
                         <td className="px-4 py-3 font-mono font-medium tracking-widest text-emerald-700">
                           {booking.ewayBillNo}
@@ -518,7 +495,7 @@ export default function ConsolidatedEwayBillPage() {
                 ) : (
                   <FileOutput className="w-5 h-5" />
                 )}
-                Generate Master EWB
+                Generate CEWB
               </Button>
             </div>
           </CardContent>

@@ -40,6 +40,9 @@ const consolidatedEwayBillSchema = new mongoose.Schema({
   cEwbDate: {
     type: String
   },
+  printUrl: {
+    type: String
+  },
   validUpto: {
     type: Date
   },

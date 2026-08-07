@@ -25,11 +25,11 @@ export async function GET(request: Request) {
 
       const challan = await Challan.findOne({ challanNumber: { $regex: new RegExp(`^${challanNo}$`, 'i') } })
         .populate('truckNo', 'vehicleNumber')
-        .populate('branch', 'name code')
+        .populate('branch', 'name code city state')
         .populate({
           path: 'bookings',
           match: { ewayBillNo: { $exists: true, $ne: '' } }, // only get bookings that have EWB
-          select: 'lrNumber bookingDate consignor consignee ewayBillNo material.itemName destinationBranch',
+          select: 'lrNumber bookingDate consignor consignee ewayBillNo items destinationBranch',
           populate: { path: 'destinationBranch', select: 'name code' }
         });
 
@@ -55,7 +55,8 @@ export async function GET(request: Request) {
         data: challan.bookings,
         challanDetails: {
           vehicleNo: challan.truckNo?.vehicleNumber || '',
-          branchName: challan.branch?.name || '',
+          branchCity: challan.branch?.city || challan.branch?.name || '',
+          branchState: challan.branch?.state || '',
           branchCode: challan.branch?.code || ''
         }
       }, { status: 200 });
@@ -74,7 +75,7 @@ export async function GET(request: Request) {
     const bookings = await Booking.find(filter)
       .populate('bookingBranch', 'name code')
       .populate('destinationBranch', 'name code')
-      .select('lrNumber bookingDate consignor consignee ewayBillNo material.itemName bookingBranch destinationBranch')
+      .select('lrNumber bookingDate consignor consignee ewayBillNo items bookingBranch destinationBranch')
       .sort({ bookingDate: -1 });
 
     return NextResponse.json({ data: bookings }, { status: 200 });

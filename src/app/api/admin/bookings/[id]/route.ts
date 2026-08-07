@@ -8,8 +8,9 @@ import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import User from '@/models/User';
+import Client from '@/models/Client';
 import { resolveBranchId } from '@/lib/resolveBranch';
-import { getLogisticQuery } from '@/lib/apiAuth';
+import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
 export async function PATCH(
   request: Request,
@@ -189,6 +190,33 @@ export async function PUT(
       { $set: payload },
       { new: true, runValidators: true }
     );
+
+    // Auto-save Consignor and Consignee as Clients
+    const logisticId = await getLogisticIdForCreate();
+    const handleClientAutoSave = async (clientData: any) => {
+      if (!clientData || !clientData.name || clientData.name.trim() === '') return;
+      try {
+        const existingClient = await Client.findOne({ 
+          name: { $regex: new RegExp(`^${clientData.name.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+          logisticId 
+        });
+        if (!existingClient) {
+          await Client.create({
+            name: clientData.name.trim(),
+            phone: clientData.phone || '',
+            address: clientData.address || '',
+            gstin: clientData.gstNumber || '',
+            logisticId,
+            createdBy: session?.user?.id
+          });
+        }
+      } catch (e) {
+        console.error('Error auto-saving client:', e);
+      }
+    };
+
+    if (payload.consignor) await handleClientAutoSave(payload.consignor);
+    if (payload.consignee) await handleClientAutoSave(payload.consignee);
 
     // If active trip, sync vehicle/driver changes
     if (oldBooking.status !== 'delivered' && oldBooking.status !== 'cancelled') {

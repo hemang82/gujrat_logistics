@@ -22,6 +22,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [branchHighlightIndex, setBranchHighlightIndex] = useState(-1);
 
+  const [newBranchData, setNewBranchData] = useState({
+    pincode: '',
+    state: '',
+    city: ''
+  });
+  const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [postOfficeOptions, setPostOfficeOptions] = useState<any[]>([]);
+  const [showPostOfficeDropdown, setShowPostOfficeDropdown] = useState(false);
+
+
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -44,6 +55,42 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       }
     }
   });
+
+  // Pincode Auto-fetch effect for Inline Branch Creation
+  useEffect(() => {
+    if (!formData.branchId && newBranchData.pincode && newBranchData.pincode.length === 6) {
+      setIsFetchingPincode(true);
+      fetch(`https://api.postalpincode.in/pincode/${newBranchData.pincode}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data[0] && data[0].Status === 'Success') {
+            const offices = data[0].PostOffice;
+            setPostOfficeOptions(offices);
+            setShowPostOfficeDropdown(true);
+            if (offices.length === 1) {
+              setNewBranchData(prev => ({
+                ...prev,
+                city: offices[0].District,
+                state: offices[0].State
+              }));
+              setShowPostOfficeDropdown(false);
+              toast.success(`Fetched: ${offices[0].District}, ${offices[0].State}`);
+            } else {
+              toast.success(`Found ${offices.length} locations. Please select one.`);
+            }
+          } else {
+            toast.error('Invalid Pincode or no data found.');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching pincode data:', err);
+          toast.error('Failed to fetch Pincode data.');
+        })
+        .finally(() => {
+          setIsFetchingPincode(false);
+        });
+    }
+  }, [newBranchData.pincode, formData.branchId]);
 
   useEffect(() => {
     // Fetch branches and user data
@@ -75,6 +122,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
             const currentBranch = branchesData.branches.find((b: any) => b._id === userData.branch);
             if (currentBranch) {
               setBranchSearch(`${currentBranch.name} (${currentBranch.code})`);
+              setNewBranchData({
+                pincode: currentBranch.pincode || '',
+                state: currentBranch.state || '',
+                city: currentBranch.city || ''
+              });
             }
           }
       } else {
@@ -107,13 +159,18 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
   const handleBranchSearchChange = (value: string) => {
     setBranchSearch(value);
-    setFormData(prev => ({ ...prev, branchId: '' })); // Reset ID since they are typing
-    
-    const filtered = branches.filter(b => 
-      b.name.toLowerCase().includes(value.toLowerCase()) || 
-      b.code.toLowerCase().includes(value.toLowerCase())
-    );
-    setBranchSuggestions(filtered);
+    if (!value) {
+      setFormData(prev => ({ ...prev, branchId: '' }));
+      setNewBranchData({ pincode: '', state: '', city: '' });
+      setBranchSuggestions(branches);
+    } else {
+      setFormData(prev => ({ ...prev, branchId: '' }));
+      const filtered = branches.filter(b => 
+        b.name.toLowerCase().includes(value.toLowerCase()) || 
+        b.code.toLowerCase().includes(value.toLowerCase())
+      );
+      setBranchSuggestions(filtered);
+    }
     setShowBranchDropdown(true);
     setBranchHighlightIndex(-1);
   };
@@ -126,6 +183,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           e.preventDefault();
           setFormData(prev => ({ ...prev, branchId: firstMatch._id }));
           setBranchSearch(`${firstMatch.name} (${firstMatch.code})`);
+          setNewBranchData({
+            pincode: firstMatch.pincode || '',
+            state: firstMatch.state || '',
+            city: firstMatch.city || ''
+          });
           setShowBranchDropdown(false);
           setBranchHighlightIndex(-1);
           return;
@@ -147,6 +209,11 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         const selected = branchSuggestions[branchHighlightIndex];
         setFormData(prev => ({ ...prev, branchId: selected._id }));
         setBranchSearch(`${selected.name} (${selected.code})`);
+        setNewBranchData({
+          pincode: selected.pincode || '',
+          state: selected.state || '',
+          city: selected.city || ''
+        });
         setShowBranchDropdown(false);
       }
     } else if (e.key === 'Escape') {
@@ -203,12 +270,25 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     try {
       let finalBranchId = formData.branchId;
       
-      // If no branchId is selected but user typed a branch name, create it
+      // If creating a new branch inline
       if (!finalBranchId && branchSearch.trim()) {
+        const generatedCode = branchSearch.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+        if (!newBranchData.state) {
+          toast.error("Please fill State to create a new branch.");
+          setIsLoading(false);
+          return;
+        }
+
         const branchRes = await fetch('/api/admin/branches', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: branchSearch.trim() })
+          body: JSON.stringify({ 
+            name: branchSearch.trim(),
+            code: generatedCode,
+            state: newBranchData.state,
+            city: newBranchData.city,
+            pincode: newBranchData.pincode
+          })
         });
         
         if (branchRes.ok) {
@@ -255,6 +335,14 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       setIsLoading(false);
     }
   };
+
+  let derivedBranchCode = '';
+  if (formData.branchId) {
+    const match = branchSearch.match(/\(([^)]+)\)$/);
+    if (match) derivedBranchCode = match[1];
+  } else if (branchSearch.trim()) {
+    derivedBranchCode = branchSearch.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  }
 
   if (isFetching) {
     return <div className="p-8 text-center text-gray-500 font-medium">Loading branch login details...</div>;
@@ -311,29 +399,111 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                     className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.branchId ? 'border-red-500' : 'border-gray-200'}`}
                   />
                 </div>
-                {errors.branchId && <p className="text-xs text-red-500">{errors.branchId}</p>}
-                {showBranchDropdown && branchSuggestions.length > 0 && (
+                {errors.branchId && !formData.branchId && <p className="text-xs text-red-500">{errors.branchId}</p>}
+                
+                {showBranchDropdown && branchSuggestions.length > 0 && !formData.branchId && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    {branchSuggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion._id}
+                        onMouseDown={() => {
+                          setFormData(prev => ({ ...prev, branchId: suggestion._id }));
+                          setBranchSearch(`${suggestion.name} (${suggestion.code})`);
+                          setNewBranchData({
+                            pincode: suggestion.pincode || '',
+                            state: suggestion.state || '',
+                            city: suggestion.city || ''
+                          });
+                          setShowBranchDropdown(false);
+                          setBranchHighlightIndex(-1);
+                        }}
+                        className={`flex flex-col px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'hover:bg-gray-50 text-gray-800'
+                          }`}
+                      >
+                        <span className="font-bold">{suggestion.name} ({suggestion.code})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                <Input 
+                  value={derivedBranchCode} 
+                  disabled
+                  placeholder="Auto-generated"
+                  className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed font-medium text-gray-700" 
+                />
+              </div>
+
+            </div>
+
+            {/* Seamless Branch Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Pincode</Label>
+                <div className="relative">
+                  <Input 
+                    value={newBranchData.pincode}
+                    onChange={e => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setNewBranchData(prev => ({ ...prev, pincode: val }));
+                    }}
+                    disabled={!!formData.branchId}
+                    placeholder="e.g. 395002"
+                    className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                  />
+                  {isFetchingPincode && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>}
+                  {showPostOfficeDropdown && postOfficeOptions.length > 0 && !formData.branchId && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {branchSuggestions.map((suggestion, index) => (
+                      <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Select Location</div>
+                      {postOfficeOptions.map((po, index) => (
                         <div
-                          key={suggestion._id}
+                          key={index}
                           onMouseDown={() => {
-                            setFormData(prev => ({ ...prev, branchId: suggestion._id }));
-                            setBranchSearch(`${suggestion.name} (${suggestion.code})`);
-                            setShowBranchDropdown(false);
-                            setBranchHighlightIndex(-1);
+                            setNewBranchData(prev => ({
+                              ...prev,
+                              city: po.District,
+                              state: po.State
+                            }));
+                            setShowPostOfficeDropdown(false);
                           }}
-                          className={`flex flex-col px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors ${index === branchHighlightIndex
-                              ? 'bg-brand-primary/10 text-brand-primary'
-                              : 'hover:bg-gray-50 text-gray-800'
-                            }`}
+                          className="flex flex-col px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:bg-gray-50 text-gray-800"
                         >
-                          <span className="font-bold">{suggestion.name} ({suggestion.code})</span>
+                          <span className="font-bold">{po.Name}</span>
+                          <span className="text-[10px] text-gray-500">{po.District}, {po.State}</span>
                         </div>
                       ))}
                     </div>
                   )}
+                </div>
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">State {!formData.branchId && <span className="text-red-500">*</span>}</Label>
+                <Input 
+                  value={newBranchData.state}
+                  onChange={e => setNewBranchData(prev => ({ ...prev, state: e.target.value }))}
+                  disabled={!!formData.branchId}
+                  placeholder="e.g. GUJARAT"
+                  className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">City</Label>
+                <Input 
+                  value={newBranchData.city}
+                  onChange={e => setNewBranchData(prev => ({ ...prev, city: e.target.value }))}
+                  disabled={!!formData.branchId}
+                  placeholder="e.g. Surat"
+                  className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-gray-600 uppercase">Role <span className="text-red-500">*</span></Label>
