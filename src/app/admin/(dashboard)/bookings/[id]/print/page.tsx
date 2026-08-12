@@ -14,7 +14,7 @@ import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 // Reusable component for a single half-page LR Copy
 const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any, copyType: string, trackingUrl: string, logisticName: string }) => {
   return (
-    <div className="w-full flex flex-col h-[14cm] p-4 bg-white relative">
+    <div className="w-full flex flex-col h-[14.5cm] p-2 bg-white relative overflow-hidden">
       
       {/* Top Header - Company & LR Details */}
       <div className="flex justify-between items-start border-b-2 border-brand-primary pb-2 mb-2">
@@ -96,41 +96,43 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any
         </div>
 
         {/* Row 3: Items Table & Amount Grid */}
-        <div className="flex h-[130px]">
+        <div className="flex flex-1 min-h-0">
           {/* Left side: Items */}
-          <div className="flex-[3] border-r border-gray-400 flex flex-col">
-            <table className="w-full text-left border-collapse">
+          <div className="flex-[3] border-r border-gray-400 flex flex-col min-h-0">
+            <div className="overflow-hidden flex-1">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-400">
-                  <th className="p-1 font-bold text-gray-700 text-[10px] uppercase border-r border-gray-400">Pkg</th>
-                  <th className="p-1 font-bold text-gray-700 text-[10px] uppercase border-r border-gray-400">Method</th>
-                  <th className="p-1 font-bold text-gray-700 text-[10px] uppercase border-r border-gray-400">Description (Said to Contain)</th>
-                  <th className="p-1 font-bold text-gray-700 text-[10px] uppercase text-right">Actual Wt.</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Pkg</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Method</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Description (Said to Contain)</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase text-right">Actual Wt.</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="text-[9px]">
                 {booking.items?.length > 0 ? (
                   booking.items.map((item: any, i: number) => (
-                    <tr key={i} className="border-b border-gray-200 last:border-b-0">
-                      <td className="p-1 border-r border-gray-400 font-semibold text-center">{item.packages || 0}</td>
-                      <td className="p-1 border-r border-gray-400 text-center">{item.packaging || '-'}</td>
-                      <td className="p-1 border-r border-gray-400 uppercase">{item.description || booking.material?.itemName || '-'}</td>
-                      <td className="p-1 text-right font-semibold">{item.weight || 0} kg</td>
+                    <tr key={i} className="border-b border-gray-200 last:border-b-0 leading-tight">
+                      <td className="p-0.5 border-r border-gray-400 font-semibold text-center">{item.packages || 0}</td>
+                      <td className="p-0.5 border-r border-gray-400 text-center">{item.packaging || '-'}</td>
+                      <td className="p-0.5 border-r border-gray-400 uppercase">{item.description || booking.material?.itemName || '-'}</td>
+                      <td className="p-0.5 text-right font-semibold">{item.weight || 0} kg</td>
                     </tr>
                   ))
                 ) : (
-                  <tr>
-                    <td className="p-1 border-r border-gray-400 font-semibold text-center">{booking.material?.quantity || 0}</td>
-                    <td className="p-1 border-r border-gray-400 text-center">{booking.material?.packagingType || '-'}</td>
-                    <td className="p-1 border-r border-gray-400 uppercase">{booking.material?.itemName || '-'}</td>
-                    <td className="p-1 text-right font-semibold">{booking.material?.weight || 0} kg</td>
+                  <tr className="leading-tight">
+                    <td className="p-0.5 border-r border-gray-400 font-semibold text-center">{booking.material?.quantity || 0}</td>
+                    <td className="p-0.5 border-r border-gray-400 text-center">{booking.material?.packagingType || '-'}</td>
+                    <td className="p-0.5 border-r border-gray-400 uppercase">{booking.material?.itemName || '-'}</td>
+                    <td className="p-0.5 text-right font-semibold">{booking.material?.weight || 0} kg</td>
                   </tr>
                 )}
               </tbody>
             </table>
+            </div>
             
             {/* Invoice & Eway Bill Info */}
-            <div className="mt-auto p-1.5 border-t border-gray-400 bg-gray-50/50 flex flex-wrap gap-2">
+            <div className="mt-auto p-1 border-t border-gray-400 bg-gray-50/50 flex flex-wrap gap-2 text-[10px]">
                <div><span className="font-semibold text-gray-500 mr-1">Invoice No:</span> <span className="font-bold">{booking.invoiceNo || 'N/A'}</span></div>
                <div><span className="font-semibold text-gray-500 mr-1">E-Way Bill:</span> <span className="font-bold">{booking.ewayBillNo || 'N/A'}</span></div>
                <div><span className="font-semibold text-gray-500 mr-1">Vehicle:</span> <span className="font-bold">{booking.vehicle?.vehicleNumber || 'N/A'}</span></div>
@@ -239,15 +241,15 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
       {/* A4 Paper Format for Print */}
       <div 
         className="bg-white mx-auto shadow-lg border border-gray-300 print:shadow-none print:m-0 print:w-full print:border-none relative" 
-        style={{ width: '21cm', minHeight: '29.7cm', padding: '0.5cm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
+        style={{ width: '21cm', height: '29.7cm', overflow: 'hidden', padding: '0.2cm', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact', boxSizing: 'border-box' }}
       >
         
         {/* Consignor Copy (Top Half) */}
         <LRCopy booking={booking} copyType="Consignor Copy" trackingUrl={trackingUrl} logisticName={logisticName} />
 
         {/* Cut Line */}
-        <div className="flex items-center justify-center my-1 print:my-0 text-gray-300 overflow-hidden opacity-50">
-          <Scissors className="w-4 h-4 mr-2 shrink-0" />
+        <div className="flex items-center justify-center m-0 p-0 text-gray-300 overflow-hidden opacity-50 h-[0.5cm]">
+          <Scissors className="w-3 h-3 mr-2 shrink-0" />
           <div className="h-[1px] w-full border-t border-dashed border-gray-400 flex-1"></div>
         </div>
 

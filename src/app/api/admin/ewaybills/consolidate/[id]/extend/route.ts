@@ -10,8 +10,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) {
+      return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
     }
 
     await dbConnect();

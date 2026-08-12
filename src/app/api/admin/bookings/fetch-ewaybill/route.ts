@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ApiLog from '@/models/ApiLog';
+import Client from '@/models/Client';
 import { EwayBillService } from '@/services/ewaybillService';
 
 export async function GET(request: Request) {
@@ -60,20 +61,49 @@ export async function GET(request: Request) {
     // Call Masters India API via Service Layer
     const ewbData = await EwayBillService.fetchEwayBillDetails(number);
 
+    // Look up Clients to auto-fill Phone numbers if they exist
+    const consignorGst = ewbData.gstin_of_consignor || '';
+    const consignorName = ewbData.legal_name_of_consignor || ewbData.trade_name_of_consignor || '';
+    let consignorPhone = '';
+    
+    if (consignorGst || consignorName) {
+      const consignorClient = await Client.findOne({
+        $or: [
+          ...(consignorGst ? [{ gstin: consignorGst }] : []),
+          ...(consignorName ? [{ name: consignorName }] : [])
+        ]
+      });
+      if (consignorClient && consignorClient.phone) consignorPhone = consignorClient.phone;
+    }
+
+    const consigneeGst = ewbData.gstin_of_consignee || '';
+    const consigneeName = ewbData.legal_name_of_consignee || ewbData.trade_name_of_consignee || '';
+    let consigneePhone = '';
+
+    if (consigneeGst || consigneeName) {
+      const consigneeClient = await Client.findOne({
+        $or: [
+          ...(consigneeGst ? [{ gstin: consigneeGst }] : []),
+          ...(consigneeName ? [{ name: consigneeName }] : [])
+        ]
+      });
+      if (consigneeClient && consigneeClient.phone) consigneePhone = consigneeClient.phone;
+    }
+
     // Map Masters India response to our Frontend UI format
     const mappedDetails = {
       ewayBillNo: ewbData.eway_bill_number || number,
       ewayBillDate: ewbData.eway_bill_date || '',
       consignor: {
-        name: ewbData.legal_name_of_consignor || ewbData.trade_name_of_consignor || '',
-        gst: ewbData.gstin_of_consignor || '',
-        phone: '', // Usually not provided in EWB
+        name: consignorName,
+        gst: consignorGst,
+        phone: consignorPhone, // Populated from Client DB!
         address: [ewbData.address1_of_consignor, ewbData.address2_of_consignor, ewbData.place_of_consignor, ewbData.state_of_consignor, ewbData.pincode_of_consignor].filter(Boolean).join(', ')
       },
       consignee: {
-        name: ewbData.legal_name_of_consignee || ewbData.trade_name_of_consignee || '',
-        gst: ewbData.gstin_of_consignee || '',
-        phone: '',
+        name: consigneeName,
+        gst: consigneeGst,
+        phone: consigneePhone, // Populated from Client DB!
         address: [ewbData.address1_of_consignee, ewbData.address2_of_consignee, ewbData.place_of_consignee, ewbData.state_of_consignee, ewbData.pincode_of_consignee].filter(Boolean).join(', ')
       },
       destinationBranch: '', // Requires manual selection by user

@@ -21,7 +21,8 @@ import {
   Database,
   Box,
   Activity,
-  Building2
+  Building2,
+  Megaphone
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -237,9 +238,19 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
   if (user?.role === 'superadmin' || user?.role === 'logistic') {
     navItems.push({ name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false });
   }
+  
+  if (user?.role === 'logistic' || user?.role === 'branch_user' || user?.role === 'branch') {
+    navItems.push({ name: 'Help & Support', href: '/admin/support', icon: <Contact className="w-5 h-5" />, isDropdown: false });
+  }
+
+  if (user?.role === 'logistic') {
+    navItems.push({ name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false });
+  }
 
   if (user?.role === 'superadmin') {
-    navItems.push({ name: 'Billing', href: '/admin/billing', icon: <ReceiptText className="w-5 h-5" />, isDropdown: false });
+    navItems.push({ name: 'Announcements', href: '/admin/announcements', icon: <Megaphone className="w-5 h-5" />, isDropdown: false });
+    navItems.push({ name: 'Support Tickets', href: '/admin/support-tickets', icon: <Contact className="w-5 h-5" />, isDropdown: false });
+    navItems.push({ name: 'Demo Requests', href: '/admin/demo-requests', icon: <BriefcaseBusiness className="w-5 h-5" />, isDropdown: false });
     navItems.push({ name: 'API Logs', href: '/admin/api-logs', icon: <Activity className="w-5 h-5" />, isDropdown: false });
   }
 

@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 
 export default function HowItWorksPage() {
   return (
-    <main className="pt-28 pb-20 bg-white min-h-screen">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <main className="pt-36 md:pt-40 pb-20 bg-white min-h-screen">
+      <div className="container mx-auto px-4 max-w-7xl">
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">How Trust Logistic Works</h1>
-          <p className="text-xl text-gray-600">From setup to scaling, see how our software streamlines your daily operations.</p>
+          <h1 className="mb-6 text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">How Trust Logistic Works</h1>
+          <p className="text-base text-gray-600 leading-relaxed">From setup to scaling, see how our software streamlines your daily operations.</p>
         </div>
 
         <div className="space-y-12 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-300 before:to-transparent">
@@ -22,9 +22,9 @@ export default function HowItWorksPage() {
               <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-brand-primary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm">
                 {i + 1}
               </div>
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl border border-gray-100 bg-gray-50 shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all">
+              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-full border border-gray-100 bg-gray-50 shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all">
                 <div className="text-brand-primary font-bold mb-1 text-sm tracking-widest uppercase">{item.step}</div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.title}</h3>
+                <h3 className="mb-3 text-lg font-bold text-gray-900">{item.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{item.desc}</p>
               </div>
             </div>
@@ -33,7 +33,7 @@ export default function HowItWorksPage() {
 
         <div className="mt-24 text-center">
           <Link href="/demo">
-            <Button size="lg" className="bg-brand-primary hover:bg-brand-primary-dark text-white rounded-full px-10 h-16 font-extrabold text-lg shadow-xl shadow-brand-primary/30">
+            <Button size="lg" className="bg-brand-primary hover:bg-brand-primary-dark text-white rounded-full px-10 h-16 font-extrabold text-lg shadow-lg shadow-brand-primary/30 hover:shadow-brand-primary/50 transition-all hover:-translate-y-0.5">
               See it in Action — Book a Demo
             </Button>
           </Link>

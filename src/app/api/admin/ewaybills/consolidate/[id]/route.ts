@@ -10,7 +10,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
 
     await dbConnect();
     Branch.init(); // ensure branch is initialized for populate
@@ -35,7 +35,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
 
     const body = await request.json();
     await dbConnect();
@@ -53,7 +53,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
   try {
     const { id } = await context.params;
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
 
     await dbConnect();
     const deleted = await ConsolidatedEwayBill.findByIdAndDelete(id);

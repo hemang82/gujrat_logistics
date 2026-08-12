@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopbar } from './AdminTopbar';
 import { useUserStore } from '@/store/useUserStore';
+import GlobalAnnouncementBar from './GlobalAnnouncementBar';
 
 export function AdminLayoutWrapper({ 
   children, 
@@ -91,8 +92,10 @@ export function AdminLayoutWrapper({
       {/* Sidebar */}
       <AdminSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
+      <GlobalAnnouncementBar />
+
       {/* Main Content wrapper */}
-      <div className="flex flex-col min-h-screen lg:ml-64 transition-all duration-300 print:ml-0 min-w-0 w-full lg:w-auto">
+      <div className="flex flex-col min-h-screen lg:ml-64 transition-all duration-300 print:ml-0 min-w-0 w-full lg:w-auto pt-4">
         <AdminTopbar 
           user={user} 
           onMenuClick={() => setSidebarOpen(true)} 

@@ -220,6 +220,9 @@ export async function POST(req: Request) {
             logisticId,
             createdBy: session?.user?.id
           });
+        } else if (!existingClient.phone && clientData.phone) {
+          existingClient.phone = clientData.phone;
+          await existingClient.save();
         }
       } catch (e) {
         console.error('Error auto-saving client:', e);

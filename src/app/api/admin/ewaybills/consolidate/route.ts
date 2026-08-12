@@ -10,8 +10,8 @@ import { EwayBillService } from '@/services/ewaybillService';
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) {
+      return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
     }
 
     await dbConnect();
@@ -67,8 +67,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session || !session.user || !(session.user as any).ewbApiAccess) {
+      return NextResponse.json({ error: 'Unauthorized: E-Way Bill feature is disabled for your account.' }, { status: 403 });
     }
 
     await dbConnect();

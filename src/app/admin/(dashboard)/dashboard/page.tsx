@@ -12,11 +12,17 @@ import { Package, Truck, Users, IndianRupee, FileText, AlertTriangle, CheckCircl
 import { DashboardCharts } from '@/components/admin/DashboardCharts';
 import Link from 'next/link';
 import { formatDate } from '@/lib/dateUtils';
+import SuperAdminDashboard from '@/components/admin/SuperAdminDashboard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
+  
+  if (session && (session.user as any).role === 'superadmin') {
+    return <SuperAdminDashboard />;
+  }
+
   await connectToDatabase();
 
   const baseQuery: any = {};

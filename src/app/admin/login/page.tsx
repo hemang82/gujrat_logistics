@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -74,19 +76,16 @@ export default function AdminLogin() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay z-0"></div>
         
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-14 h-14 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center shadow-2xl">
-            <Truck className="w-8 h-8 text-white" />
-          </div>
-          <span className="font-extrabold text-3xl tracking-tight text-white drop-shadow-sm">
-            Trust <span className="text-white/70">Logistic</span>
-          </span>
+          <Link href="/" className="bg-white/95 backdrop-blur-sm px-6 py-4 rounded-3xl inline-flex items-center justify-center shadow-2xl border border-white/20 hover:scale-[1.02] transition-transform">
+            <img 
+              src="/main_logo.svg" 
+              alt="Trust Logistic Logo" 
+              className="h-14 w-auto object-contain" 
+            />
+          </Link>
         </div>
 
         <div className="relative z-10 mt-auto mb-20 max-w-xl">
-          <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs text-white mb-6 backdrop-blur-md">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 mr-2 animate-pulse"></span>
-            System Operational
-          </div>
           <h2 className="text-5xl font-black text-white leading-[1.1] mb-6 drop-shadow-md">
             Streamline your<br/>transport operations.
           </h2>
@@ -105,15 +104,19 @@ export default function AdminLogin() {
         <div className="w-full max-w-[420px]">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-primary to-[#0f4c3a] rounded-xl flex items-center justify-center shadow-lg">
-              <Truck className="w-6 h-6 text-white" />
-            </div>
-            <span className="font-extrabold text-2xl tracking-tight text-gray-900">
-              Trust <span className="text-brand-primary">Logistic</span>
-            </span>
+            <Link href="/" className="bg-white/95 backdrop-blur-sm px-5 py-3 rounded-2xl inline-flex items-center justify-center shadow-md border border-gray-100 hover:scale-[1.02] transition-transform">
+              <img 
+                src="/main_logo.svg" 
+                alt="Trust Logistic Logo" 
+                className="h-10 w-auto object-contain" 
+              />
+            </Link>
           </div>
 
-          <div className="mb-10 text-center lg:text-left">
+          <div className="mb-10 text-center lg:text-left relative">
+            <Link href="/" className="inline-flex items-center text-sm font-semibold text-gray-500 hover:text-brand-primary mb-6 transition-colors lg:absolute lg:-top-16 lg:left-0">
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to website
+            </Link>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-3">Welcome back</h1>
             <p className="text-gray-500 font-medium text-sm">Please enter your credentials to access your workspace.</p>
           </div>
@@ -126,7 +129,7 @@ export default function AdminLogin() {
                   id="email" 
                   type="email" 
                   placeholder="Please enter your email" 
-                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-4 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.email ? 'border-red-500 focus-visible:ring-red-500/30 focus-visible:border-red-500 bg-red-50/30' : ''}`}
+                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-4 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.email ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -134,7 +137,12 @@ export default function AdminLogin() {
                   }}
                 />
               </div>
-              {errors.email && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 
+                  {errors.email}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -146,7 +154,7 @@ export default function AdminLogin() {
                   id="password" 
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••" 
-                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-12 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.password ? 'border-red-500 focus-visible:ring-red-500/30 focus-visible:border-red-500 bg-red-50/30' : ''}`}
+                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-12 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.password ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -162,13 +170,18 @@ export default function AdminLogin() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              {errors.password && <p className="text-red-500 text-xs mt-1.5 font-medium">{errors.password}</p>}
+              {errors.password && (
+                <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> 
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="w-full h-14 rounded-xl text-base font-bold border-none bg-gradient-to-r from-brand-primary to-[#0f4c3a] hover:from-brand-primary hover:to-brand-primary text-white shadow-lg shadow-brand-primary/25 transition-all mt-8"
+              className="w-full h-14 rounded-full text-base font-bold bg-brand-primary hover:bg-brand-primary-dark text-white shadow-lg shadow-brand-primary/30 hover:shadow-brand-primary/50 transition-all hover:-translate-y-0.5 mt-8"
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">

@@ -8,14 +8,16 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Basic validation
-    if (!body.name || !body.companyName || !body.phone || !body.painPoint) {
+    if (!body.name || !body.companyName || !body.phone || !body.painPoint || !body.email || !body.city) {
       return NextResponse.json({ error: 'Please fill all required fields' }, { status: 400 });
     }
 
     const newRequest = new DemoRequest({
       name: body.name,
+      email: body.email,
       companyName: body.companyName,
       phone: body.phone,
+      city: body.city,
       fleetSize: body.fleetSize || '1-10',
       painPoint: body.painPoint
     });

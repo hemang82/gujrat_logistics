@@ -886,7 +886,19 @@ export default function EditBookingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                   <div className="space-y-1">
                     <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
-                    <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className="h-10 rounded-lg border-emerald-500 focus-visible:ring-emerald-500 font-semibold text-sm" />
+                    <div className="flex gap-2">
+                      <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg font-semibold text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-emerald-500 focus-visible:ring-emerald-500'}`} />
+                      {user?.ewbApiAccess && (
+                        <Button
+                          type="button"
+                          onClick={handleFetchEwayBill}
+                          disabled={isFetchingEway}
+                          className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
+                        >
+                          {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                        </Button>
+                      )}
+                    </div>
                     {renderError('ewayBillNo')}
                   </div>
                   <div className="space-y-1">

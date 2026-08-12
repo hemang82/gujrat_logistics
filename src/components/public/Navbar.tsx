@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Truck } from 'lucide-react';
+import { Menu, X, Truck, ArrowRight } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export function Navbar() {
@@ -30,30 +30,25 @@ export function Navbar() {
   const shouldBeTransparent = false; // Disabled because hero section is light
 
   return (
-    <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-        !shouldBeTransparent
-          ? 'bg-white/90 backdrop-blur-md shadow-sm border-b border-gray-200 py-3'
-          : 'bg-transparent py-5'
-      }`}
-    >
-      <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center group overflow-hidden">
-          <div className="h-14 w-48 relative flex items-center justify-start">
+    <nav className="fixed top-6 inset-x-0 mx-auto w-full max-w-[1200px] z-50 px-4 transition-all duration-300">
+      <div className="bg-white/65 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] border border-white/80 rounded-full py-3 px-5 flex items-center justify-between w-full relative overflow-hidden">
+        {/* Subtle glossy top highlight */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-white/0 via-white to-white/0 opacity-80 pointer-events-none" />
+        
+        <Link href="/" className="flex items-center group overflow-hidden shrink-0 pl-2">
+          <div className="h-12 w-52 relative flex items-center justify-start transition-all">
             <img src="/main_logo.svg" alt="Trust Logistic Logo" className="w-full h-full object-contain origin-left" />
           </div>
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-9">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className={`text-sm font-medium transition-colors ${
-                !shouldBeTransparent 
-                  ? (pathname === link.href ? 'text-brand-primary' : 'text-brand-text-secondary hover:text-brand-primary')
-                  : (pathname === link.href ? 'text-white font-bold' : 'text-white/70 hover:text-white')
+              className={`text-[15px] font-medium transition-colors ${
+                pathname === link.href ? 'text-brand-primary font-bold' : 'text-gray-700 hover:text-brand-primary'
               }`}
             >
               {link.name}
@@ -61,22 +56,20 @@ export function Navbar() {
           ))}
         </div>
 
-        <div className="hidden md:flex items-center gap-6">
-          <Link href="/login" className={`text-sm font-semibold transition-colors flex items-center gap-1.5 ${!shouldBeTransparent ? 'text-gray-500 hover:text-brand-primary' : 'text-white/80 hover:text-white'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-            Login
+        <div className="hidden md:flex items-center gap-5 pr-1">
+           <Link href="/login" className="text-[15px] font-medium text-gray-700 hover:text-brand-primary transition-colors px-2">
+            Sign in
           </Link>
-          <div className={`w-px h-6 ${!shouldBeTransparent ? 'bg-gray-200' : 'bg-white/20'}`}></div>
           <Link href="/demo">
-            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white rounded-full px-8 h-11 font-bold shadow-md active:scale-95 transition-all cursor-pointer">
-              Book a Free Demo
+            <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white rounded-full px-5 h-10 text-[14px] font-bold shadow-lg shadow-brand-primary/20 transition-all hover:-translate-y-0.5 cursor-pointer">
+              Request a Demo
             </Button>
           </Link>
         </div>
 
         {/* Mobile Toggle */}
         <button
-          className={`md:hidden ${!shouldBeTransparent ? 'text-brand-text-primary' : 'text-white'}`}
+          className="md:hidden text-gray-700 p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -85,21 +78,24 @@ export function Navbar() {
 
       {/* Mobile Nav */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-lg border-b border-gray-100 py-4 flex flex-col px-4 gap-4">
+        <div className="md:hidden absolute top-[115%] left-4 right-4 bg-white/80 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.08)] border border-white/80 rounded-2xl py-4 flex flex-col px-4 gap-2">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
-              className="text-brand-text-primary font-medium p-2 hover:bg-brand-bg rounded-md"
+              className="text-gray-800 text-[15px] font-medium p-3 hover:bg-brand-primary/5 hover:text-brand-primary rounded-xl transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               {link.name}
             </Link>
           ))}
-          <div className="border-t border-gray-100 pt-4 flex flex-col gap-3">
+          <div className="border-t border-gray-200/50 mt-2 pt-4 flex flex-col gap-3">
+             <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 text-[15px] font-medium p-3 hover:bg-brand-primary/5 hover:text-brand-primary rounded-xl transition-colors">
+              Sign in
+            </Link>
             <Link href="/demo" onClick={() => setIsMobileMenuOpen(false)}>
-              <Button className="w-full bg-brand-primary text-white mt-2 rounded-lg">
-                Book a Free Demo
+              <Button className="w-full bg-brand-primary text-white rounded-xl h-12 text-[15px] font-bold">
+                Request a Demo
               </Button>
             </Link>
           </div>

@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 
 export default function PricingPage() {
   return (
-    <main className="pt-28 pb-20 bg-white min-h-screen">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <main className="pt-36 md:pt-40 pb-20 bg-white min-h-screen">
+      <div className="container mx-auto px-4 max-w-7xl">
         <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">Simple, Transparent Pricing</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">Choose the plan that fits your transport business. No hidden fees.</p>
+          <h1 className="mb-6 text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Simple, Transparent Pricing</h1>
+          <p className="max-w-2xl mx-auto text-base text-gray-600 leading-relaxed">Choose the plan that fits your transport business. No hidden fees.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -19,8 +19,8 @@ export default function PricingPage() {
           ].map((tier, i) => (
             <div key={i} className={`rounded-3xl p-8 border ${tier.isPopular ? 'border-brand-primary shadow-xl relative' : 'border-gray-200 shadow-sm'}`}>
               {tier.isPopular && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-primary text-white px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">Most Popular</div>}
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{tier.name}</h3>
-              <p className="text-gray-500 text-sm mb-6 min-h-[40px]">{tier.desc}</p>
+              <h3 className="mb-2 text-lg font-bold text-gray-900">{tier.name}</h3>
+              <p className="text-gray-500 text-base mb-6 min-h-[40px]">{tier.desc}</p>
               <div className="mb-8">
                 <span className="text-4xl font-extrabold text-gray-900">{tier.price}</span>
                 {tier.price !== 'Custom' && <span className="text-gray-500">/mo</span>}
@@ -33,7 +33,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Link href="/demo">
-                <Button className={`w-full h-12 rounded-xl font-bold ${tier.isPopular ? 'bg-brand-primary hover:bg-brand-primary-dark text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'}`}>
+                <Button className={`w-full h-12 rounded-full font-bold shadow-sm transition-all hover:-translate-y-0.5 ${tier.isPopular ? 'bg-brand-primary hover:bg-brand-primary-dark text-white shadow-brand-primary/30 hover:shadow-brand-primary/50 shadow-md' : 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-200'}`}>
                   {tier.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
                 </Button>
               </Link>

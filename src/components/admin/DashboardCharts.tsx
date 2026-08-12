@@ -5,8 +5,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 interface ChartData {
   name: string;
   Revenue: number;
-  Expenses: number;
-  Profit: number;
+  Expenses?: number;
+  Profit?: number;
+  Bookings?: number;
 }
 
 export function DashboardCharts({ data }: { data: ChartData[] }) {
