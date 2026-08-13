@@ -42,13 +42,13 @@ export default function DriverKYCPage() {
                 ))}
               </AnimatedStaggerContainer>
             </AnimatedSection>
-            <AnimatedSection delay={0.2} className="bg-white rounded-full h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-xl">
+            <AnimatedSection delay={0.2} className="bg-white rounded-3xl h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-xl">
                <div className="absolute inset-0 bg-gradient-to-bl from-brand-primary/5 to-transparent"></div>
                <p className="text-gray-400 font-semibold italic relative z-10">[ Driver Management Screen ]</p>
             </AnimatedSection>
           </div>
 
-          <AnimatedSection delay={0.4} className="bg-brand-primary rounded-full p-10 text-center text-white">
+          <AnimatedSection delay={0.4} className="bg-brand-primary rounded-3xl p-10 text-center text-white">
             <h3 className="mb-4 text-lg font-bold text-gray-900">Protect your fleet and your cargo</h3>
             <p className="text-brand-primary-light mb-8 max-w-2xl mx-auto text-base">Always know exactly who is driving your trucks.</p>
             <Link href="/demo" className="inline-flex h-14 items-center justify-center px-8 rounded-full font-bold text-brand-primary bg-white hover:bg-gray-50 shadow-lg transition-transform hover:-translate-y-1">
@@ -61,3 +61,4 @@ export default function DriverKYCPage() {
     </main>
   );
 }
+

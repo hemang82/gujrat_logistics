@@ -27,7 +27,7 @@ export default function FleetTrackingPage() {
           </header>
 
           <section className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
-            <div className="order-2 md:order-1 bg-gray-100 rounded-full h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-inner">
+            <div className="order-2 md:order-1 bg-gray-100 rounded-3xl h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-inner">
                <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary/5 to-transparent"></div>
                <p className="text-gray-400 font-semibold italic relative z-10">[ Fleet Dashboard Preview ]</p>
             </div>
@@ -47,7 +47,7 @@ export default function FleetTrackingPage() {
             </div>
           </section>
 
-          <section className="bg-brand-bg rounded-full p-10 text-center border border-brand-primary/10">
+          <section className="bg-brand-bg rounded-3xl p-10 text-center border border-brand-primary/10">
             <h3 className="text-brand-primary-dark mb-4 text-lg font-bold">Start optimizing your fleet today</h3>
             <p className="text-gray-600 mb-8 max-w-2xl mx-auto">Get intelligent insights into your fleet's performance and driver expenses.</p>
             <Link href="/contact" className="inline-flex h-14 items-center justify-center px-8 rounded-full font-bold text-white bg-brand-primary hover:bg-brand-primary-dark shadow-lg transition-transform hover:-translate-y-1">
@@ -60,3 +60,4 @@ export default function FleetTrackingPage() {
     </main>
   );
 }
+

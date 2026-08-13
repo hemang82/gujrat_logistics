@@ -42,13 +42,13 @@ export default function FTLPTLPage() {
                 ))}
               </AnimatedStaggerContainer>
             </AnimatedSection>
-            <AnimatedSection delay={0.2} className="bg-gray-100 rounded-full h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-inner">
+            <AnimatedSection delay={0.2} className="bg-gray-100 rounded-3xl h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-inner">
                <div className="absolute inset-0 bg-gradient-to-br from-brand-primary/5 to-transparent"></div>
                <p className="text-gray-400 font-semibold italic relative z-10">[ FTL/PTL Loading Dashboard ]</p>
             </AnimatedSection>
           </div>
 
-          <AnimatedSection delay={0.4} className="bg-brand-bg rounded-full p-10 text-center border border-brand-primary/10">
+          <AnimatedSection delay={0.4} className="bg-brand-bg rounded-3xl p-10 text-center border border-brand-primary/10">
             <h3 className="text-brand-primary-dark mb-4 text-lg font-bold">Scale your transport network securely</h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto text-sm">Equip your branches and hubs with the #1 software built for Indian load management.</p>
             <Link href="/contact" className="inline-flex h-14 items-center justify-center px-8 rounded-full font-bold text-white bg-brand-primary hover:bg-brand-primary-dark shadow-lg transition-transform hover:-translate-y-1">
@@ -61,3 +61,4 @@ export default function FTLPTLPage() {
     </main>
   );
 }
+

@@ -22,7 +22,7 @@ export default function HowItWorksPage() {
               <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-brand-primary text-white font-bold shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm">
                 {i + 1}
               </div>
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-full border border-gray-100 bg-gray-50 shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all">
+              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-6 rounded-2xl border border-gray-100 bg-gray-50 shadow-sm hover:shadow-md hover:border-brand-primary/30 transition-all">
                 <div className="text-brand-primary font-bold mb-1 text-sm tracking-widest uppercase">{item.step}</div>
                 <h3 className="mb-3 text-lg font-bold text-gray-900">{item.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{item.desc}</p>
@@ -50,3 +50,4 @@ export const metadata: Metadata = {
     canonical: 'https://trustlogistic.in/how-it-works',
   }
 };
+

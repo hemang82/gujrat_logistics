@@ -28,7 +28,7 @@ export default function AutoFreightPage() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
-            <AnimatedSection delay={0.2} className="order-2 md:order-1 bg-white rounded-full h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-xl">
+            <AnimatedSection delay={0.2} className="order-2 md:order-1 bg-white rounded-3xl h-80 flex items-center justify-center relative overflow-hidden border border-gray-200 shadow-xl">
                <div className="absolute inset-0 bg-gradient-to-tr from-brand-primary/5 to-transparent"></div>
                <p className="text-gray-400 font-semibold italic relative z-10">[ Freight Calculation Demo ]</p>
             </AnimatedSection>
@@ -48,7 +48,7 @@ export default function AutoFreightPage() {
             </AnimatedSection>
           </div>
 
-          <AnimatedSection delay={0.4} className="bg-brand-primary rounded-full p-10 text-center text-white">
+          <AnimatedSection delay={0.4} className="bg-brand-primary rounded-3xl p-10 text-center text-white">
             <h3 className="mb-4 text-lg font-bold text-gray-900">Secure your revenue streams</h3>
             <p className="text-brand-primary-light mb-8 max-w-2xl mx-auto text-base">Accounting built specifically for the Indian transport workflow.</p>
             <Link href="/contact" className="inline-flex h-14 items-center justify-center px-8 rounded-full font-bold text-brand-primary bg-white hover:bg-gray-50 shadow-lg transition-transform hover:-translate-y-1">
@@ -61,3 +61,4 @@ export default function AutoFreightPage() {
     </main>
   );
 }
+
