@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
+import Branch from '@/models/Branch';
+import { sendBranchUserEmail } from '@/lib/mail';
 import bcrypt from 'bcryptjs';
 
 export const dynamic = 'force-dynamic';
@@ -100,6 +102,32 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       { $set: updateData },
       { new: true, runValidators: true }
     );
+
+    if (updatedUser) {
+      // Send update email to the branch user
+      try {
+        let branchName = 'N/A';
+        if (updatedUser.branch) {
+          const branchObj = await Branch.findById(updatedUser.branch);
+          if (branchObj) {
+            branchName = branchObj.name;
+          }
+        }
+
+        await sendBranchUserEmail({
+          to: updatedUser.email,
+          userName: updatedUser.name,
+          email: updatedUser.email,
+          password: updatedUser.plainPassword || undefined, // Send the stored plain password
+          phone: updatedUser.phone || '',
+          branchName,
+          role: updatedUser.role,
+          action: 'update',
+        });
+      } catch (mailError) {
+        console.error('Failed to send update email to branch user:', mailError);
+      }
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error: any) {

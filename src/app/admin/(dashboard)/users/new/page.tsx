@@ -262,6 +262,17 @@ export default function NewUserPage() {
     setIsLoading(true);
 
     try {
+      // Pre-validate that the email does not already exist
+      const emailCheckRes = await fetch(`/api/admin/users?checkEmail=${encodeURIComponent(formData.email)}`);
+      if (emailCheckRes.ok) {
+        const { exists } = await emailCheckRes.json();
+        if (exists) {
+          toast.error(`Email "${formData.email}" is already in use.`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       let finalBranchId = formData.branchId;
       
       // If creating a new branch inline
@@ -288,6 +299,8 @@ export default function NewUserPage() {
         if (branchRes.ok) {
           const newBranch = await branchRes.json();
           finalBranchId = newBranch._id;
+          // Store the created branch ID in state so we don't try to recreate it if user creation fails
+          setFormData(prev => ({ ...prev, branchId: newBranch._id }));
         } else {
           const errorData = await branchRes.json().catch(() => ({ error: 'Failed to create branch' }));
           toast.error(`Branch Error: ${errorData.error}`);
@@ -309,6 +322,17 @@ export default function NewUserPage() {
 
       if (response.ok) {
         toast.success('Branch login added successfully!');
+        
+        // Generate pre-filled WhatsApp message
+        const roleText = formData.role === 'manager' ? 'Branch Manager' : formData.role === 'admin' ? 'Administrator' : 'Branch User / Staff';
+        const waMsg = `*Trust Logistics - Branch Account Created*\n\nDear *${formData.name}*,\n\nYour branch account has been successfully created. Please find your portal access details below.\n\n*Portal Link:* https://trustlogistic.in/admin/login\n*Login Email:* ${formData.email}\n*Password:* ${formData.password}\n*Assigned Branch:* ${branchSearch || 'N/A'}\n*Role:* ${roleText}\n*Phone:* ${formData.phone || 'N/A'}\n\nPlease keep these credentials secure and do not share them.`;
+        
+        const waUrl = `https://wa.me/91${formData.phone}?text=${encodeURIComponent(waMsg)}`;
+        
+        if (formData.phone) {
+          window.open(waUrl, '_blank');
+        }
+
         router.push('/admin/users');
         router.refresh();
       } else {

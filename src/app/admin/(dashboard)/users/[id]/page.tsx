@@ -268,6 +268,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
     setIsLoading(true);
 
     try {
+      // Pre-validate that the email does not already exist for another user
+      const emailCheckRes = await fetch(`/api/admin/users?checkEmail=${encodeURIComponent(formData.email)}&excludeId=${resolvedParams.id}`);
+      if (emailCheckRes.ok) {
+        const { exists } = await emailCheckRes.json();
+        if (exists) {
+          toast.error(`Email "${formData.email}" is already in use.`);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       let finalBranchId = formData.branchId;
       
       // If creating a new branch inline
@@ -294,6 +305,8 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
         if (branchRes.ok) {
           const newBranch = await branchRes.json();
           finalBranchId = newBranch._id;
+          // Store the created branch ID in state so we don't try to recreate it if user update fails
+          setFormData(prev => ({ ...prev, branchId: newBranch._id }));
         } else {
           const errorData = await branchRes.json();
           toast.error(`Failed to create new branch: ${errorData.error}`);
@@ -323,6 +336,17 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
 
       if (response.ok) {
         toast.success('Branch login updated successfully!');
+
+        // Generate pre-filled WhatsApp message
+        const roleText = formData.role === 'manager' ? 'Branch Manager' : formData.role === 'admin' ? 'Administrator' : 'Branch User / Staff';
+        const waMsg = `*Trust Logistics - Branch Account Details Updated*\n\nDear *${formData.name}*,\n\nYour branch account details have been successfully updated. Please find your portal access details below.\n\n*Portal Link:* https://trustlogistic.in/admin/login\n*Login Email:* ${formData.email}\n*Password:* ${formData.password || '•••••••• (Unchanged)'}\n*Assigned Branch:* ${branchSearch || 'N/A'}\n*Role:* ${roleText}\n*Phone:* ${formData.phone || 'N/A'}\n\nPlease keep these credentials secure.`;
+        
+        const waUrl = `https://wa.me/91${formData.phone}?text=${encodeURIComponent(waMsg)}`;
+        
+        if (formData.phone) {
+          window.open(waUrl, '_blank');
+        }
+
         router.push('/admin/users');
         router.refresh();
       } else {

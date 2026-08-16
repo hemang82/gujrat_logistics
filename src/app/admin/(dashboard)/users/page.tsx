@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash2, MapPin, User as UserIcon } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MapPin, User as UserIcon, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useUserStore } from '@/store/useUserStore';
@@ -18,6 +18,7 @@ export default function UsersPage() {
   
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [viewUser, setViewUser] = useState<any | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -163,6 +164,14 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg"
+                            onClick={() => setViewUser(u)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Link href={`/admin/users/${u._id}`}>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg">
                               <Edit className="w-4 h-4" />
@@ -202,6 +211,117 @@ export default function UsersPage() {
         confirmText="Delete User"
         variant="danger"
       />
+
+      {/* View Details Dialog */}
+      {viewUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <Card className="w-full max-w-xl border-0 shadow-2xl bg-white overflow-hidden rounded-2xl">
+            <div className="bg-brand-primary p-6 text-white flex items-center gap-4 relative">
+              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+                <UserIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">{viewUser.name}</h3>
+                <p className="text-xs text-brand-primary-light uppercase tracking-wider font-semibold">
+                  {viewUser.role === 'manager' ? 'Branch Manager' : viewUser.role === 'admin' ? 'Administrator' : 'Branch User / Staff'}
+                </p>
+              </div>
+              <button 
+                onClick={() => setViewUser(null)}
+                className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <CardContent className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Email / Login ID</p>
+                  <p className="text-sm font-semibold text-gray-900 break-all font-mono">{viewUser.email}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Password</p>
+                  <p className="text-sm font-bold text-gray-900 font-mono bg-gray-50 px-2.5 py-1 rounded border border-gray-100 w-fit">
+                    {viewUser.plainPassword || '•••••••• (Unchanged)'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Phone Number</p>
+                  <p className="text-sm font-semibold text-gray-900">{viewUser.phone || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Assigned Branch</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {viewUser.branch ? viewUser.branch.name : '-'}
+                  </p>
+                </div>
+                {viewUser.branch && (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Branch Code</p>
+                      <p className="text-sm font-semibold text-gray-900 font-mono">{viewUser.branch.code || '-'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pincode</p>
+                      <p className="text-sm font-semibold text-gray-900 font-mono">{viewUser.branch.pincode || '-'}</p>
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">City & State</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {viewUser.branch.city ? `${viewUser.branch.city}, ` : ''}{viewUser.branch.state || '-'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Module Permissions */}
+              <div className="pt-4 border-t border-gray-100 space-y-2">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Module Permissions</p>
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50/50 text-xs">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-100 text-[10px] text-gray-400 uppercase tracking-wider font-bold border-b border-gray-200">
+                      <tr>
+                        <th className="p-2.5 pl-3 text-gray-500">Module Name</th>
+                        <th className="p-2.5 text-center text-gray-500">View</th>
+                        <th className="p-2.5 text-center text-gray-500">Add</th>
+                        <th className="p-2.5 text-center text-gray-500">Edit</th>
+                        <th className="p-2.5 text-center text-gray-500">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      <tr>
+                        <td className="p-2.5 pl-3 font-semibold text-gray-700">Bookings & LR</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canView ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canAdd ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canEdit ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canDelete ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                      </tr>
+                      <tr>
+                        <td className="p-2.5 pl-3 font-semibold text-gray-700">Challans & Lorry Hire</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canView ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canAdd ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canEdit ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                        <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canDelete ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 flex justify-end">
+                <Button 
+                  onClick={() => setViewUser(null)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 rounded-lg text-sm h-10 border border-gray-200"
+                >
+                  Close
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
