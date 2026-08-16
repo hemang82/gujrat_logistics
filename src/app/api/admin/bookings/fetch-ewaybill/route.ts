@@ -30,6 +30,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'E-Way Bill API Access Denied. Contact Admin to enable this feature.' }, { status: 403 });
     }
 
+    // Get the parent logistic company's GSTIN for multi-tenant SaaS support
+    const activeLogisticId = dbUser.role === 'logistic' ? dbUser._id : dbUser.logisticId;
+    const parentLogistic = await User.findById(activeLogisticId);
+    const tenantGstin = parentLogistic?.gstNumber;
+
+    if (!tenantGstin) {
+      return NextResponse.json({ error: 'Logistic Company GSTIN is not configured in settings.' }, { status: 400 });
+    }
+
     // 2. Smart Caching System (Check if fetched in last 24 hours)
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const cachedLog = await ApiLog.findOne({
@@ -58,8 +67,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // Call Masters India API via Service Layer
-    const ewbData = await EwayBillService.fetchEwayBillDetails(number);
+    // Call Masters India API via Service Layer using the tenant's own GSTIN
+    const ewbData = await EwayBillService.fetchEwayBillDetails(number, tenantGstin);
 
     // Look up Clients to auto-fill Phone numbers if they exist
     const consignorGst = ewbData.gstin_of_consignor || '';

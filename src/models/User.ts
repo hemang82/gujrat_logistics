@@ -4,6 +4,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string;
+  plainPassword?: string;
   role: 'superadmin' | 'logistic' | 'branch' | 'admin' | 'manager' | 'accountant' | 'driver';
   phone?: string;
   logisticId?: mongoose.Types.ObjectId | any;
@@ -42,6 +43,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String }, // Hashed password
+    plainPassword: { type: String },
     role: {
       type: String,
       enum: ['superadmin', 'logistic', 'branch', 'admin', 'manager', 'accountant', 'driver'],

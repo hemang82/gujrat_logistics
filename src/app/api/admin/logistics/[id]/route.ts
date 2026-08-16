@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { sendLogisticEmail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,9 +80,26 @@ export async function PUT(
     if (password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(password, salt);
+      user.plainPassword = password;
     }
 
     await user.save();
+
+    // Send update email asynchronously (don't block the API response but log result)
+    try {
+      await sendLogisticEmail({
+        to: user.email,
+        companyName: user.name,
+        email: user.email,
+        password: user.plainPassword || undefined, // Send the stored plain password
+        phone: user.phone || '',
+        transporterId: user.transporterId,
+        gstNumber: user.gstNumber,
+        action: 'update'
+      });
+    } catch (mailError) {
+      console.error('Failed to send update email:', mailError);
+    }
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user.toObject();
@@ -112,11 +130,19 @@ export async function DELETE(
 
     const { id } = await params;
     
-    // Soft-delete the logistic user
-    const deletedUser = await User.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
-    if (!deletedUser) {
+    // Find and soft-delete the logistic user, renaming email to release it
+    const userToDelete = await User.findById(id);
+    if (!userToDelete) {
       return NextResponse.json({ error: 'Logistic not found' }, { status: 404 });
     }
+
+    userToDelete.isDeleted = true;
+    // Prefix email and phone to bypass constraints and allow reuse
+    userToDelete.email = `deleted_${Date.now()}_${userToDelete.email}`;
+    if (userToDelete.phone) {
+      userToDelete.phone = `del_${userToDelete.phone}`;
+    }
+    await userToDelete.save();
 
     return NextResponse.json({ message: 'Logistic deleted successfully' }, { status: 200 });
   } catch (error: any) {

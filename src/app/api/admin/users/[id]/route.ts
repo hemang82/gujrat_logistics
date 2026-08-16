@@ -92,6 +92,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
       updateData.password = await bcrypt.hash(body.password, salt);
+      updateData.plainPassword = body.password;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -134,7 +135,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       return NextResponse.json({ error: 'Permission denied' }, { status: 403 });
     }
 
-    await User.findByIdAndUpdate(id, { isDeleted: true });
+    existingUser.isDeleted = true;
+    // Prefix email and phone to bypass unique constraints and allow reuse
+    existingUser.email = `deleted_${Date.now()}_${existingUser.email}`;
+    if (existingUser.phone) {
+      existingUser.phone = `del_${existingUser.phone}`;
+    }
+    await existingUser.save();
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error: any) {

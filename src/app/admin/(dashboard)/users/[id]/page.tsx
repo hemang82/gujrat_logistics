@@ -107,7 +107,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
           setFormData({
             name: userData.name || '',
             email: userData.email || '',
-            password: '', // Empty password means don't change
+            password: userData.plainPassword || '', // Populate plain password
             phone: userData.phone || '',
             role: userData.role || 'branch',
             branchId: userData.branch || '',

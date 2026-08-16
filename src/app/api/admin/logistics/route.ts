@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { sendLogisticEmail } from '@/lib/mail';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     const logistics = await User.find(query)
-      .select('-password') // Don't return passwords
+      .select('-password') // Don't return hashed password, but return plainPassword
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -86,6 +87,7 @@ export async function POST(request: Request) {
       name: body.name,
       email: body.email.toLowerCase(),
       password: hashedPassword,
+      plainPassword: body.password,
       phone: body.phone,
       role: 'logistic',
       companyLogo: body.companyLogo,
@@ -97,6 +99,22 @@ export async function POST(request: Request) {
     });
 
     await newLogistic.save();
+
+    // Send welcome email asynchronously (don't block the API response but log result)
+    try {
+      await sendLogisticEmail({
+        to: newLogistic.email,
+        companyName: newLogistic.name,
+        email: newLogistic.email,
+        password: body.password, // Plain password entered by user
+        phone: newLogistic.phone || '',
+        transporterId: newLogistic.transporterId,
+        gstNumber: newLogistic.gstNumber,
+        action: 'create'
+      });
+    } catch (mailError) {
+      console.error('Failed to send welcome email:', mailError);
+    }
     
     // Remove password from response
     const logisticObj = newLogistic.toObject();

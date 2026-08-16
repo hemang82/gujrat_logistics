@@ -251,6 +251,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     navItems.push({ name: 'Announcements', href: '/admin/announcements', icon: <Megaphone className="w-5 h-5" />, isDropdown: false });
     navItems.push({ name: 'Support Tickets', href: '/admin/support-tickets', icon: <Contact className="w-5 h-5" />, isDropdown: false });
     navItems.push({ name: 'Demo Requests', href: '/admin/demo-requests', icon: <BriefcaseBusiness className="w-5 h-5" />, isDropdown: false });
+    navItems.push({ name: 'E-Way Bill Tester', href: '/admin/ewaybills/test', icon: <FileText className="w-5 h-5" />, isDropdown: false });
     navItems.push({ name: 'API Logs', href: '/admin/api-logs', icon: <Activity className="w-5 h-5" />, isDropdown: false });
   }
 

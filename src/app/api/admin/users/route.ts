@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       name: body.name,
       email: body.email.toLowerCase(),
       password: hashedPassword,
+      plainPassword: body.password,
       phone: body.phone,
       role: body.role || 'branch',
       branch: body.branch || null,

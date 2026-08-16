@@ -48,7 +48,7 @@ function LogisticsFormContent() {
           setFormData({
             name: logistic.name || '',
             email: logistic.email || '',
-            password: '', 
+            password: logistic.plainPassword || '', 
             phone: logistic.phone || '',
             gstNumber: logistic.gstNumber || '',
             transporterId: logistic.transporterId || '',
@@ -151,6 +151,14 @@ function LogisticsFormContent() {
 
     setIsLoading(true);
 
+    // Open a blank window immediately before async fetch to bypass browser popup blockers
+    let waWindow: Window | null = null;
+    try {
+      waWindow = window.open('', '_blank');
+    } catch (e) {
+      console.warn("Popup blocked or failed to open blank tab:", e);
+    }
+
     try {
       const url = editingId ? `/api/admin/logistics/${editingId}` : '/api/admin/logistics';
       const method = editingId ? 'PUT' : 'POST';
@@ -163,13 +171,55 @@ function LogisticsFormContent() {
 
       if (response.ok) {
         toast.success(`Logistic Company ${editingId ? 'updated' : 'created'} successfully!`);
+        
+        // Prepare WhatsApp message
+        const passText = formData.password ? formData.password : '•••••••• (Unchanged)';
+        const transporterIdText = formData.transporterId || 'N/A';
+        const gstNumberText = formData.gstNumber || 'N/A';
+        const actionText = editingId ? 'UPDATED' : 'REGISTERED';
+
+        const waMessage = 
+`*TRUST LOGISTICS - ACCOUNT ${actionText}*
+
+Dear Partner,
+
+Your logistics company account has been successfully ${editingId ? 'updated' : 'registered'} on the Trust Logistics platform.
+
+*Account Details:*
+• *Company Name:* ${formData.name}
+• *Login Email:* ${formData.email}
+• *Password:* ${passText}
+• *Phone Number:* ${formData.phone}
+
+*Statutory Details:*
+• *Transporter ID:* ${transporterIdText}
+• *GST Number:* ${gstNumberText}
+
+*Login Link:* https://trustlogistic.in/admin/login
+
+Thank you,
+*Trust Logistics Team*`;
+
+        // Redirect the blank tab to WhatsApp URL
+        const cleanPhone = formData.phone.replace(/\D/g, '');
+        const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
+        
+        if (waWindow) {
+          waWindow.location.href = waUrl;
+        } else {
+          // Fallback if blank window couldn't be opened initially
+          window.open(waUrl, '_blank');
+        }
+
         router.push('/admin/logistics');
         router.refresh();
       } else {
+        if (waWindow) waWindow.close();
         const errorData = await response.json();
         toast.error(`Failed to save: ${errorData.error}`);
       }
     } catch (error) {
+      if (waWindow) waWindow.close();
       toast.error('An error occurred while saving.');
     } finally {
       setIsLoading(false);

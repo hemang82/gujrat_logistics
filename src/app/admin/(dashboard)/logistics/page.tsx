@@ -237,6 +237,10 @@ export default function LogisticsManagementPage() {
                   <p className="text-sm font-medium text-gray-900">{viewLogistic.email}</p>
                 </div>
                 <div className="space-y-1">
+                  <p className="text-xs text-gray-500 font-medium">Password</p>
+                  <p className="text-sm font-medium text-gray-900 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100 w-fit">{viewLogistic.plainPassword || '•••••••• (Unchanged)'}</p>
+                </div>
+                <div className="space-y-1">
                   <p className="text-xs text-gray-500 font-medium">Phone Number</p>
                   <p className="text-sm font-medium text-gray-900">{viewLogistic.phone || '-'}</p>
                 </div>
