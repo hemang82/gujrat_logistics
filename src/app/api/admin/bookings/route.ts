@@ -12,6 +12,8 @@ import { resolveBranchId } from '@/lib/resolveBranch';
 import { addCashTransaction } from '@/lib/ledgerUtils';
 import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);

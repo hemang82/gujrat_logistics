@@ -54,7 +54,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Logistic company not found' }, { status: 404 });
     }
 
-    const { name, email, phone, password, settings, companyLogo, gstNumber, transporterId, panNumber, ewbApiAccess, ewbApiQuota } = await request.json();
+    const { name, email, phone, password, settings, companyLogo, gstNumber, transporterId, panNumber, ewbApiAccess, ewbApiQuota, isActive } = await request.json();
 
     // Check if new email is already taken by another user
     if (email && email !== user.email) {
@@ -74,6 +74,7 @@ export async function PUT(
     if (panNumber !== undefined) user.panNumber = panNumber;
     if (ewbApiAccess !== undefined) user.ewbApiAccess = ewbApiAccess;
     if (ewbApiQuota !== undefined) user.ewbApiQuota = Number(ewbApiQuota) || 0;
+    if (isActive !== undefined) user.isActive = !!isActive;
     
     // removed settings assignment
 
@@ -86,19 +87,22 @@ export async function PUT(
     await user.save();
 
     // Send update email asynchronously (don't block the API response but log result)
-    try {
-      await sendLogisticEmail({
-        to: user.email,
-        companyName: user.name,
-        email: user.email,
-        password: user.plainPassword || undefined, // Send the stored plain password
-        phone: user.phone || '',
-        transporterId: user.transporterId,
-        gstNumber: user.gstNumber,
-        action: 'update'
-      });
-    } catch (mailError) {
-      console.error('Failed to send update email:', mailError);
+    const isProfileUpdate = name || email || phone || password || gstNumber || transporterId || panNumber;
+    if (isProfileUpdate) {
+      try {
+        await sendLogisticEmail({
+          to: user.email,
+          companyName: user.name,
+          email: user.email,
+          password: user.plainPassword || undefined, // Send the stored plain password
+          phone: user.phone || '',
+          transporterId: user.transporterId,
+          gstNumber: user.gstNumber,
+          action: 'update'
+        });
+      } catch (mailError) {
+        console.error('Failed to send update email:', mailError);
+      }
     }
 
     // Remove password from response

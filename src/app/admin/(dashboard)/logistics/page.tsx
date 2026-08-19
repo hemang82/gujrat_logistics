@@ -10,6 +10,7 @@ import { Building2, Plus, Loader2, Edit, Trash2, Mail, Phone, Eye } from 'lucide
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useUserStore } from '@/store/useUserStore';
 import { redirect, useRouter } from 'next/navigation';
+import ConfirmDialog from '@/components/admin/ConfirmDialog';
 
 export default function LogisticsManagementPage() {
   const { user } = useUserStore();
@@ -35,6 +36,9 @@ export default function LogisticsManagementPage() {
 
   // View State
   const [viewLogistic, setViewLogistic] = useState<any | null>(null);
+
+  // Status Toggle State
+  const [statusToggleData, setStatusToggleData] = useState<{ id: string, name: string, currentStatus: boolean } | null>(null);
 
   useEffect(() => {
     const allowedRoles = ['superadmin', 'admin', 'manager'];
@@ -68,6 +72,49 @@ export default function LogisticsManagementPage() {
     router.push(`/admin/logistics/new?id=${logistic._id}`);
   };
 
+  const handleToggleStatusConfirm = async () => {
+    if (!statusToggleData) return;
+    const { id, currentStatus } = statusToggleData;
+
+    // Soft update: Toggle state locally immediately
+    setLogistics(prev => prev.map(item => {
+      if (item._id === id) {
+        return { ...item, isActive: !currentStatus };
+      }
+      return item;
+    }));
+
+    try {
+      const res = await fetch(`/api/admin/logistics/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      toast.success(`Company status updated to ${!currentStatus ? 'Active' : 'Inactive'}`);
+      
+      // Silent refresh: Fetch in background without setting full loading spinner
+      const silentRes = await fetch('/api/admin/logistics');
+      const silentData = await silentRes.json();
+      if (silentRes.ok && silentData.data) {
+        setLogistics(silentData.data);
+      }
+    } catch (err: any) {
+      // Rollback on error
+      setLogistics(prev => prev.map(item => {
+        if (item._id === id) {
+          return { ...item, isActive: currentStatus };
+        }
+        return item;
+      }));
+      toast.error(err.message || 'Failed to update status');
+    } finally {
+      setStatusToggleData(null);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -79,8 +126,17 @@ export default function LogisticsManagementPage() {
       if (!res.ok) throw new Error(data.error);
       
       toast.success("Logistic Company deleted successfully!");
+      
+      // Soft delete: filter locally
+      setLogistics(prev => prev.filter(item => item._id !== deleteId));
       setDeleteId(null);
-      fetchLogistics();
+
+      // Silent refresh in background
+      const silentRes = await fetch('/api/admin/logistics');
+      const silentData = await silentRes.json();
+      if (silentRes.ok && silentData.data) {
+        setLogistics(silentData.data);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete company');
     } finally {
@@ -118,20 +174,21 @@ export default function LogisticsManagementPage() {
                 <th className="px-6 py-4">COMPANY DETAILS</th>
                 <th className="px-6 py-4">STATUTORY INFO</th>
                 <th className="px-6 py-4">CONTACT</th>
+                <th className="px-6 py-4 text-center">STATUS</th>
                 <th className="px-6 py-4 text-right">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-brand-primary" />
                     Loading companies...
                   </td>
                 </tr>
               ) : logistics.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
                         <Building2 className="w-6 h-6 text-gray-400" />
@@ -184,6 +241,18 @@ export default function LogisticsManagementPage() {
                           <span>{logistic.phone || '-'}</span>
                         </div>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button
+                        onClick={() => setStatusToggleData({ id: logistic._id, name: logistic.name, currentStatus: logistic.isActive !== false })}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                          logistic.isActive !== false
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                        }`}
+                      >
+                        {logistic.isActive !== false ? 'Active' : 'Inactive'}
+                      </button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
@@ -299,6 +368,17 @@ export default function LogisticsManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Status Toggle Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={statusToggleData !== null}
+        onClose={() => setStatusToggleData(null)}
+        onConfirm={handleToggleStatusConfirm}
+        title={`${statusToggleData?.currentStatus ? 'Deactivate' : 'Activate'} Company Account`}
+        description={`Are you sure you want to ${statusToggleData?.currentStatus ? 'deactivate' : 'activate'} "${statusToggleData?.name}"? ${statusToggleData?.currentStatus ? 'Deactivating this company will instantly log out and block all branches and branch users belonging to it.' : 'This will allow the company and all its branches to log in again.'}`}
+        confirmText={statusToggleData?.currentStatus ? 'Deactivate Company' : 'Activate Company'}
+        variant={statusToggleData?.currentStatus ? 'danger' : 'primary'}
+      />
     </div>
   );
 }

@@ -640,7 +640,7 @@ export default function EditBookingPage() {
     if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
     if (!formData.grNo) newErrors.grNo = "Please enter LR No";
 
-    const phoneRegex = /^[6-9]\d{9}$/;
+    const phoneRegex = /^\d{10}$/;
     if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit phone number";
     if (formData.consigneePhone && !phoneRegex.test(formData.consigneePhone)) newErrors.consigneePhone = "Invalid 10-digit phone number";
 

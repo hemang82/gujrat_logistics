@@ -32,6 +32,24 @@ export const authOptions: NextAuthOptions = {
         if (!isCorrectPassword) {
           throw new Error("Invalid credentials");
         }
+
+        // Check if user or company is deactivated
+        if (user.role !== 'superadmin') {
+          if (user.role === 'logistic' && user.isActive === false) {
+            throw new Error("Your company account has been deactivated. Please contact support.");
+          }
+          
+          if (user.role !== 'logistic' && user.logisticId) {
+            const parentLogistic = await User.findById(user.logisticId).select('isActive').lean() as any;
+            if (parentLogistic && parentLogistic.isActive === false) {
+              throw new Error("Your company account has been deactivated. Please contact support.");
+            }
+          }
+          
+          if (user.isActive === false) {
+            throw new Error("Your account has been deactivated. Please contact support.");
+          }
+        }
         
         let hasEwbAccess = user.ewbApiAccess || false;
         let logisticName = user.role === 'logistic' ? user.name : '';
@@ -71,11 +89,24 @@ export const authOptions: NextAuthOptions = {
         token.logisticName = (user as any).logisticName;
         token.permissions = (user as any).permissions;
       } else if (token.id) {
-        // Fetch fresh branch/bookingBranch details from the database on refresh
+        // Fetch fresh details from the database on refresh
         try {
           await connectToDatabase();
-          const dbUser = await User.findById(token.id).select('logisticId branch bookingBranch role ewbApiAccess permissions');
+          const dbUser = await User.findById(token.id).select('logisticId branch bookingBranch role ewbApiAccess permissions isActive');
           if (dbUser) {
+            // Force logout if user is deactivated
+            if (dbUser.isActive === false) {
+              return {}; // Returns empty token, causing logout
+            }
+
+            // Force logout if parent logistic company is deactivated
+            if (dbUser.role !== 'superadmin' && dbUser.role !== 'logistic' && dbUser.logisticId) {
+              const parentLogistic = await User.findById(dbUser.logisticId).select('isActive').lean() as any;
+              if (parentLogistic && parentLogistic.isActive === false) {
+                return {}; // Cause logout
+              }
+            }
+
             token.logisticId = dbUser.logisticId ? dbUser.logisticId.toString() : '';
             token.branch = dbUser.branch ? dbUser.branch.toString() : '';
             token.bookingBranch = dbUser.bookingBranch ? dbUser.bookingBranch.toString() : '';
@@ -93,6 +124,8 @@ export const authOptions: NextAuthOptions = {
             token.ewbApiAccess = hasEwbAccess;
             token.logisticName = logisticName;
             token.permissions = dbUser.permissions || {};
+          } else {
+            return {}; // User deleted
           }
         } catch (err) {
           console.error("Error updating token in jwt callback:", err);

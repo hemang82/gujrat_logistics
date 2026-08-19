@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { signIn, signOut } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,31 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
-export default function AdminLogin() {
+function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get('error');
+
+  useEffect(() => {
+    if (errorParam === 'deactivated_user') {
+      signOut({ redirect: false });
+      toast.error('Your account has been deactivated. Please contact support.');
+      router.replace('/admin/login');
+    } else if (errorParam === 'deactivated_company') {
+      signOut({ redirect: false });
+      toast.error('Your company account has been deactivated. Please contact support.');
+      router.replace('/admin/login');
+    } else if (errorParam === 'system_error') {
+      signOut({ redirect: false });
+      toast.error('System validation error. Please log in again.');
+      router.replace('/admin/login');
+    }
+  }, [errorParam, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +70,8 @@ export default function AdminLogin() {
       });
 
       if (result?.error) {
-        toast.error('Invalid email or password');
+        const errorMsg = result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error;
+        toast.error(errorMsg);
       } else {
         toast.success('Login successful!');
         router.push('/admin/dashboard');
@@ -194,5 +213,13 @@ export default function AdminLogin() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center text-brand-primary font-bold">Loading portal...</div>}>
+      <AdminLogin />
+    </Suspense>
   );
 }

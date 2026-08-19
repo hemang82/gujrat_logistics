@@ -8,6 +8,8 @@ import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Single Challan by ID
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,7 +31,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const challan = await Challan.findOne({ _id: id, logisticId, ...branchFilter, isDeleted: false })
       .populate({
         path: 'bookings',
-        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch',
+        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch paymentCondition',
         populate: { path: 'destinationBranch', select: 'name code' }
       })
       .populate('truckNo', 'vehicleNumber')

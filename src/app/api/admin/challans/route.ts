@@ -9,6 +9,8 @@ import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Paginated list of challans with search
 export async function GET(request: Request) {
   try {
@@ -98,7 +100,7 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('bookings', 'lrNumber consignor consignee charges items material')
+      .populate('bookings', 'lrNumber consignor consignee charges items material paymentCondition')
       .populate('truckNo', 'vehicleNumber')
       .populate('driverName', 'name')
       .populate('branch', 'name code')

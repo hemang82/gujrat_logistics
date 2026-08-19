@@ -29,7 +29,8 @@ function LogisticsFormContent() {
     panNumber: '',
     companyLogo: '',
     ewbApiAccess: false,
-    ewbApiQuota: 0
+    ewbApiQuota: 0,
+    isActive: true
   });
 
   useEffect(() => {
@@ -55,7 +56,8 @@ function LogisticsFormContent() {
             panNumber: logistic.panNumber || '',
             companyLogo: logistic.companyLogo || '',
             ewbApiAccess: logistic.ewbApiAccess || false,
-            ewbApiQuota: logistic.ewbApiQuota || 0
+            ewbApiQuota: logistic.ewbApiQuota || 0,
+            isActive: logistic.isActive !== false
           });
         }
       }
@@ -151,14 +153,6 @@ function LogisticsFormContent() {
 
     setIsLoading(true);
 
-    // Open a blank window immediately before async fetch to bypass browser popup blockers
-    let waWindow: Window | null = null;
-    try {
-      waWindow = window.open('', '_blank');
-    } catch (e) {
-      console.warn("Popup blocked or failed to open blank tab:", e);
-    }
-
     try {
       const url = editingId ? `/api/admin/logistics/${editingId}` : '/api/admin/logistics';
       const method = editingId ? 'PUT' : 'POST';
@@ -204,23 +198,16 @@ Thank you,
         const cleanPhone = formData.phone.replace(/\D/g, '');
         const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
         
-        if (waWindow) {
-          waWindow.location.href = waUrl;
-        } else {
-          // Fallback if blank window couldn't be opened initially
-          window.open(waUrl, '_blank');
-        }
+        window.open(waUrl, '_blank');
 
         router.push('/admin/logistics');
         router.refresh();
       } else {
-        if (waWindow) waWindow.close();
         const errorData = await response.json();
         toast.error(`Failed to save: ${errorData.error}`);
       }
-    } catch (error) {
-      if (waWindow) waWindow.close();
-      toast.error('An error occurred while saving.');
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred while saving.');
     } finally {
       setIsLoading(false);
     }
@@ -341,15 +328,15 @@ Thank you,
           </CardContent>
         </Card>
 
-        {/* Section 3: API Permissions */}
+        {/* Section 3: API & Status Permissions */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
             <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              API Permissions
+              API & Status Permissions
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1 flex flex-col justify-center">
                 <Label className="text-xs font-semibold text-gray-600 uppercase mb-2">E-Way Bill API Access</Label>
                 <div className="flex items-center gap-3">
@@ -380,6 +367,24 @@ Thank you,
                   className={`h-10 text-sm rounded-lg ${errors.ewbApiQuota ? 'border-red-500' : 'border-gray-200'} ${!formData.ewbApiAccess ? 'bg-gray-50 text-gray-400' : ''}`} 
                 />
                 {renderError('ewbApiQuota')}
+              </div>
+              <div className="space-y-1 flex flex-col justify-center">
+                <Label className="text-xs font-semibold text-gray-600 uppercase mb-2">Company Login Status</Label>
+                <div className="flex items-center gap-3">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      name="isActive" 
+                      checked={formData.isActive} 
+                      onChange={handleChange} 
+                      className="sr-only peer" 
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                  </label>
+                  <span className="text-sm font-medium text-gray-700">
+                    {formData.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
