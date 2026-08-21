@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ArrowLeft, Save, Trash2, Search } from 'lucide-react';
+import { ArrowLeft, Save, Trash2, Search, Loader2 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -39,9 +39,20 @@ export default function LorryHireForm() {
     date: new Date().toISOString().split('T')[0],
     fromBranch: userBranch,
     toBranch: '',
+    fromCity: '',
+    fromState: '',
+    fromPincode: '',
+    toCity: '',
+    toState: '',
+    toPincode: '',
     truckNo: '',
+    driver: '',
+    modeOfTransport: '1',
     totalAmount: '',
     advanceAmount: '',
+    commission: '',
+    hamali: '',
+    tds: '',
     balancePaidBy: '',
     status: 'pending',
     remark: ''
@@ -60,6 +71,14 @@ export default function LorryHireForm() {
   const [fromBranchHighlightIndex, setFromBranchHighlightIndex] = useState(-1);
   const [fromBranchSuggestions, setFromBranchSuggestions] = useState<any[]>([]);
 
+  // Pincode dropdown states
+  const [fromPincodeOptions, setFromPincodeOptions] = useState<{name: string, city: string, state: string}[]>([]);
+  const [showFromPincodeDropdown, setShowFromPincodeDropdown] = useState(false);
+  const [fromPincodeLoading, setFromPincodeLoading] = useState(false);
+  const [toPincodeOptions, setToPincodeOptions] = useState<{name: string, city: string, state: string}[]>([]);
+  const [showToPincodeDropdown, setShowToPincodeDropdown] = useState(false);
+  const [toPincodeLoading, setToPincodeLoading] = useState(false);
+
   const [toBranchSearch, setToBranchSearch] = useState('');
   const [showToBranchDropdown, setShowToBranchDropdown] = useState(false);
   const [toBranchHighlightIndex, setToBranchHighlightIndex] = useState(-1);
@@ -75,6 +94,12 @@ export default function LorryHireForm() {
   const [balancePaidByHighlightIndex, setBalancePaidByHighlightIndex] = useState(-1);
   const [balancePaidBySuggestions, setBalancePaidBySuggestions] = useState<any[]>([]);
 
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [driverSearch, setDriverSearch] = useState('');
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+  const [driverHighlightIndex, setDriverHighlightIndex] = useState(-1);
+  const [driverSuggestions, setDriverSuggestions] = useState<any[]>([]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -83,27 +108,37 @@ export default function LorryHireForm() {
 
   const fetchMasters = async () => {
     try {
-      const [branchRes, vehicleRes, challanRes] = await Promise.all([
+      const [branchRes, vehicleRes, challanRes, driverRes] = await Promise.all([
         fetch('/api/admin/branches?limit=1000'),
         fetch('/api/admin/vehicles'),
-        fetch('/api/admin/challans?status=pending&limit=1000') 
+        fetch('/api/admin/challans?status=pending&limit=1000'),
+        fetch('/api/admin/drivers?limit=1000')
       ]);
       
       const branchData = await branchRes.json();
       const vehicleData = await vehicleRes.json();
       const challanData = await challanRes.json();
+      const driverData = await driverRes.json();
       
       const loadedBranches = branchData.branches || branchData || [];
       const loadedVehicles = vehicleData.vehicles || vehicleData || [];
+      const loadedDrivers = driverData.drivers || driverData || [];
 
       setBranches(loadedBranches);
       setVehicles(loadedVehicles);
       setChallans(challanData.challans || challanData || []);
+      setDrivers(loadedDrivers);
 
       if (userBranch && loadedBranches.length > 0) {
         const userBranchObj = loadedBranches.find((b: any) => b._id === userBranch);
         if (userBranchObj) {
           setFromBranchSearch(`${userBranchObj.name || ''} (${userBranchObj.code || ''})`);
+          setFormData(prev => ({
+            ...prev,
+            fromCity: userBranchObj.city || '',
+            fromState: userBranchObj.state || '',
+            fromPincode: userBranchObj.pincode || ''
+          }));
         }
       }
 
@@ -137,8 +172,8 @@ export default function LorryHireForm() {
     }
   };
 
-  const branchOptions = branches.map(b => ({ value: b._id, label: `${b.name || ''} (${b.code || ''})` }));
-  const vehicleOptions = vehicles.map(v => ({ value: v._id, label: v.vehicleNumber || 'Unknown' }));
+  const branchOptions = branches.map(b => ({ value: b._id, label: `${b.name || ''} (${b.code || ''})`, original: b }));
+  const vehicleOptions = vehicles.map(v => ({ value: v._id, label: v.vehicleNumber || 'Unknown', original: v }));
 
   // ------------- CHALLAN AUTOCOMPLETE -------------
   useEffect(() => {
@@ -216,7 +251,13 @@ export default function LorryHireForm() {
     if (e.key === 'Tab') {
       const firstMatch = fromBranchSuggestions[0];
       if (firstMatch && fromBranchSearch && firstMatch.label.toLowerCase().startsWith(fromBranchSearch.toLowerCase())) {
-        setFormData(prev => ({ ...prev, fromBranch: firstMatch.value }));
+        setFormData(prev => ({ 
+          ...prev, 
+          fromBranch: firstMatch.value,
+          fromCity: firstMatch.original.city || '',
+          fromState: firstMatch.original.state || '',
+          fromPincode: firstMatch.original.pincode || ''
+        }));
         setFromBranchSearch(firstMatch.label);
         setShowFromBranchDropdown(false);
         setFromBranchHighlightIndex(-1);
@@ -231,7 +272,13 @@ export default function LorryHireForm() {
       if (fromBranchHighlightIndex >= 0 && fromBranchHighlightIndex < fromBranchSuggestions.length) {
         e.preventDefault();
         const selected = fromBranchSuggestions[fromBranchHighlightIndex];
-        setFormData(prev => ({ ...prev, fromBranch: selected.value }));
+        setFormData(prev => ({ 
+          ...prev, 
+          fromBranch: selected.value,
+          fromCity: selected.original.city || '',
+          fromState: selected.original.state || '',
+          fromPincode: selected.original.pincode || ''
+        }));
         setFromBranchSearch(selected.label);
         setShowFromBranchDropdown(false);
         setFromBranchHighlightIndex(-1);
@@ -260,7 +307,13 @@ export default function LorryHireForm() {
     if (e.key === 'Tab') {
       const firstMatch = toBranchSuggestions[0];
       if (firstMatch && toBranchSearch && firstMatch.label.toLowerCase().startsWith(toBranchSearch.toLowerCase())) {
-        setFormData(prev => ({ ...prev, toBranch: firstMatch.value }));
+        setFormData(prev => ({ 
+          ...prev, 
+          toBranch: firstMatch.value,
+          toCity: firstMatch.original.city || '',
+          toState: firstMatch.original.state || '',
+          toPincode: firstMatch.original.pincode || ''
+        }));
         setToBranchSearch(firstMatch.label);
         setShowToBranchDropdown(false);
         setToBranchHighlightIndex(-1);
@@ -275,7 +328,13 @@ export default function LorryHireForm() {
       if (toBranchHighlightIndex >= 0 && toBranchHighlightIndex < toBranchSuggestions.length) {
         e.preventDefault();
         const selected = toBranchSuggestions[toBranchHighlightIndex];
-        setFormData(prev => ({ ...prev, toBranch: selected.value }));
+        setFormData(prev => ({ 
+          ...prev, 
+          toBranch: selected.value,
+          toCity: selected.original.city || '',
+          toState: selected.original.state || '',
+          toPincode: selected.original.pincode || ''
+        }));
         setToBranchSearch(selected.label);
         setShowToBranchDropdown(false);
         setToBranchHighlightIndex(-1);
@@ -316,13 +375,72 @@ export default function LorryHireForm() {
       if (truckHighlightIndex >= 0 && truckHighlightIndex < truckSuggestions.length) {
         e.preventDefault();
         const selected = truckSuggestions[truckHighlightIndex];
-        setFormData(prev => ({ ...prev, truckNo: selected.value }));
+        
+        let newDriver = formData.driver;
+        let newDriverSearch = driverSearch;
+        const truckDriver = selected.original?.driver;
+        if (truckDriver) {
+           const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+           const driverObj = drivers.find(d => d._id === did);
+           if (driverObj) {
+             newDriver = driverObj._id;
+             newDriverSearch = driverObj.name;
+           }
+        }
+        
+        setFormData(prev => ({ ...prev, truckNo: selected.value, driver: newDriver }));
         setTruckSearch(selected.label);
+        setDriverSearch(newDriverSearch);
         setShowTruckDropdown(false);
         setTruckHighlightIndex(-1);
         setErrors(prev => ({ ...prev, truckNo: '' }));
       }
     } else if (e.key === 'Escape') { setShowTruckDropdown(false); setTruckHighlightIndex(-1); }
+  };
+
+  // ------------- DRIVER AUTOCOMPLETE -------------
+  const driverOptions = drivers.map(d => ({ value: d._id, label: d.name || 'Unknown' }));
+
+  useEffect(() => {
+    if (!driverSearch || driverSearch.trim().length < 1) {
+      setDriverSuggestions([]);
+      return;
+    }
+    const query = driverSearch.trim().toLowerCase();
+    const filtered = driverOptions.filter(d => 
+      d.label.toLowerCase().includes(query) || d.value.toLowerCase().includes(query)
+    );
+    setDriverSuggestions(filtered);
+  }, [driverSearch, drivers]);
+
+  useEffect(() => setDriverHighlightIndex(-1), [driverSuggestions]);
+
+  const handleDriverKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = driverSuggestions[0];
+      if (firstMatch && driverSearch && firstMatch.label.toLowerCase().startsWith(driverSearch.toLowerCase())) {
+        setFormData(prev => ({ ...prev, driver: firstMatch.value }));
+        setDriverSearch(firstMatch.label);
+        setShowDriverDropdown(false);
+        setDriverHighlightIndex(-1);
+        setErrors(prev => ({ ...prev, driver: '' }));
+        return;
+      }
+    }
+    if (!showDriverDropdown || driverSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setDriverHighlightIndex(prev => prev < driverSuggestions.length - 1 ? prev + 1 : 0); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setDriverHighlightIndex(prev => prev > 0 ? prev - 1 : driverSuggestions.length - 1); }
+    else if (e.key === 'Enter') {
+      if (driverHighlightIndex >= 0 && driverHighlightIndex < driverSuggestions.length) {
+        e.preventDefault();
+        const selected = driverSuggestions[driverHighlightIndex];
+        setFormData(prev => ({ ...prev, driver: selected.value }));
+        setDriverSearch(selected.label);
+        setShowDriverDropdown(false);
+        setDriverHighlightIndex(-1);
+        setErrors(prev => ({ ...prev, driver: '' }));
+      }
+    } else if (e.key === 'Escape') { setShowDriverDropdown(false); setDriverHighlightIndex(-1); }
   };
 
   // ------------- BALANCE PAID BY AUTOCOMPLETE -------------
@@ -410,18 +528,57 @@ export default function LorryHireForm() {
       }));
 
       // Update search inputs for UI feedback
+      let newFromCity = formData.fromCity, newFromState = formData.fromState, newFromPincode = formData.fromPincode;
       if (fromBranch) {
         const branchObj = branches.find(b => b._id === fromBranch);
-        if (branchObj) setFromBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+        if (branchObj) {
+          setFromBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+          newFromCity = branchObj.city || '';
+          newFromState = branchObj.state || '';
+          newFromPincode = branchObj.pincode || '';
+        }
       }
+      
+      let newToCity = '', newToState = '', newToPincode = '';
       if (toBranch) {
         const branchObj = branches.find(b => b._id === toBranch);
-        if (branchObj) setToBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+        if (branchObj) {
+          setToBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
+          newToCity = branchObj.city || '';
+          newToState = branchObj.state || '';
+          newToPincode = branchObj.pincode || '';
+        }
       }
+      
+      let newDriver = formData.driver, newDriverSearch = driverSearch;
       if (truck) {
         const truckObj = vehicles.find(v => v._id === truck);
-        if (truckObj) setTruckSearch(truckObj.vehicleNumber || '');
+        if (truckObj) {
+          setTruckSearch(truckObj.vehicleNumber || '');
+          const truckDriver = truckObj.driver;
+          if (truckDriver) {
+            const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+            const driverObj = drivers.find(d => d._id === did);
+            if (driverObj) {
+              newDriver = driverObj._id;
+              newDriverSearch = driverObj.name;
+            }
+          }
+        }
       }
+      
+      setDriverSearch(newDriverSearch);
+      
+      setFormData(p => ({
+        ...p,
+        fromCity: newFromCity,
+        fromState: newFromState,
+        fromPincode: newFromPincode,
+        toCity: newToCity,
+        toState: newToState,
+        toPincode: newToPincode,
+        driver: newDriver
+      }));
     } else {
       // Sum LR charges for the new challan being added
       const newChallanLRTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
@@ -443,7 +600,10 @@ export default function LorryHireForm() {
   const calculateBalance = () => {
     const total = Number(formData.totalAmount) || 0;
     const advance = Number(formData.advanceAmount) || 0;
-    return total - advance;
+    const comm = Number(formData.commission) || 0;
+    const tdsAmt = Number(formData.tds) || 0;
+    const hamaliAmt = Number(formData.hamali) || 0;
+    return total - advance - comm - tdsAmt + hamaliAmt;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -470,11 +630,22 @@ export default function LorryHireForm() {
       const payload = {
         date: formData.date,
         fromBranch: formData.fromBranch,
+        fromCity: formData.fromCity,
+        fromState: formData.fromState,
+        fromPincode: formData.fromPincode,
         toBranch: formData.toBranch,
+        toCity: formData.toCity,
+        toState: formData.toState,
+        toPincode: formData.toPincode,
         truckNo: formData.truckNo,
+        driver: formData.driver,
+        modeOfTransport: formData.modeOfTransport,
         challans: selectedChallans.map(c => c._id),
         totalAmount: Number(formData.totalAmount) || 0,
         advanceAmount: Number(formData.advanceAmount) || 0,
+        commission: Number(formData.commission) || 0,
+        hamali: Number(formData.hamali) || 0,
+        tds: Number(formData.tds) || 0,
         balanceAmount: calculateBalance(),
         balancePaidBy: formData.balancePaidBy || null,
         status: formData.status,
@@ -638,8 +809,21 @@ export default function LorryHireForm() {
                       <div
                         key={suggestion.value}
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
+                          let newDriver = formData.driver;
+                          let newDriverSearch = driverSearch;
+                          const truckDriver = suggestion.original?.driver;
+                          if (truckDriver) {
+                             const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+                             const driverObj = drivers.find(d => d._id === did);
+                             if (driverObj) {
+                               newDriver = driverObj._id;
+                               newDriverSearch = driverObj.name;
+                             }
+                          }
+                          
+                          setFormData(prev => ({ ...prev, truckNo: suggestion.value, driver: newDriver }));
                           setTruckSearch(suggestion.label);
+                          setDriverSearch(newDriverSearch);
                           setShowTruckDropdown(false);
                           setTruckHighlightIndex(-1);
                           setErrors(prev => ({ ...prev, truckNo: '' }));
@@ -654,45 +838,45 @@ export default function LorryHireForm() {
                 )}
               </div>
 
-              {/* From Branch Dropdown */}
+              {/* Driver Dropdown */}
               <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">From Branch <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Driver Name</Label>
                 <div className="relative">
-                  {fromBranchSearch && fromBranchSuggestions.length > 0 && fromBranchSuggestions[0].label.toLowerCase().startsWith(fromBranchSearch.toLowerCase()) && (
+                  {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{fromBranchSuggestions[0].label.slice(0, fromBranchSearch.length)}</span>
-                      <span>{fromBranchSuggestions[0].label.slice(fromBranchSearch.length)}</span>
+                      <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
+                      <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
                     </div>
                   )}
                   <Input
-                    value={fromBranchSearch}
+                    value={driverSearch}
                     onChange={(e) => {
-                      setFromBranchSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, fromBranch: '' }));
+                      setDriverSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, driver: '' }));
                     }}
-                    onFocus={() => setShowFromBranchDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowFromBranchDropdown(false), 250)}
-                    onKeyDown={handleFromBranchKeyDown}
-                    placeholder="Search or type Branch..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.fromBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    onFocus={() => setShowDriverDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDriverDropdown(false), 250)}
+                    onKeyDown={handleDriverKeyDown}
+                    placeholder="Search or type Driver..."
+                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.driver ? 'border-red-500' : 'border-gray-200'}`}
                   />
                 </div>
-                {renderError('fromBranch')}
+                {renderError('driver')}
 
-                {showFromBranchDropdown && fromBranchSuggestions.length > 0 && (
+                {showDriverDropdown && driverSuggestions.length > 0 && (
                   <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                    {fromBranchSuggestions.map((suggestion, index) => (
+                    {driverSuggestions.map((suggestion, index) => (
                       <div
                         key={suggestion.value}
                         onClick={() => {
-                          setFormData(prev => ({ ...prev, fromBranch: suggestion.value }));
-                          setFromBranchSearch(suggestion.label);
-                          setShowFromBranchDropdown(false);
-                          setFromBranchHighlightIndex(-1);
-                          setErrors(prev => ({ ...prev, fromBranch: '' }));
+                          setFormData(prev => ({ ...prev, driver: suggestion.value }));
+                          setDriverSearch(suggestion.label);
+                          setShowDriverDropdown(false);
+                          setDriverHighlightIndex(-1);
+                          setErrors(prev => ({ ...prev, driver: '' }));
                         }}
-                        onMouseEnter={() => setFromBranchHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${fromBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        onMouseEnter={() => setDriverHighlightIndex(index)}
+                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${driverHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -700,52 +884,285 @@ export default function LorryHireForm() {
                   </div>
                 )}
               </div>
+              
+              {/* Mode of Transport */}
+              <div className="space-y-1 relative pb-4 flex flex-col justify-end">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Mode of Transport <span className="text-red-500">*</span></Label>
+                <select
+                  value={formData.modeOfTransport}
+                  onChange={(e) => setFormData(prev => ({ ...prev, modeOfTransport: e.target.value }))}
+                  className="flex h-10 w-full rounded-lg border border-gray-200 bg-transparent px-3 text-sm focus-visible:outline-none focus:border-brand-primary"
+                >
+                  <option value="1">1 - Road</option>
+                  <option value="2">2 - Rail</option>
+                  <option value="3">3 - Air</option>
+                  <option value="4">4 - Ship</option>
+                </select>
+              </div>
 
-              {/* To Branch Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">To Branch <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  {toBranchSearch && toBranchSuggestions.length > 0 && toBranchSuggestions[0].label.toLowerCase().startsWith(toBranchSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{toBranchSuggestions[0].label.slice(0, toBranchSearch.length)}</span>
-                      <span>{toBranchSuggestions[0].label.slice(toBranchSearch.length)}</span>
+              {/* From Branch Dropdown */}
+
+              {/* From Branch Row */}
+              <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-3.5 items-start">
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">From Branch <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {fromBranchSearch && fromBranchSuggestions.length > 0 && fromBranchSuggestions[0].label.toLowerCase().startsWith(fromBranchSearch.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{fromBranchSuggestions[0].label.slice(0, fromBranchSearch.length)}</span>
+                        <span>{fromBranchSuggestions[0].label.slice(fromBranchSearch.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      value={fromBranchSearch}
+                      onChange={(e) => {
+                        setFromBranchSearch(e.target.value);
+                        setFormData(prev => ({ ...prev, fromBranch: '' }));
+                      }}
+                      onFocus={() => setShowFromBranchDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowFromBranchDropdown(false), 250)}
+                      onKeyDown={handleFromBranchKeyDown}
+                      placeholder="Search or type Branch..."
+                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.fromBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {renderError('fromBranch')}
+
+                  {showFromBranchDropdown && fromBranchSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {fromBranchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.value}
+                          onClick={() => {
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              fromBranch: suggestion.value,
+                              fromCity: suggestion.original.city || '',
+                              fromState: suggestion.original.state || '',
+                              fromPincode: suggestion.original.pincode || ''
+                            }));
+                            setFromBranchSearch(suggestion.label);
+                            setShowFromBranchDropdown(false);
+                            setFromBranchHighlightIndex(-1);
+                            setErrors(prev => ({ ...prev, fromBranch: '' }));
+                          }}
+                          onMouseEnter={() => setFromBranchHighlightIndex(index)}
+                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${fromBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          {suggestion.label}
+                        </div>
+                      ))}
                     </div>
                   )}
-                  <Input
-                    value={toBranchSearch}
-                    onChange={(e) => {
-                      setToBranchSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, toBranch: '' }));
-                    }}
-                    onFocus={() => setShowToBranchDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowToBranchDropdown(false), 250)}
-                    onKeyDown={handleToBranchKeyDown}
-                    placeholder="Search or type Branch..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-gray-200'}`}
-                  />
                 </div>
-                {renderError('toBranch')}
-
-                {showToBranchDropdown && toBranchSuggestions.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                    {toBranchSuggestions.map((suggestion, index) => (
-                      <div
-                        key={suggestion.value}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, toBranch: suggestion.value }));
-                          setToBranchSearch(suggestion.label);
-                          setShowToBranchDropdown(false);
-                          setToBranchHighlightIndex(-1);
-                          setErrors(prev => ({ ...prev, toBranch: '' }));
-                        }}
-                        onMouseEnter={() => setToBranchHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        {suggestion.label}
+                <div className="space-y-1 relative">
+                  <Label className="text-xs text-gray-500">Pincode</Label>
+                  <div className="relative">
+                    <Input 
+                      value={formData.fromPincode} 
+                      onChange={async e => {
+                        const pin = e.target.value;
+                        setFormData(p => ({...p, fromPincode: pin}));
+                        if(pin.length === 6) {
+                          try {
+                            setFromPincodeLoading(true);
+                            const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+                            const data = await res.json();
+                            if(data && data[0] && data[0].Status === 'Success') {
+                               const postOffices = data[0].PostOffice;
+                               const uniqueCityStates = Array.from(new Set(postOffices.map((po: any) => JSON.stringify({ city: po.District, state: po.State }))))
+                                 .map((str: any) => JSON.parse(str));
+                               
+                               // If all post offices in this pincode belong to the EXACT same City and State (no confusion)
+                               if (uniqueCityStates.length === 1) {
+                                 setFormData(p => ({...p, fromCity: uniqueCityStates[0].city, fromState: uniqueCityStates[0].state}));
+                                 setShowFromPincodeDropdown(false);
+                               } else {
+                                 // If they span across multiple cities/districts, show the list so user can choose the exact area
+                                 const places = postOffices.map((po: any) => ({ name: po.Name, city: po.District, state: po.State }));
+                                 setFromPincodeOptions(places);
+                                 setShowFromPincodeDropdown(true);
+                               }
+                            }
+                          } catch(e) {
+                          } finally {
+                            setFromPincodeLoading(false);
+                          }
+                        } else {
+                          setShowFromPincodeDropdown(false);
+                        }
+                      }} 
+                      className="h-10 text-sm rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/30" 
+                      placeholder="Enter Pincode"
+                      maxLength={6}
+                    />
+                    {fromPincodeLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 text-brand-primary animate-spin" />
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
+                  {showFromPincodeDropdown && fromPincodeOptions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-[280px] bg-white rounded-xl border border-gray-100 p-2 shadow-xl max-h-[300px] overflow-y-auto">
+                      <div className="text-[10px] font-bold text-gray-400 px-2 pb-1.5 pt-1 uppercase tracking-wider">Select Location</div>
+                      <div className="space-y-0.5">
+                        {fromPincodeOptions.map((opt, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, fromCity: opt.city, fromState: opt.state }));
+                              setShowFromPincodeDropdown(false);
+                            }}
+                            className="px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-primary/5 transition-colors border border-transparent hover:border-brand-primary/10"
+                          >
+                            <div className="text-sm font-semibold text-gray-700">{opt.name}</div>
+                            <div className="text-xs text-gray-500">{opt.city}, {opt.state}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">City</Label>
+                  <Input disabled value={formData.fromCity} placeholder="Enter city" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">State</Label>
+                  <Input disabled value={formData.fromState} placeholder="Enter state" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
+                </div>
+              </div>
+
+              {/* To Branch Dropdown */}
+              {/* To Branch Row */}
+              <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-3.5 items-start">
+                <div className="space-y-1 relative">
+                  <Label className="text-xs font-semibold text-gray-600 uppercase">To Branch <span className="text-red-500">*</span></Label>
+                  <div className="relative">
+                    {toBranchSearch && toBranchSuggestions.length > 0 && toBranchSuggestions[0].label.toLowerCase().startsWith(toBranchSearch.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{toBranchSuggestions[0].label.slice(0, toBranchSearch.length)}</span>
+                        <span>{toBranchSuggestions[0].label.slice(toBranchSearch.length)}</span>
+                      </div>
+                    )}
+                    <Input
+                      value={toBranchSearch}
+                      onChange={(e) => {
+                        setToBranchSearch(e.target.value);
+                        setFormData(prev => ({ ...prev, toBranch: '' }));
+                      }}
+                      onFocus={() => setShowToBranchDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowToBranchDropdown(false), 250)}
+                      onKeyDown={handleToBranchKeyDown}
+                      placeholder="Search or type Branch..."
+                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    />
+                  </div>
+                  {renderError('toBranch')}
+
+                  {showToBranchDropdown && toBranchSuggestions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                      {toBranchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={suggestion.value}
+                          onClick={() => {
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              toBranch: suggestion.value,
+                              toCity: suggestion.original.city || '',
+                              toState: suggestion.original.state || '',
+                              toPincode: suggestion.original.pincode || ''
+                            }));
+                            setToBranchSearch(suggestion.label);
+                            setShowToBranchDropdown(false);
+                            setToBranchHighlightIndex(-1);
+                            setErrors(prev => ({ ...prev, toBranch: '' }));
+                          }}
+                          onMouseEnter={() => setToBranchHighlightIndex(index)}
+                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          {suggestion.label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1 relative">
+                  <Label className="text-xs text-gray-500">Pincode</Label>
+                  <div className="relative">
+                    <Input 
+                      value={formData.toPincode} 
+                      onChange={async e => {
+                        const pin = e.target.value;
+                        setFormData(p => ({...p, toPincode: pin}));
+                        if(pin.length === 6) {
+                          try {
+                            setToPincodeLoading(true);
+                            const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+                            const data = await res.json();
+                            if(data && data[0] && data[0].Status === 'Success') {
+                               const postOffices = data[0].PostOffice;
+                               const uniqueCityStates = Array.from(new Set(postOffices.map((po: any) => JSON.stringify({ city: po.District, state: po.State }))))
+                                 .map((str: any) => JSON.parse(str));
+                               
+                               // If all post offices in this pincode belong to the EXACT same City and State (no confusion)
+                               if (uniqueCityStates.length === 1) {
+                                 setFormData(p => ({...p, toCity: uniqueCityStates[0].city, toState: uniqueCityStates[0].state}));
+                                 setShowToPincodeDropdown(false);
+                               } else {
+                                 // If they span across multiple cities/districts, show the list so user can choose the exact area
+                                 const places = postOffices.map((po: any) => ({ name: po.Name, city: po.District, state: po.State }));
+                                 setToPincodeOptions(places);
+                                 setShowToPincodeDropdown(true);
+                               }
+                            }
+                          } catch(e) {
+                          } finally {
+                            setToPincodeLoading(false);
+                          }
+                        } else {
+                          setShowToPincodeDropdown(false);
+                        }
+                      }} 
+                      className="h-10 text-sm rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/30" 
+                      placeholder="Enter Pincode"
+                      maxLength={6}
+                    />
+                    {toPincodeLoading && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 text-brand-primary animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  {showToPincodeDropdown && toPincodeOptions.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-[280px] bg-white rounded-xl border border-gray-100 p-2 shadow-xl max-h-[300px] overflow-y-auto">
+                      <div className="text-[10px] font-bold text-gray-400 px-2 pb-1.5 pt-1 uppercase tracking-wider">Select Location</div>
+                      <div className="space-y-0.5">
+                        {toPincodeOptions.map((opt, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, toCity: opt.city, toState: opt.state }));
+                              setShowToPincodeDropdown(false);
+                            }}
+                            className="px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-primary/5 transition-colors border border-transparent hover:border-brand-primary/10"
+                          >
+                            <div className="text-sm font-semibold text-gray-700">{opt.name}</div>
+                            <div className="text-xs text-gray-500">{opt.city}, {opt.state}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">City</Label>
+                  <Input disabled value={formData.toCity} placeholder="Enter city" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-500">State</Label>
+                  <Input disabled value={formData.toState} placeholder="Enter state" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
+                </div>
               </div>
 
               {/* Challan Search removed from here and moved to top */}
@@ -858,6 +1275,39 @@ export default function LorryHireForm() {
                   type="number"
                   name="advanceAmount"
                   value={formData.advanceAmount}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Commission</Label>
+                <Input
+                  type="number"
+                  name="commission"
+                  value={formData.commission}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">Hamali</Label>
+                <Input
+                  type="number"
+                  name="hamali"
+                  value={formData.hamali}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
+                />
+              </div>
+              <div className="space-y-1 relative pb-4">
+                <Label className="text-xs font-semibold text-gray-600 uppercase">TDS</Label>
+                <Input
+                  type="number"
+                  name="tds"
+                  value={formData.tds}
                   onChange={handleChange}
                   placeholder="0.00"
                   className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"

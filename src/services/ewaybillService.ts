@@ -150,4 +150,40 @@ export class EwayBillService {
       throw error;
     }
   }
+
+  /**
+   * Updates Vehicle Number in an existing E-Way Bill (Part-B)
+   * @param payload JSON payload formatted exactly for Masters India updateVehicleNumber API
+   */
+  public static async updateVehicleNumber(payload: any): Promise<any> {
+    try {
+      const token = await this.getAuthToken();
+      const url = `${this.API_BASE}/updateVehicleNumber/`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `JWT ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (data?.results?.message && typeof data.results.message === 'object') {
+        return data.results.message;
+      } else if (data?.results?.errorMessage || data?.results?.message) {
+        throw new Error(data.results.errorMessage || data.results.message);
+      } else if (data?.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error('Invalid response structure from Update Vehicle API');
+      }
+
+    } catch (error: any) {
+      console.error('Error updating vehicle number:', error);
+      throw error;
+    }
+  }
 }

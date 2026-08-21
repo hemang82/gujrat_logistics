@@ -35,6 +35,7 @@ export interface IUser extends Document {
   };
 
   isDeleted?: boolean;
+  isActive?: boolean;
   createdAt: Date;
 }
 
@@ -79,6 +80,7 @@ const UserSchema = new Schema<IUser>(
       }
     },
     isDeleted: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

@@ -9,6 +9,8 @@ import { addCashTransaction } from '@/lib/ledgerUtils';
 import Booking from '@/models/Booking'; // Required to populate nested LRs in Challan
 import Branch from '@/models/Branch';
 import Vehicle from '@/models/Vehicle';
+import User from '@/models/User';
+import { EwayBillService } from '@/services/ewaybillService';
 
 // Helper to generate next Lorry Hire Voucher No
 async function generateNextVoucherNo() {
@@ -145,7 +147,10 @@ export async function POST(request: Request) {
     // Auto-calculate status based on balance
     const total = Number(body.totalAmount) || 0;
     const advance = Number(body.advanceAmount) || 0;
-    body.balanceAmount = total - advance; // Force strict backend calculation
+    const comm = Number(body.commission) || 0;
+    const tds = Number(body.tds) || 0;
+    const hamali = Number(body.hamali) || 0;
+    body.balanceAmount = total - advance - comm - tds + hamali; // Force strict backend calculation
     
     let finalStatus = body.status || 'pending';
     
@@ -154,22 +159,66 @@ export async function POST(request: Request) {
       finalStatus = 'completed';
     }
 
+    const logisticId = (session.user as any).role === 'logistic' ? session.user.id : (session.user as any).logisticId;
+    const userDoc = await User.findById(logisticId);
+    const hasEwbAccess = userDoc?.ewbApiAccess || false;
+
     const newDoc = new LorryHire({
       ...body,
-      logisticId: (session.user as any).role === 'logistic' ? session.user.id : (session.user as any).logisticId,
+      logisticId,
       status: finalStatus,
       voucherNo,
+      hasEwbAccess,
       createdBy: session.user.id
     });
 
     await newDoc.save();
 
-    // Mark the selected challans as in_transit
+    // Cascade truck and driver to Challans and Bookings
     if (body.challans && body.challans.length > 0) {
+      // 1. Update Challan with truck and driver, and set status to 'in_transit'
       await Challan.updateMany(
         { _id: { $in: body.challans } },
-        { $set: { status: 'in_transit' } }
+        { 
+          $set: { 
+            status: 'in_transit',
+            truckNo: body.truckNo,
+            driverName: body.driver
+          } 
+        }
       );
+
+      // 2. Fetch all bookings inside these challans to update them
+      const challansData = await Challan.find({ _id: { $in: body.challans } }).select('bookings');
+      let allBookingIds: string[] = [];
+      challansData.forEach(c => {
+        if (c.bookings) {
+          allBookingIds = allBookingIds.concat(c.bookings.map((b: any) => b.toString()));
+        }
+      });
+
+      // 3. Update Bookings with truck and driver
+      if (allBookingIds.length > 0) {
+        await Booking.updateMany(
+          { _id: { $in: allBookingIds } },
+          { 
+            $set: { 
+              vehicle: body.truckNo,
+              driver: body.driver 
+            }
+          }
+        );
+      }
+    }
+
+    // 4. Update Truck and Driver status to 'on-trip'
+    if (body.truckNo) {
+      const Vehicle = require('@/models/Vehicle').default;
+      await Vehicle.findByIdAndUpdate(body.truckNo, { status: 'on-trip' });
+    }
+    if (body.driver) {
+      const Driver = require('@/models/Driver').default;
+      await Driver.findByIdAndUpdate(body.driver, { status: 'on-trip' });
     }
 
     // Ledger: If advance is paid, debit from origin branch
@@ -184,6 +233,73 @@ export async function POST(request: Request) {
         createdBy: session.user.id
       });
     }
+
+    // ---------------------------------------------------------
+    // E-WAY BILL: Auto-update Vehicle (Part B) API
+    // ---------------------------------------------------------
+    try {
+      // 1. Check if user has API access
+      const hasEwbAccess = (session.user as any).ewbApiAccess === true;
+      
+      if (hasEwbAccess && allBookingIds.length > 0 && body.truckNo) {
+        // Fetch actual vehicle string (e.g. GJ01AB1234)
+        const vehicleDoc = await Vehicle.findById(body.truckNo);
+        const truckString = vehicleDoc ? vehicleDoc.vehicleNumber.replace(/\s+/g, '') : '';
+
+        // Fetch logistic user GSTIN
+        const logisticUser = await User.findById(newDoc.logisticId);
+        const userGstin = logisticUser?.gstNo || process.env.MASTERS_INDIA_GSTIN;
+
+        if (truckString && userGstin) {
+          // Find all bookings that have an EWB Number
+          const ewbBookings = await Booking.find({ 
+            _id: { $in: allBookingIds }, 
+            ewayBillNo: { $exists: true, $type: 'string', $ne: '' } 
+          });
+
+          // Loop in background (using Promise.allSettled for batched execution)
+          // We won't block the request if it fails.
+          const apiPromises = ewbBookings.map(b => {
+            // format date to DD/MM/YYYY
+            const bDate = new Date(b.bookingDate);
+            const formattedDate = `${bDate.getDate().toString().padStart(2, '0')}/${(bDate.getMonth()+1).toString().padStart(2, '0')}/${bDate.getFullYear()}`;
+
+            const payload = {
+              userGstin: userGstin,
+              eway_bill_number: Number(b.ewayBillNo), // API expects number
+              vehicle_number: truckString,
+              vehicle_type: "r",
+              place_of_consignor: body.fromCity || "",
+              state_of_consignor: body.fromState || "",
+              reason_code_for_vehicle_updation: "First time", // As requested by user
+              reason_for_vehicle_updation: "",
+              transporter_document_number: b.lrNumber || "",
+              transporter_document_date: formattedDate,
+              mode_of_transport: Number(body.modeOfTransport) || 1,
+              data_source: ""
+            };
+
+            return EwayBillService.updateVehicleNumber(payload);
+          });
+
+          // Execute all calls in parallel (awaiting here takes a few seconds but ensures it fires)
+          if (apiPromises.length > 0) {
+            Promise.allSettled(apiPromises).then((results) => {
+               // Log results silently in background
+               results.forEach((res, idx) => {
+                 if(res.status === 'rejected') {
+                   console.error(`EWB Vehicle Update failed for LR ${ewbBookings[idx].lrNumber}:`, res.reason);
+                 }
+               });
+            });
+          }
+        }
+      }
+    } catch (ewbErr) {
+      console.error("Error initiating EWB vehicle update batch:", ewbErr);
+      // We do NOT block the overall Lorry Hire Save process if EWB batch fails
+    }
+    // ---------------------------------------------------------
 
     return NextResponse.json({ success: true, message: 'Lorry Hire created successfully', data: newDoc }, { status: 201 });
   } catch (error: any) {

@@ -22,6 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .populate('fromBranch', 'name code')
       .populate('toBranch', 'name code')
       .populate('truckNo', 'vehicleNumber')
+      .populate('driver', 'name')
       .populate('balancePaidBy', 'name code')
       .populate({
         path: 'challans',
@@ -71,7 +72,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     // Auto-calculate status and balance
     const total = Number(body.totalAmount) || 0;
     const advance = Number(body.advanceAmount) || 0;
-    body.balanceAmount = total - advance;
+    const comm = Number(body.commission) || 0;
+    const tds = Number(body.tds) || 0;
+    const hamali = Number(body.hamali) || 0;
+    body.balanceAmount = total - advance - comm - tds + hamali;
     
     if (total > 0 && advance >= total) {
       body.status = 'completed';

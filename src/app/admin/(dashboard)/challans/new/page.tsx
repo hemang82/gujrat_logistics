@@ -247,6 +247,7 @@ export default function AddChallanPage() {
             weight: weight,
             freight: freight,
             totalAmount: totalAmount,
+            paymentCondition: b.paymentCondition,
             charges: b.charges || {},
             destinationBranch: b.destinationBranch || 'N/A'
           };
@@ -393,6 +394,7 @@ export default function AddChallanPage() {
         weight: weight,
         freight: freight,
         totalAmount: totalAmount,
+        paymentCondition: booking.paymentCondition,
         charges: booking.charges || {},
         destinationBranch: booking.destinationBranch || 'N/A'
       };
@@ -439,6 +441,7 @@ export default function AddChallanPage() {
       weight: weight,
       freight: freight,
       totalAmount: totalAmount,
+      paymentCondition: booking.paymentCondition,
       charges: booking.charges || {},
       destinationBranch: booking.destinationBranch || 'N/A'
     };
@@ -470,17 +473,9 @@ export default function AddChallanPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.challanNumber) newErrors.challanNumber = 'Please enter Challan Number';
     if (!formData.challanDate) newErrors.challanDate = 'Please enter Challan Date';
-    if (!formData.truckNo) newErrors.truckNo = 'Please select a valid Truck No.';
     if (loadedLrs.length === 0) newErrors.loadedLrs = 'Please load at least one LR No';
-    
     if (formData.agent && !agentsList.some(a => a.value === formData.agent)) {
       newErrors.agent = 'Please select a valid agent from the list';
-    }
-    if (memoSearch && !formData.memoDestinationBranch) {
-      newErrors.memoDestinationBranch = 'Please select a valid Memo Destination Branch';
-    }
-    if (driverSearch && !formData.driverName) {
-      newErrors.driverName = 'Please select a valid Driver';
     }
 
     setErrors(newErrors);
@@ -818,7 +813,7 @@ export default function AddChallanPage() {
             {/* Loaded LRs Table List */}
             {pendingLrs.length > 0 && (
               <>
-              <div className="border border-gray-100 rounded-lg overflow-hidden mt-2 bg-white">
+              <div className="overflow-x-auto border border-gray-100 rounded-lg overflow-hidden mt-2 bg-white min-h-[240px]">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-gray-50 text-gray-500 uppercase tracking-wider font-bold">
                     <tr>
@@ -847,7 +842,9 @@ export default function AddChallanPage() {
                       <th className="p-3 text-center">Packages</th>
                       <th className="p-3 text-center">Weight (KG)</th>
                       <th className="p-3 text-center">Freight</th>
-                      <th className="p-3 text-center">Total Amt</th>
+                      <th className="p-3 text-center">To Pay</th>
+                      <th className="p-3 text-center">Paid</th>
+                      <th className="p-3 text-center">T.B.B</th>
                       <th className="p-3">Destination</th>
                       <th className="p-3 text-center">Action</th>
                     </tr>
@@ -857,8 +854,8 @@ export default function AddChallanPage() {
                       const isChecked = !!selectedLrIds[item._id];
                       return (
                         <tr 
-                          key={item._id} 
-                          className={`hover:bg-gray-50/50 transition-colors ${!isChecked ? 'opacity-50 line-through text-gray-400 bg-gray-50/30' : ''}`}
+                           key={item._id} 
+                           className={`hover:bg-gray-50/50 transition-colors relative hover:z-50 ${!isChecked ? 'opacity-50 line-through text-gray-400 bg-gray-50/30' : ''}`}
                         >
                           <td className="p-3 w-10 text-center">
                             <input 
@@ -875,27 +872,86 @@ export default function AddChallanPage() {
                             />
                           </td>
                           <td className="p-3 text-center text-gray-400">{index + 1}</td>
-                          <td className={`p-3 font-bold ${isChecked ? 'text-brand-primary' : 'text-gray-400'}`}>#{item.lrNumber}</td>
+                          <td className={`p-3 font-bold ${isChecked ? 'text-brand-primary' : 'text-gray-400'}`}>LR- {item.lrNumber}</td>
                           <td className="p-3">{item.consignorName}</td>
                           <td className="p-3">{item.consigneeName}</td>
                           <td className="p-3 text-center">{item.pkg}</td>
                           <td className="p-3 text-center">{item.weight} KG</td>
                           <td className="p-3 text-center">₹{item.freight}</td>
-                          <td className="p-3 text-center font-bold relative group">
-                            <span className="cursor-help border-b border-dotted border-gray-400">₹{item.totalAmount}</span>
-                            <div className="absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 bottom-full mb-2 w-48 transition-all pointer-events-none text-left font-normal">
-                              <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
-                              {(Number(item.charges?.freightAmount) > 0 || Number(item.freight) > 0) && <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges?.freightAmount || item.freight}</span></div>}
-                              {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
-                              {Number(item.charges?.hamali) > 0 && <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges.hamali}</span></div>}
-                              {Number(item.charges?.biltyCharge) > 0 && <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges.biltyCharge}</span></div>}
-                              {Number(item.charges?.ddCharge) > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
-                              {Number(item.charges?.gstAmount) > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
-                              <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
-                              
-                              {/* Tooltip arrow */}
-                              <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 border-solid border-t-gray-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"></div>
-                            </div>
+                          <td className="p-3 text-center text-orange-600">
+                            {item.paymentCondition === 'to_pay' ? (
+                              <div className="relative group inline-block">
+                                <span className="cursor-help border-b border-dotted border-orange-400">₹{item.totalAmount}</span>
+                                <div className={`absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 transition-all pointer-events-none text-left font-normal ${
+                                  index === pendingLrs.length - 1 ? 'bottom-full mb-1' : 'top-full mt-1'
+                                }`}>
+                                  <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
+                                  <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges?.freightAmount || item.freight || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges?.hamali || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges?.biltyCharge || 0}</span></div>
+                                  {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
+                                  {Number(item.charges?.surCharge) > 0 && <div className="flex justify-between py-0.5"><span>Surcharge:</span> <span>₹{item.charges.surCharge}</span></div>}
+                                  {Number(item.charges?.ddCharge) > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
+                                  {Number(item.charges?.gstAmount) > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
+                                  <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
+                                  {index === pendingLrs.length - 1 ? (
+                                    <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 border-solid border-t-gray-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"></div>
+                                  ) : (
+                                    <div className="absolute left-1/2 -top-1 -translate-x-1/2 border-solid border-b-gray-900 border-b-[6px] border-x-transparent border-x-[6px] border-t-0"></div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td className="p-3 text-center text-emerald-600">
+                            {item.paymentCondition === 'paid' ? (
+                              <div className="relative group inline-block">
+                                <span className="cursor-help border-b border-dotted border-emerald-400">₹{item.totalAmount}</span>
+                                <div className={`absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 transition-all pointer-events-none text-left font-normal ${
+                                  index === pendingLrs.length - 1 ? 'bottom-full mb-1' : 'top-full mt-1'
+                                }`}>
+                                  <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
+                                  <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges?.freightAmount || item.freight || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges?.hamali || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges?.biltyCharge || 0}</span></div>
+                                  {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
+                                  {Number(item.charges?.surCharge) > 0 && <div className="flex justify-between py-0.5"><span>Surcharge:</span> <span>₹{item.charges.surCharge}</span></div>}
+                                  {Number(item.charges?.ddCharge) > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
+                                  {Number(item.charges?.gstAmount) > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
+                                  <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
+                                  {index === pendingLrs.length - 1 ? (
+                                    <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 border-solid border-t-gray-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"></div>
+                                  ) : (
+                                    <div className="absolute left-1/2 -top-1 -translate-x-1/2 border-solid border-b-gray-900 border-b-[6px] border-x-transparent border-x-[6px] border-t-0"></div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td className="p-3 text-center text-blue-600">
+                            {item.paymentCondition === 'tbb' ? (
+                              <div className="relative group inline-block">
+                                <span className="cursor-help border-b border-dotted border-blue-400">₹{item.totalAmount}</span>
+                                <div className={`absolute z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 bg-gray-900 text-white text-xs rounded shadow-lg p-2.5 right-1/2 translate-x-1/2 transition-all pointer-events-none text-left font-normal ${
+                                  index === pendingLrs.length - 1 ? 'bottom-full mb-1' : 'top-full mt-1'
+                                }`}>
+                                  <div className="font-bold text-gray-300 mb-1 border-b border-gray-700 pb-1">Amount Breakdown</div>
+                                  <div className="flex justify-between py-0.5"><span>Freight:</span> <span>₹{item.charges?.freightAmount || item.freight || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Labour:</span> <span>₹{item.charges?.hamali || 0}</span></div>
+                                  <div className="flex justify-between py-0.5"><span>Bilty:</span> <span>₹{item.charges?.biltyCharge || 0}</span></div>
+                                  {Number(item.charges?.pf) > 0 && <div className="flex justify-between py-0.5"><span>PF:</span> <span>₹{item.charges.pf}</span></div>}
+                                  {Number(item.charges?.surCharge) > 0 && <div className="flex justify-between py-0.5"><span>Surcharge:</span> <span>₹{item.charges.surCharge}</span></div>}
+                                  {Number(item.charges?.ddCharge) > 0 && <div className="flex justify-between py-0.5"><span>DD Charge:</span> <span>₹{item.charges.ddCharge}</span></div>}
+                                  {Number(item.charges?.gstAmount) > 0 && <div className="flex justify-between py-0.5 text-brand-secondary"><span>GST:</span> <span>₹{item.charges.gstAmount}</span></div>}
+                                  <div className="flex justify-between py-0.5 mt-1 border-t border-gray-700 pt-1 font-bold"><span>Total:</span> <span>₹{item.totalAmount}</span></div>
+                                  {index === pendingLrs.length - 1 ? (
+                                    <div className="absolute left-1/2 -bottom-1 -translate-x-1/2 border-solid border-t-gray-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"></div>
+                                  ) : (
+                                    <div className="absolute left-1/2 -top-1 -translate-x-1/2 border-solid border-b-gray-900 border-b-[6px] border-x-transparent border-x-[6px] border-t-0"></div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : '-'}
                           </td>
                           <td className="p-3 uppercase text-brand-primary">{getBranchLabel(item.destinationBranch)}</td>
                           <td className="p-3 text-center">
@@ -915,11 +971,15 @@ export default function AddChallanPage() {
                   </tbody>
                   <tfoot className="bg-brand-primary/5 text-gray-700 font-bold border-t-2 border-brand-primary/20">
                     <tr>
-                      <td colSpan={5} className="p-3 text-right uppercase text-xs">Total LRs: <span className="text-brand-primary text-sm">{loadedLrs.length}</span></td>
+                      <td colSpan={2} className="p-3"></td>
+                      <td className="p-3 text-left uppercase text-xs">Total LRs: <span className="text-brand-primary text-sm">{loadedLrs.length}</span></td>
+                      <td colSpan={2} className="p-3"></td>
                       <td className="p-3 text-center text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.pkg) || 0), 0)}</td>
                       <td className="p-3 text-center text-brand-primary text-sm">{loadedLrs.reduce((acc, curr) => acc + (Number(curr.weight) || 0), 0)} KG</td>
                       <td className="p-3 text-center text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.freight) || 0), 0)}</td>
-                      <td className="p-3 text-center text-brand-primary text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (Number(curr.totalAmount) || 0), 0)}</td>
+                      <td className="p-3 text-center text-orange-600 text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (curr.paymentCondition === 'to_pay' ? (Number(curr.totalAmount) || 0) : 0), 0)}</td>
+                      <td className="p-3 text-center text-emerald-600 text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (curr.paymentCondition === 'paid' ? (Number(curr.totalAmount) || 0) : 0), 0)}</td>
+                      <td className="p-3 text-center text-blue-600 text-sm">₹{loadedLrs.reduce((acc, curr) => acc + (curr.paymentCondition === 'tbb' ? (Number(curr.totalAmount) || 0) : 0), 0)}</td>
                       <td colSpan={2}></td>
                     </tr>
                   </tfoot>
@@ -929,190 +989,8 @@ export default function AddChallanPage() {
             )}
 
             {/* Row 3 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5 pt-2"><div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  {truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckNoSearch.length)}</span>
-                      <span>{truckSuggestions[0].label.slice(truckNoSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={truckNoSearch}
-                    onChange={(e) => {
-                      const val = e.target.value.toUpperCase();
-                      setTruckNoSearch(val);
-                      const exactMatch = vehiclesList.find(v => v.label.toUpperCase() === val);
-                      setFormData(prev => ({ ...prev, truckNo: exactMatch ? exactMatch.value : '' }));
-                      if (errors.truckNo) {
-                        const newErrors = { ...errors };
-                        delete newErrors.truckNo;
-                        setErrors(newErrors);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && truckNoSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckNoSearch.toLowerCase())) {
-                        setTruckNoSearch(truckSuggestions[0].label);
-                        setFormData(prev => ({ ...prev, truckNo: truckSuggestions[0].value }));
-                        setShowTruckDropdown(false);
-                        if (truckSuggestions[0].label.toLowerCase() !== truckNoSearch.toLowerCase()) {
-                          e.preventDefault();
-                        }
-                        return;
-                      }
-                      if (!showTruckDropdown || truckSuggestions.length === 0) return;
-                      
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setTruckHighlightIndex(prev => prev < truckSuggestions.length - 1 ? prev + 1 : 0);
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setTruckHighlightIndex(prev => prev > 0 ? prev - 1 : truckSuggestions.length - 1);
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (truckHighlightIndex >= 0 && truckHighlightIndex < truckSuggestions.length) {
-                          const selected = truckSuggestions[truckHighlightIndex];
-                          setTruckNoSearch(selected.label);
-                          setFormData(prev => ({ ...prev, truckNo: selected.value }));
-                          setShowTruckDropdown(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowTruckDropdown(false);
-                      }
-                    }}
-                    onFocus={() => {
-                      setShowTruckDropdown(true);
-                      if (errors.truckNo) {
-                        const newErrors = { ...errors };
-                        delete newErrors.truckNo;
-                        setErrors(newErrors);
-                      }
-                    }}
-                    onBlur={() => setTimeout(() => setShowTruckDropdown(false), 200)}
-                    placeholder="Search Truck..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
-                  />
-                  {renderError('truckNo')}
-                  
-                  {showTruckDropdown && truckSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {truckSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setTruckNoSearch(suggestion.label);
-                            setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
-                            setShowTruckDropdown(false);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === truckHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span>{suggestion.label}</span>
-                            {suggestion.status && (
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                {suggestion.status.replace('-', ' ')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
-                <div className="relative">
-                  {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
-                      <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={driverSearch}
-                    onChange={(e) => {
-                      setDriverSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, driverName: e.target.value }));
-                      if (errors.driverName) {
-                        const newErrors = { ...errors };
-                        delete newErrors.driverName;
-                        setErrors(newErrors);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Tab' && driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase())) {
-                        setDriverSearch(driverSuggestions[0].label);
-                        setFormData(prev => ({ ...prev, driverName: driverSuggestions[0].value }));
-                        setShowDriverDropdown(false);
-                        if (driverSuggestions[0].label.toLowerCase() !== driverSearch.toLowerCase()) {
-                          e.preventDefault();
-                        }
-                        return;
-                      }
-                      if (!showDriverDropdown || driverSuggestions.length === 0) return;
-                      
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setDriverHighlightIndex(prev => prev < driverSuggestions.length - 1 ? prev + 1 : 0);
-                      } else if (e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        setDriverHighlightIndex(prev => prev > 0 ? prev - 1 : driverSuggestions.length - 1);
-                      } else if (e.key === 'Enter') {
-                        e.preventDefault();
-                        if (driverHighlightIndex >= 0 && driverHighlightIndex < driverSuggestions.length) {
-                          const selected = driverSuggestions[driverHighlightIndex];
-                          setDriverSearch(selected.label);
-                          setFormData(prev => ({ ...prev, driverName: selected.value }));
-                          setShowDriverDropdown(false);
-                        }
-                      } else if (e.key === 'Escape') {
-                        setShowDriverDropdown(false);
-                      }
-                    }}
-                    onFocus={() => setShowDriverDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowDriverDropdown(false), 200)}
-                    placeholder="Search Driver..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.driverName ? 'border-red-500' : 'border-gray-200'}`}
-                    autoComplete="off"
-                  />
-                  {renderError('driverName')}
-                  
-                  {showDriverDropdown && driverSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {driverSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          onMouseDown={() => {
-                            setDriverSearch(suggestion.label);
-                            setFormData(prev => ({ ...prev, driverName: suggestion.value }));
-                            setShowDriverDropdown(false);
-                          }}
-                          className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${index === driverHighlightIndex
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'hover:bg-gray-50 text-gray-800'
-                            }`}
-                        >
-                          <div className="flex justify-between items-center w-full">
-                            <span>{suggestion.label}</span>
-                            {suggestion.status && (
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize ${suggestion.status === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                {suggestion.status.replace('-', ' ')}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            <div className="space-y-1">
                 <Label className="text-xs font-bold text-gray-600 uppercase">Memo Destination Branch</Label>
                 <div className="relative">
                   <BranchAutocomplete
@@ -1197,21 +1075,7 @@ export default function AddChallanPage() {
               </div>
               </div>
 
-            {/* Row 4 */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Truck Freight</Label>
-                <Input name="truckFreight" value={formData.truckFreight} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Advance Amount</Label>
-                <Input name="advanceAmount" value={formData.advanceAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-bold text-gray-600 uppercase">Commission</Label>
-                <Input name="commission" value={formData.commission} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg" />
-              </div>
-            </div>
+
 
             {/* Row 5 */}
             <div className="space-y-2 w-full pt-2">

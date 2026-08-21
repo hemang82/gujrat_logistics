@@ -11,18 +11,23 @@ import Link from 'next/link';
 import { formatDate } from '@/lib/dateUtils';
 import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 
-// Reusable component for a single half-page LR Copy
-const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any, copyType: string, trackingUrl: string, logisticName: string }) => {
+const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: { booking: any, copyType: string, trackingUrl: string, logisticName: string, companyLogo?: string }) => {
   return (
-    <div className="w-full flex flex-col h-[14.5cm] p-2 bg-white relative overflow-hidden">
+    <div className="w-full flex flex-col h-[14.2cm] p-2 bg-white relative overflow-hidden">
       
       {/* Top Header - Company & LR Details */}
-      <div className="flex justify-between items-start border-b-2 border-brand-primary pb-2 mb-2">
+      <div className="flex justify-between items-center border-b-2 border-brand-primary pb-2 mb-2">
         {/* Left: Logo & Company Name */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shrink-0 print:border print:border-brand-primary">
-            <Truck className="w-7 h-7 text-white print:text-brand-primary" />
-          </div>
+          {companyLogo ? (
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center bg-white">
+              <img src={companyLogo} alt={logisticName} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-12 h-12 bg-brand-primary rounded-xl flex items-center justify-center shrink-0 print:border print:border-brand-primary">
+              <Truck className="w-7 h-7 text-white print:text-brand-primary" />
+            </div>
+          )}
           <div>
             <h1 className="text-xl font-bold text-brand-text-primary uppercase tracking-wide m-0 leading-tight">{logisticName}</h1>
             <p className="text-[10px] text-gray-500 font-medium m-0">Fast, Safe & Reliable Transport Services</p>
@@ -30,29 +35,32 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any
           </div>
         </div>
 
-        {/* Right: LR Number & Date */}
-        <div className="flex gap-4 items-start">
+        {/* Center: LR No & Date (Enclosed in a styled Card/Box) */}
+        <div className="flex flex-col items-center justify-center self-center text-center">
+          <div className="border border-brand-primary rounded-lg px-4 py-2 bg-gray-50/30 flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex items-center justify-between gap-3 font-bold">
+              <span className="text-[9px] text-gray-500 uppercase font-semibold">LR No :</span>
+              <span className="text-brand-primary text-sm font-black">{booking.lrNumber}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3 font-bold border-t border-gray-200 pt-1">
+              <span className="text-[9px] text-gray-500 uppercase font-semibold">Date :</span>
+              <span className="text-xs text-gray-800 font-extrabold">{formatDate(booking.bookingDate)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: QR Code & Consignment Note (QR Code at the very rightmost) */}
+        <div className="flex gap-4 items-center">
+          <div className="text-right flex flex-col items-end">
+            <div className="border border-brand-primary rounded px-3 py-1.5">
+              <h2 className="text-xs font-bold text-brand-primary uppercase m-0 leading-tight">CONSIGNMENT NOTE</h2>
+              <p className="text-[9px] text-gray-500 font-bold m-0 uppercase tracking-widest text-center">({copyType})</p>
+            </div>
+          </div>
           <div className="flex flex-col items-center">
             <QRCodeDisplay value={trackingUrl} size={50} />
             <span className="text-[7px] text-gray-500 font-bold mt-0.5 tracking-wider uppercase">Scan to Track</span>
           </div>
-          
-          <div className="text-right flex flex-col items-end">
-            <div className="border border-brand-primary rounded px-3 py-1 mb-1">
-              <h2 className="text-xs font-bold text-brand-primary uppercase m-0 leading-tight">CONSIGNMENT NOTE</h2>
-              <p className="text-[9px] text-gray-500 font-bold m-0 uppercase tracking-widest text-center">({copyType})</p>
-            </div>
-            <div className="flex gap-4 text-xs font-bold text-gray-800">
-            <div>
-              <span className="text-[10px] text-gray-500 block uppercase font-normal">LR No</span>
-              <span className="text-brand-primary text-sm">{booking.lrNumber}</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-gray-500 block uppercase font-normal">Date</span>
-              <span className="text-sm">{formatDate(booking.bookingDate)}</span>
-            </div>
-          </div>
-        </div>
         </div>
       </div>
 
@@ -61,15 +69,15 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any
         
         {/* Row 1: Branches */}
         <div className="flex border-b border-gray-400">
-          <div className="flex-1 p-1.5 border-r border-gray-400">
+          <div className="flex-1 p-1 border-r border-gray-400">
             <span className="font-bold text-gray-500 uppercase mr-2">From:</span>
             <span className="font-bold text-gray-900 text-xs">{booking.bookingBranch?.name || booking.branch?.name} ({booking.bookingBranch?.code || booking.branch?.code})</span>
           </div>
-          <div className="flex-1 p-1.5 border-r border-gray-400">
+          <div className="flex-1 p-1 border-r border-gray-400">
             <span className="font-bold text-gray-500 uppercase mr-2">To:</span>
             <span className="font-bold text-gray-900 text-xs">{booking.destinationBranch?.name} ({booking.destinationBranch?.code})</span>
           </div>
-          <div className="w-[100px] p-1.5 text-center bg-gray-50">
+          <div className="w-[100px] p-1 text-center bg-gray-50">
             <span className="font-bold text-gray-500 uppercase block text-[9px] mb-0.5">Pay Basis</span>
             <span className="font-bold text-brand-primary uppercase text-xs">{booking.paymentCondition?.replace('_', ' ')}</span>
           </div>
@@ -103,20 +111,26 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any
               <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-400">
-                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Pkg</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Method</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase border-r border-gray-400">Description (Said to Contain)</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[9px] uppercase text-right">Actual Wt.</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">Pkgs</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">Packaging</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400">Description</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-right">Weight</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">N / W</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-right">Rate</th>
+                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="text-[9px]">
+              <tbody className="text-[8px]">
                 {booking.items?.length > 0 ? (
                   booking.items.map((item: any, i: number) => (
                     <tr key={i} className="border-b border-gray-200 last:border-b-0 leading-tight">
                       <td className="p-0.5 border-r border-gray-400 font-semibold text-center">{item.packages || 0}</td>
                       <td className="p-0.5 border-r border-gray-400 text-center">{item.packaging || '-'}</td>
                       <td className="p-0.5 border-r border-gray-400 uppercase">{item.description || booking.material?.itemName || '-'}</td>
-                      <td className="p-0.5 text-right font-semibold">{item.weight || 0} kg</td>
+                      <td className="p-0.5 border-r border-gray-400 text-right font-semibold">{item.weight || 0} kg</td>
+                      <td className="p-0.5 border-r border-gray-400 text-center">{item.nw || 'N'}</td>
+                      <td className="p-0.5 border-r border-gray-400 text-right">₹{item.rate || 0}</td>
+                      <td className="p-0.5 text-right font-semibold">₹{item.amount || 0}</td>
                     </tr>
                   ))
                 ) : (
@@ -124,7 +138,10 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName }: { booking: any
                     <td className="p-0.5 border-r border-gray-400 font-semibold text-center">{booking.material?.quantity || 0}</td>
                     <td className="p-0.5 border-r border-gray-400 text-center">{booking.material?.packagingType || '-'}</td>
                     <td className="p-0.5 border-r border-gray-400 uppercase">{booking.material?.itemName || '-'}</td>
-                    <td className="p-0.5 text-right font-semibold">{booking.material?.weight || 0} kg</td>
+                    <td className="p-0.5 border-r border-gray-400 text-right font-semibold">{booking.material?.weight || 0} kg</td>
+                    <td className="p-0.5 border-r border-gray-400 text-center">N</td>
+                    <td className="p-0.5 border-r border-gray-400 text-right">₹0</td>
+                    <td className="p-0.5 text-right font-semibold">₹0</td>
                   </tr>
                 )}
               </tbody>
@@ -226,6 +243,25 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="w-full mx-auto print:p-0 print:m-0 print:max-w-none bg-gray-100 print:bg-white min-h-screen py-8">
+      {/* CSS style block for clean print styling (Removes headers/footers & forces A4 single page height) */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0 !important;
+          }
+          body {
+            margin: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          html, body {
+            height: 29.7cm;
+            overflow: hidden;
+          }
+        }
+      `}} />
       
       {/* Top Actions - Hidden in Print */}
       <div className="flex items-center justify-center gap-4 print:hidden mb-6 max-w-[21cm] mx-auto">
@@ -245,7 +281,7 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
       >
         
         {/* Consignor Copy (Top Half) */}
-        <LRCopy booking={booking} copyType="Consignor Copy" trackingUrl={trackingUrl} logisticName={logisticName} />
+        <LRCopy booking={booking} copyType="Consignor Copy" trackingUrl={trackingUrl} logisticName={logisticName} companyLogo={booking.logisticId?.companyLogo} />
 
         {/* Cut Line */}
         <div className="flex items-center justify-center m-0 p-0 text-gray-300 overflow-hidden opacity-50 h-[0.5cm]">
@@ -254,7 +290,7 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Driver / Office Copy (Bottom Half) */}
-        <LRCopy booking={booking} copyType="Driver / Office Copy" trackingUrl={trackingUrl} logisticName={logisticName} />
+        <LRCopy booking={booking} copyType="Driver / Office Copy" trackingUrl={trackingUrl} logisticName={logisticName} companyLogo={booking.logisticId?.companyLogo} />
 
       </div>
     </div>

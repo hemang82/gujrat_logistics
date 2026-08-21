@@ -96,6 +96,7 @@ export async function POST(request: Request) {
       panNumber: body.panNumber,
       ewbApiAccess: body.ewbApiAccess || false,
       ewbApiQuota: Number(body.ewbApiQuota) || 0,
+      isActive: body.isActive !== undefined ? !!body.isActive : true,
     });
 
     await newLogistic.save();

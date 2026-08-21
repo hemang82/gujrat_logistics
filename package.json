@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 2001",
+    "dev-safe": "next dev --no-turbo -H 0.0.0.0 -p 2001",
+    "dev-clean": "rd /s /q .next && next dev --no-turbo -H 0.0.0.0 -p 2001",
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start -p 2001",

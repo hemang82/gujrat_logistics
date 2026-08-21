@@ -36,6 +36,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       newStatus = 'completed';
     }
 
+    // Free Truck and Driver if completed
+    if (newStatus === 'completed' && lorryHire.status !== 'completed') {
+      if (lorryHire.truckNo) {
+        const Vehicle = require('@/models/Vehicle').default;
+        await Vehicle.findByIdAndUpdate(lorryHire.truckNo, { status: 'available' });
+      }
+      if (lorryHire.driver) {
+        const Driver = require('@/models/Driver').default;
+        await Driver.findByIdAndUpdate(lorryHire.driver, { status: 'available' });
+      }
+    }
+
     // Update Lorry Hire
     lorryHire.advanceAmount = newAdvance;
     lorryHire.balanceAmount = total - newAdvance;

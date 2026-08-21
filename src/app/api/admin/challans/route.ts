@@ -9,6 +9,8 @@ import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Paginated list of challans with search
 export async function GET(request: Request) {
   try {
@@ -98,7 +100,7 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('bookings', 'lrNumber consignor consignee charges items material')
+      .populate('bookings', 'lrNumber consignor consignee charges items material paymentCondition')
       .populate('truckNo', 'vehicleNumber')
       .populate('driverName', 'name')
       .populate('branch', 'name code')
@@ -247,14 +249,6 @@ export async function POST(request: Request) {
 
     await newChallan.save();
 
-    let truckNumberName = data.truckNo || 'N/A';
-    if (data.truckNo && String(data.truckNo).match(/^[0-9a-fA-F]{24}$/)) {
-      const vehicleDoc = await Vehicle.findById(data.truckNo).select('vehicleNumber').lean();
-      if (vehicleDoc) {
-        truckNumberName = (vehicleDoc as any).vehicleNumber || truckNumberName;
-      }
-    }
-
     // Update loaded bookings status to 'in_transit'
     if (data.bookings && data.bookings.length > 0) {
       await Booking.updateMany(
@@ -263,21 +257,13 @@ export async function POST(request: Request) {
           $set: { status: 'in_transit' },
           $push: { 
             trackingHistory: { 
-              status: 'in_transit', 
-              timestamp: new Date(),
-              remarks: `Loaded on Challan No: ${challanNumber} with truck ${truckNumberName}`
+               status: 'in_transit', 
+               timestamp: new Date(),
+               remarks: `Loaded on Challan No: ${challanNumber}`
             } 
           }
         }
       );
-    }
-
-    // Update Truck and Driver status to 'on-trip'
-    if (data.truckNo) {
-      await Vehicle.findByIdAndUpdate(data.truckNo, { status: 'on-trip' });
-    }
-    if (data.driverName) {
-      await Driver.findByIdAndUpdate(data.driverName, { status: 'on-trip' });
     }
 
     return NextResponse.json(newChallan, { status: 201 });

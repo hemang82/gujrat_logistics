@@ -21,6 +21,8 @@ export interface IChallan extends Document {
   isDeleted: boolean;
   status: 'pending' | 'in_transit' | 'delivered';
   createdBy?: mongoose.Types.ObjectId;
+  cewbNo?: string;
+  cewbUrl?: string;
 }
 
 const ChallanSchema = new Schema<IChallan>(
@@ -45,6 +47,8 @@ const ChallanSchema = new Schema<IChallan>(
     isDeleted: { type: Boolean, default: false },
     status: { type: String, enum: ['pending', 'in_transit', 'delivered'], default: 'pending' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    cewbNo: { type: String },
+    cewbUrl: { type: String },
   },
   { timestamps: true }
 );

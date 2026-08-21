@@ -8,6 +8,8 @@ import Vehicle from '@/models/Vehicle';
 import Driver from '@/models/Driver';
 import { resolveBranchId } from '@/lib/resolveBranch';
 
+export const dynamic = 'force-dynamic';
+
 // GET: Single Challan by ID
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,7 +31,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const challan = await Challan.findOne({ _id: id, logisticId, ...branchFilter, isDeleted: false })
       .populate({
         path: 'bookings',
-        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch',
+        select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch paymentCondition',
         populate: { path: 'destinationBranch', select: 'name code' }
       })
       .populate('truckNo', 'vehicleNumber')
@@ -130,14 +132,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     // Mark added bookings as 'in_transit'
     if (addedBookings.length > 0) {
-      let truckNumberName = data.truckNo || oldChallan.truckNo || 'N/A';
-      if (truckNumberName && String(truckNumberName).match(/^[0-9a-fA-F]{24}$/)) {
-        const vehicleDoc = await Vehicle.findById(truckNumberName).select('vehicleNumber').lean();
-        if (vehicleDoc) {
-          truckNumberName = (vehicleDoc as any).vehicleNumber || truckNumberName;
-        }
-      }
-
       await Booking.updateMany(
         { _id: { $in: addedBookings } },
         { 
@@ -146,7 +140,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
             trackingHistory: { 
               status: 'in_transit', 
               timestamp: new Date(),
-              remarks: `Added to Challan No: ${oldChallan.challanNumber} with truck ${truckNumberName}`
+              remarks: `Added to Challan No: ${oldChallan.challanNumber}`
             } 
           }
         }

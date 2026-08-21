@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Edit, Trash2, MapPin, User as UserIcon, Eye, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, MapPin, User as UserIcon, Eye, X, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
 import { useUserStore } from '@/store/useUserStore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function UsersPage() {
   const { user } = useUserStore();
@@ -19,6 +20,13 @@ export default function UsersPage() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [viewUser, setViewUser] = useState<any | null>(null);
+
+  const handleCopyCredentials = () => {
+    if (!viewUser) return;
+    const text = `Login Email: ${viewUser.email}\nPassword: ${viewUser.plainPassword || '••••••••'}`;
+    navigator.clipboard.writeText(text);
+    toast.success('Email and Password copied to clipboard!');
+  };
 
   const fetchUsers = async () => {
     try {
@@ -51,7 +59,16 @@ export default function UsersPage() {
       
       if (res.ok) {
         toast.success('Branch login deleted successfully');
-        fetchUsers();
+        
+        // Soft delete: filter locally
+        setUsers(prev => prev.filter(user => user._id !== deleteUserId));
+        
+        // Silent refresh in background
+        const silentRes = await fetch(`/api/admin/users?search=${search}&limit=50`);
+        if (silentRes.ok) {
+          const silentData = await silentRes.json();
+          setUsers(silentData.users || []);
+        }
       } else {
         const data = await res.json();
         toast.error(data.error || 'Failed to delete branch login');
@@ -212,63 +229,90 @@ export default function UsersPage() {
         variant="danger"
       />
 
-      {/* View Details Dialog */}
-      {viewUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <Card className="w-full max-w-xl border-0 shadow-2xl bg-white overflow-hidden rounded-2xl">
-            <div className="bg-brand-primary p-6 text-white flex items-center gap-4 relative">
-              <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
-                <UserIcon className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">{viewUser.name}</h3>
-                <p className="text-xs text-brand-primary-light uppercase tracking-wider font-semibold">
-                  {viewUser.role === 'manager' ? 'Branch Manager' : viewUser.role === 'admin' ? 'Administrator' : 'Branch User / Staff'}
-                </p>
-              </div>
-              <button 
-                onClick={() => setViewUser(null)}
-                className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <CardContent className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Email / Login ID</p>
-                  <p className="text-sm font-semibold text-gray-900 break-all font-mono">{viewUser.email}</p>
+      <Dialog open={!!viewUser} onOpenChange={(open) => !open && setViewUser(null)}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-brand-primary" />
+              Branch Login Details
+            </DialogTitle>
+          </DialogHeader>
+          {viewUser && (
+            <div className="space-y-6 py-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-xl bg-brand-primary/10 flex items-center justify-center shrink-0 border border-brand-primary/20 overflow-hidden">
+                  <UserIcon className="w-8 h-8 text-brand-primary" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Password</p>
-                  <p className="text-sm font-bold text-gray-900 font-mono bg-gray-50 px-2.5 py-1 rounded border border-gray-100 w-fit">
-                    {viewUser.plainPassword || '•••••••• (Unchanged)'}
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{viewUser.name}</h3>
+                  <p className="text-sm text-gray-500 uppercase tracking-wider font-medium">
+                    {viewUser.role === 'manager' ? 'Branch Manager' : viewUser.role === 'admin' ? 'Administrator' : 'Branch User / Staff'}
                   </p>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Phone Number</p>
-                  <p className="text-sm font-semibold text-gray-900">{viewUser.phone || '-'}</p>
+                  <p className="text-xs text-gray-500 font-medium">Email Address</p>
+                  <p className="text-sm font-medium text-gray-900 break-all font-mono">{viewUser.email}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Assigned Branch</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-xs text-gray-500 font-medium">Password</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900 font-mono bg-gray-50 px-2.5 py-0.5 rounded border border-gray-100 w-fit">
+                      {viewUser.plainPassword || '•••••••• (Unchanged)'}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg shrink-0"
+                      title="Copy Email & Password"
+                      onClick={handleCopyCredentials}
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 font-medium">Phone Number</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900">{viewUser.phone || '-'}</p>
+                    {viewUser.phone && (
+                      <a 
+                        href={`https://wa.me/91${viewUser.phone}?text=${encodeURIComponent(
+                          `*Trust Logistics - Credentials*\n\nPortal Link: https://trustlogistic.in/admin/login\nLogin Email: ${viewUser.email}\nPassword: ${viewUser.plainPassword || '••••••••'}\nAssigned Branch: ${viewUser.branch ? viewUser.branch.name : 'N/A'}`
+                        )}`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-6 w-6 text-emerald-600 hover:text-white bg-emerald-50 hover:bg-emerald-600 border border-emerald-200 hover:border-emerald-600 rounded-full transition-all shrink-0 ml-1 shadow-sm"
+                        title="Send via WhatsApp"
+                      >
+                        <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.968C16.638 1.97 14.162.945 11.53.945c-5.442 0-9.87 4.372-9.874 9.802-.001 1.777.467 3.51 1.358 5.021l-.993 3.624 3.746-.983zm13.757-11.232c-.322-.162-1.9-.938-2.193-1.046-.294-.107-.507-.162-.72.162-.213.324-.827 1.046-1.013 1.262-.187.218-.374.245-.697.082-.323-.162-1.362-.502-2.595-1.602-.96-.856-1.607-1.912-1.794-2.236-.187-.324-.02-.501.141-.661.145-.143.323-.378.485-.568.162-.189.215-.324.322-.541.108-.217.053-.406-.027-.568-.08-.162-.72-1.737-.987-2.383-.26-.627-.525-.541-.72-.551-.19-.01-.406-.01-.623-.01-.217 0-.569.082-.867.406-.298.324-1.137 1.11-1.137 2.707 0 1.597 1.157 3.137 1.319 3.353.162.217 2.277 3.477 5.518 4.877.771.332 1.373.53 1.84.678.775.246 1.48.212 2.037.129.62-.093 1.9-.778 2.167-1.493.267-.715.267-1.326.187-1.493-.08-.162-.293-.267-.615-.429z" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500 font-medium">Assigned Branch</p>
+                  <p className="text-sm font-medium text-gray-900">
                     {viewUser.branch ? viewUser.branch.name : '-'}
                   </p>
                 </div>
                 {viewUser.branch && (
                   <>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Branch Code</p>
-                      <p className="text-sm font-semibold text-gray-900 font-mono">{viewUser.branch.code || '-'}</p>
+                      <p className="text-xs text-gray-500 font-medium">Branch Code</p>
+                      <p className="text-sm font-medium text-gray-900 font-mono">{viewUser.branch.code || '-'}</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pincode</p>
-                      <p className="text-sm font-semibold text-gray-900 font-mono">{viewUser.branch.pincode || '-'}</p>
+                      <p className="text-xs text-gray-500 font-medium">Pincode</p>
+                      <p className="text-sm font-medium text-gray-900 font-mono">{viewUser.branch.pincode || '-'}</p>
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">City & State</p>
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-xs text-gray-500 font-medium">City & State</p>
+                      <p className="text-sm font-medium text-gray-900">
                         {viewUser.branch.city ? `${viewUser.branch.city}, ` : ''}{viewUser.branch.state || '-'}
                       </p>
                     </div>
@@ -278,7 +322,7 @@ export default function UsersPage() {
 
               {/* Module Permissions */}
               <div className="pt-4 border-t border-gray-100 space-y-2">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Module Permissions</p>
+                <p className="text-xs text-gray-500 font-medium">Module Permissions</p>
                 <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50/50 text-xs">
                   <table className="w-full text-left">
                     <thead className="bg-gray-100 text-[10px] text-gray-400 uppercase tracking-wider font-bold border-b border-gray-200">
@@ -313,15 +357,15 @@ export default function UsersPage() {
               <div className="pt-4 border-t border-gray-100 flex justify-end">
                 <Button 
                   onClick={() => setViewUser(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-5 rounded-lg text-sm h-10 border border-gray-200"
+                  className="bg-brand-primary hover:bg-brand-primary-dark text-white font-bold px-5 rounded-lg text-sm h-10 shadow-sm"
                 >
                   Close
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

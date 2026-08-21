@@ -658,7 +658,7 @@ function NewBookingForm() {
     }
 
     // --- Phone validation (optional but must be valid if entered) ---
-    const phoneRegex = /^[6-9]\d{9}$/;
+    const phoneRegex = /^\d{10}$/;
     if (formData.consignorPhone && !phoneRegex.test(formData.consignorPhone)) newErrors.consignorPhone = "Invalid 10-digit phone number";
     if (formData.consigneePhone && !phoneRegex.test(formData.consigneePhone)) newErrors.consigneePhone = "Invalid 10-digit phone number";
 
@@ -770,9 +770,10 @@ function NewBookingForm() {
           if (formData.consignorPhone && formData.consignorPhone !== '0000000000' && formData.consignorPhone.length >= 10) {
             const logisticNameStr = user?.logisticName || 'Trust Logistic';
             const appUrl = window.location.origin;
+            const finalLrNumber = createdBooking.lrNumber || formData.grNo || '';
             const waLink = getWhatsAppShareLink(
               formData.consignorPhone,
-              `Hello ${formData.consignorName || 'Customer'},\nYour Booking (LR No: ${formData.grNo}) via ${logisticNameStr} is confirmed. Track it here: ${appUrl}/track?lr=${formData.grNo}`
+              `Hello ${formData.consignorName || 'Customer'},\nYour Booking (LR No: ${finalLrNumber}) via ${logisticNameStr} is confirmed. Track it here: ${appUrl}/track?lr=${finalLrNumber}`
             );
             window.open(waLink, 'whatsapp_share_tab');
           }
