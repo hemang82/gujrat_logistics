@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: 'https://www.trustlogistic.in',
+  siteUrl: 'https://trustlogistic.in',
   generateRobotsTxt: true,
   generateIndexSitemap: false,
   exclude: ['/admin', '/admin/*', '/api/*'],
