@@ -4,8 +4,16 @@ import { FileText, CheckCircle2, ArrowRight } from 'lucide-react';
 import { AnimatedSection, AnimatedStaggerContainer, AnimatedStaggerItem } from '@/components/ui/animated-section';
 
 export const metadata: Metadata = {
-  title: 'Digital Lorry Receipt (LR) & Bilty Software in India',
-  description: 'Generate 100% compliant, digital Lorry Receipts (LR/Bilty) in seconds. Share them instantly via WhatsApp with Trust Logistic transport software.',
+  title: 'Online Bilty Maker & Lorry Receipt (LR) Software in India',
+  description: 'Generate 100% compliant, digital Lorry Receipts (LR/Bilty) in seconds. Best Online Bilty format software for transporters in India. Share instantly via WhatsApp.',
+  keywords: [
+    'Online Bilty Maker',
+    'Lorry Receipt Format Generator',
+    'LR Software India',
+    'Digital Bilty Software',
+    'Transport Bilty Maker',
+    'Online LR Maker for Transporters'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/features/digital-lorry-receipts',
   }

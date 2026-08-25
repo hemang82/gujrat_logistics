@@ -3,8 +3,15 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'GST & E-Way Bill Software Integration - Trust Logistic',
-  description: 'Generate GST compliant invoices and consolidated E-Way bills directly from your transport management software in one click.',
+  title: 'Automated GST & E-Way Bill Generation Software for Transporters',
+  description: 'Generate GST compliant invoices and consolidated E-Way bills directly from your transport management software in one click. Zero portal login required.',
+  keywords: [
+    'E-Way Bill Generation Software',
+    'Consolidated E-way Bill Maker',
+    'GST Billing Software for Transporters',
+    'Transport E-way bill system',
+    'MastersIndia API Transport Software'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/features/gst-eway-bill-integration',
   }

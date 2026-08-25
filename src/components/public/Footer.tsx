@@ -14,7 +14,7 @@ export function Footer() {
               </div>
             </Link>
             <p className="text-sm text-gray-300 mt-2 leading-relaxed pr-4">
-              India's #1 Logistics Management Software. Digitize your transport business, streamline operations, and scale with ease.
+              India's Logistics Management Software. Digitize your transport business, streamline operations, and scale with ease.
             </p>
             <div className="flex gap-4 mt-4">
               <a href="https://www.facebook.com/profile.php?id=61593276774969" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-brand-primary hover:text-white transition-all">
