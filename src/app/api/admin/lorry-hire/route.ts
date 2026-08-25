@@ -174,6 +174,8 @@ export async function POST(request: Request) {
 
     await newDoc.save();
 
+    let allBookingIds: string[] = [];
+    
     // Cascade truck and driver to Challans and Bookings
     if (body.challans && body.challans.length > 0) {
       // 1. Update Challan with truck and driver, and set status to 'in_transit'
@@ -190,7 +192,6 @@ export async function POST(request: Request) {
 
       // 2. Fetch all bookings inside these challans to update them
       const challansData = await Challan.find({ _id: { $in: body.challans } }).select('bookings');
-      let allBookingIds: string[] = [];
       challansData.forEach(c => {
         if (c.bookings) {
           allBookingIds = allBookingIds.concat(c.bookings.map((b: any) => b.toString()));
@@ -248,7 +249,7 @@ export async function POST(request: Request) {
 
         // Fetch logistic user GSTIN
         const logisticUser = await User.findById(newDoc.logisticId);
-        const userGstin = logisticUser?.gstNo || process.env.MASTERS_INDIA_GSTIN;
+        const userGstin = (logisticUser as any)?.gstNo || process.env.MASTERS_INDIA_GSTIN;
 
         if (truckString && userGstin) {
           // Find all bookings that have an EWB Number

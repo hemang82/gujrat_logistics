@@ -4,8 +4,15 @@ import { ArrowRight, CheckCircle2, Truck } from 'lucide-react';
 import { AnimatedSection, AnimatedStaggerContainer, AnimatedStaggerItem } from '@/components/ui/animated-section';
 
 export const metadata: Metadata = {
-  title: 'Transport Management Software for Fleet Owners in India',
+  title: 'Logistics & Transport Management Software for Fleet Owners in India',
   description: 'Manage your trucks, drivers, fuel expenses, and lorry hire securely. The perfect software for Indian Fleet Owners to track profitability per trip.',
+  keywords: [
+    'Fleet Management Software India',
+    'Transport Software for Fleet Owners',
+    'Truck Management Software',
+    'Vehicle Tracking Software',
+    'Trip Accounting Software'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/industries/fleet-owners',
   }

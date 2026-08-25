@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     // Fetch user GSTIN
     const logisticUser = await User.findById(lorryHire.logisticId);
-    const userGstin = logisticUser?.gstNo || process.env.MASTERS_INDIA_GSTIN;
+    const userGstin = (logisticUser as any)?.gstNo || process.env.MASTERS_INDIA_GSTIN;
 
     if (!userGstin) {
       return NextResponse.json({ error: 'Logistic GSTIN not found' }, { status: 400 });

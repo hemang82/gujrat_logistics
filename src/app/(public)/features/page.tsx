@@ -4,6 +4,31 @@ import { Button } from '@/components/ui/button';
 import { FileText, Truck, Map, ShieldCheck, MapPin, Users, Calculator, CreditCard, Building2, BarChart3 } from 'lucide-react';
 import { AnimatedSection, AnimatedStaggerContainer, AnimatedStaggerItem } from '@/components/ui/animated-section';
 
+export const metadata: Metadata = {
+  title: 'Features of Trust Logistic | Complete Transport Software Modules',
+  description: 'Explore the powerful features of Trust Logistic: Online Bilty Maker, Auto E-way Bill, Fleet Tracking, Branch Accounting, Lorry Challan, and Freight Calculation.',
+  keywords: [
+    'Transport Software Features',
+    'Online Bilty Maker Features',
+    'Lorry Receipt (LR) Generator',
+    'Lorry Challan Software',
+    'Crossing Memo Software India',
+    'Lorry Hire Management Software',
+    'E-way Bill Integration Software',
+    'Fleet & Truck Management Tools',
+    'Driver KYC & Management System',
+    'Transport Accounting Features',
+    'Transport Billing and Invoicing',
+    'Multi Branch Management Software',
+    'Transport Client Management',
+    'Logistics Reports & Analytics',
+    'Best TMS capabilities'
+  ],
+  alternates: {
+    canonical: 'https://trustlogistic.in/features',
+  }
+};
+
 export default function FeaturesPage() {
   const modules = [
     { icon: FileText, title: "LR Generation", desc: "Generate LRs in seconds. No more handwritten paperwork, instant & error-free." },
@@ -56,11 +81,3 @@ export default function FeaturesPage() {
     </main>
   );}
 
-
-export const metadata: Metadata = {
-  title: 'Features - Trust Logistic Software',
-  description: 'Explore the powerful features of Trust Logistic: E-way bill integration, fleet tracking, branch accounting, and seamless booking management.',
-  alternates: {
-    canonical: 'https://trustlogistic.in/features',
-  }
-};

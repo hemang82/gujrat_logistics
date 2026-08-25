@@ -6,6 +6,13 @@ import { AnimatedSection, AnimatedStaggerContainer, AnimatedStaggerItem } from '
 export const metadata: Metadata = {
   title: 'Auto Freight Calculation Software for Indian Logistics',
   description: 'Automate freight calculation, advance payments, and balance recovery. Trust Logistic handles weight-based, fixed, and per-km pricing instantly.',
+  keywords: [
+    'Auto Freight Calculation Software',
+    'Transport Freight Calculator',
+    'Logistics Pricing Software',
+    'Transport Advance Payment Software',
+    'Truck Freight Billing'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/features/auto-freight-calculation',
   }

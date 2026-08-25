@@ -50,7 +50,7 @@ export default function FTLPTLPage() {
 
           <AnimatedSection delay={0.4} className="bg-brand-bg rounded-3xl p-10 text-center border border-brand-primary/10">
             <h3 className="text-brand-primary-dark mb-4 text-lg font-bold">Scale your transport network securely</h3>
-            <p className="text-gray-600 mb-6 max-w-2xl mx-auto text-sm">Equip your branches and hubs with the #1 software built for Indian load management.</p>
+            <p className="text-gray-600 mb-6 max-w-2xl mx-auto text-sm">Equip your branches and hubs with the software built for Indian load management.</p>
             <Link href="/contact" className="inline-flex h-14 items-center justify-center px-8 rounded-full font-bold text-white bg-brand-primary hover:bg-brand-primary-dark shadow-lg transition-transform hover:-translate-y-1">
               Talk to our Experts <ArrowRight className="w-5 h-5 ml-2" />
             </Link>

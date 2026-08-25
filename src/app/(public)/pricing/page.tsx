@@ -2,6 +2,15 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
+export const metadata: Metadata = {
+  title: 'Pricing - Affordable Transport Management Software',
+  description: 'Check out the transparent and affordable pricing plans of Trust Logistic. Best logistics software for single branch, growing fleets, and enterprise transporters in India.',
+  keywords: ['Transport Software Pricing', 'Logistics Software Cost', 'Cheap Bilty Software India', 'TMS Subscription', 'Fleet Management Software Price'],
+  alternates: {
+    canonical: 'https://trustlogistic.in/pricing',
+  }
+};
+
 export default function PricingPage() {
   return (
     <main className="pt-36 md:pt-40 pb-20 bg-white min-h-screen">
@@ -44,11 +53,3 @@ export default function PricingPage() {
     </main>
   );}
 
-
-export const metadata: Metadata = {
-  title: 'Pricing - Affordable Logistics Software in India',
-  description: 'Flexible and affordable pricing plans for Trust Logistic. Find the right TMS plan for your transport business size.',
-  alternates: {
-    canonical: 'https://trustlogistic.in/pricing',
-  }
-};

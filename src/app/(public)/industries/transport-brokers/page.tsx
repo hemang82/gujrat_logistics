@@ -4,8 +4,15 @@ import { ArrowRight, CheckCircle2, Handshake } from 'lucide-react';
 import { AnimatedSection, AnimatedStaggerContainer, AnimatedStaggerItem } from '@/components/ui/animated-section';
 
 export const metadata: Metadata = {
-  title: 'Logistics Software for Transport Brokers & Commission Agents',
+  title: 'Logistics Software for Transport Brokers & Commission Agents India',
   description: 'Manage market lorry hire, generate instant bilties, and track your commission margins perfectly with Trust Logistic software for brokers.',
+  keywords: [
+    'Software for Transport Brokers',
+    'Transport Commission Agent Software',
+    'Market Lorry Hire Software',
+    'Broker Accounting Software',
+    'Logistics Software for Brokers'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/industries/transport-brokers',
   }

@@ -3,8 +3,16 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Box } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Transport Management Software in India - Trust Logistic',
-  description: 'Manage bookings, create Lorry Receipts (LRs), and dispatch trucks efficiently with Trust Logistic Transport Management System (TMS) built for India.',
+  title: 'Best Transport Management Software (TMS) in India | Trust Logistic',
+  description: 'Manage bookings, create Lorry Receipts (LRs), and dispatch trucks efficiently with Trust Logistic Transport Management System (TMS). End-to-end transport ERP.',
+  keywords: [
+    'Transport Management System India',
+    'Best TMS Software',
+    'Transport Business Software',
+    'Logistics ERP India',
+    'Transport Dispatch Software',
+    'Freight Management Software'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/features/transport-management',
   }

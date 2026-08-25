@@ -5,6 +5,13 @@ import { ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Branch Accounting Software for Transporters - Trust Logistic',
   description: 'Manage unlimited transport branches, reconcile branch ledgers, and track branch-wise profitability with Trust Logistic.',
+  keywords: [
+    'Transport Branch Accounting Software',
+    'Multi Branch Logistics Software',
+    'Transport Ledger Management',
+    'Branch Wise Profitability Transport',
+    'Logistics Branch Accounting'
+  ],
   alternates: {
     canonical: 'https://trustlogistic.in/features/branch-accounting',
   }
