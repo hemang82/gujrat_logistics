@@ -11,7 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Trust Logistic - #1 Transport Management Software in India",
+    default: "Trust Logistic - Transport Management Software in India",
     template: "%s | Trust Logistic"
   },
   description: "Trust Logistic is India's most powerful, user-friendly Transport Management System (TMS) and Logistics Software. Manage bookings, fleet, e-way bills, and branch accounting easily.",
@@ -20,13 +20,13 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_IN",
     url: "https://trustlogistic.in",
-    title: "Trust Logistic - #1 Transport Management Software in India",
+    title: "Trust Logistic - Transport Management Software in India",
     description: "Trust Logistic is India's most powerful, user-friendly Transport Management System (TMS).",
     siteName: "Trust Logistic"
   },
   twitter: {
     card: "summary_large_image",
-    title: "Trust Logistic - #1 Transport Management Software in India",
+    title: "Trust Logistic - Transport Management Software in India",
     description: "Trust Logistic is India's most powerful, user-friendly Transport Management System (TMS).",
   },
   icons: {
