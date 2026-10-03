@@ -26,13 +26,9 @@ function TrackBookingContent() {
     }
 
 
-
-    
     setLoading(true);
     setError('');
     setTrackingData(null);
-
-
 
     try {
       const res = await fetch(`/api/public/track?lrNumber=${encodeURIComponent(lrNumber)}`);

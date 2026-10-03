@@ -41,6 +41,7 @@ async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      family: 4, // Force IPv4 to bypass Atlas IPv6 whitelist error
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
