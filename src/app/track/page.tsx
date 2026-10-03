@@ -29,6 +29,8 @@ function TrackBookingContent() {
     setError('');
     setTrackingData(null);
 
+
+
     try {
       const res = await fetch(`/api/public/track?lrNumber=${encodeURIComponent(lrNumber)}`);
       const data = await res.json();
@@ -36,6 +38,9 @@ function TrackBookingContent() {
       if (!res.ok) {
         throw new Error(data.error || 'Failed to fetch tracking details');
       }
+
+
+      
 
       setTrackingData(data);
     } catch (err: any) {
