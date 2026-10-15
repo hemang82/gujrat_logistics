@@ -236,7 +236,7 @@ export default function DemoRequestsPage() {
                   onClick={() => setPage(p => Math.max(1, p - 1))} 
                   disabled={page === 1}
                   variant="outline" 
-                  className="h-9 px-3 rounded-lg border-gray-200"
+                  className="h-9 px-3 rounded-[8px] border border-[#64748b59]"
                 >
                   <ChevronLeft className="w-4 h-4 mr-0.5" /> Previous
                 </Button>
@@ -244,7 +244,7 @@ export default function DemoRequestsPage() {
                   onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
                   disabled={page === totalPages || totalPages === 0}
                   variant="outline" 
-                  className="h-9 px-3 rounded-lg border-gray-200"
+                  className="h-9 px-3 rounded-[8px] border border-[#64748b59]"
                 >
                   Next <ChevronRight className="w-4 h-4 ml-0.5" />
                 </Button>
@@ -268,37 +268,37 @@ export default function DemoRequestsPage() {
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Name</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Name</p>
                   <p className="font-medium text-gray-900">{selectedRequest.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Email</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Email</p>
                   <p className="font-medium text-gray-900">{selectedRequest.email || 'Not provided'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Company</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Company</p>
                   <p className="font-medium text-gray-900">{selectedRequest.companyName}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Phone</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Phone</p>
                   <p className="font-medium text-gray-900">{selectedRequest.phone}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">City / Location</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">City / Location</p>
                   <p className="font-medium text-gray-900">{selectedRequest.city || 'Not provided'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Fleet Size</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Fleet Size</p>
                   <p className="font-medium text-gray-900">{selectedRequest.fleetSize || 'Not specified'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Status</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Status</p>
                   <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold ${selectedRequest.status === 'contacted' ? 'bg-blue-50 text-blue-700' : selectedRequest.status === 'closed' ? 'bg-gray-100 text-gray-700' : 'bg-orange-50 text-orange-700'}`}>
                     {selectedRequest.status?.toUpperCase() || 'PENDING'}
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-500 mb-1">Date Submitted</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Date Submitted</p>
                   <p className="font-medium text-gray-900">
                     {new Date(selectedRequest.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
                   </p>
@@ -306,7 +306,7 @@ export default function DemoRequestsPage() {
               </div>
 
               <div className="pt-4 border-t border-gray-100">
-                <p className="text-sm font-semibold text-gray-500 mb-2">Pain Point / Challenge</p>
+                <p className="text-sm font-semibold text-slate-700 mb-2">Pain Point / Challenge</p>
                 <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100/50">
                   <p className="text-gray-800 leading-relaxed">
                     {selectedRequest.painPoint}
@@ -332,3 +332,7 @@ export default function DemoRequestsPage() {
     </div>
   );
 }
+
+
+
+

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Building2, Plus, Loader2, Edit, Trash2, Mail, Phone, Eye } from 'lucide-react';
+import { Building2, Plus, Loader2, Edit, Trash2, Mail, Phone, Eye, Copy } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useUserStore } from '@/store/useUserStore';
 import { redirect, useRouter } from 'next/navigation';
@@ -19,6 +19,23 @@ export default function LogisticsManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCopyCredentials = (logItem?: any) => {
+    const item = logItem || viewLogistic;
+    if (!item) return;
+    const pass = item.plainPassword || '••••••••';
+    const text = `*Trust Logistics - Account Credentials*\n\nCompany Name: ${item.name}\nLogin Email: ${item.email}\nPassword: ${pass}\nPhone Number: ${item.phone || 'N/A'}\nTransporter ID: ${item.transporterId || 'N/A'}\nGST Number: ${item.gstNumber || 'N/A'}\n\nPortal Link: https://trustlogistic.in/admin/login`;
+    navigator.clipboard.writeText(text);
+    toast.success('Email, Password & Details copied to clipboard!');
+  };
+
+  const getWhatsAppShareUrl = (item: any) => {
+    if (!item) return '';
+    const cleanPhone = (item.phone || '').replace(/\D/g, '');
+    const pass = item.plainPassword || '•••••••• (Unchanged)';
+    const message = `*Trust Logistics - Account Credentials*\n\nDear Partner,\n\nYour logistics company account details are as follows:\n\n*Company Name:* ${item.name}\n*Login Email:* ${item.email}\n*Password:* ${pass}\n*Phone Number:* ${item.phone || 'N/A'}\n*Transporter ID:* ${item.transporterId || 'N/A'}\n*GST Number:* ${item.gstNumber || 'N/A'}\n\n*Portal Link:* https://trustlogistic.in/admin/login\n\nPlease keep these credentials secure and do not share them.`;
+    return cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(message)}` : `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  };
   
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -170,7 +187,7 @@ export default function LogisticsManagementPage() {
           <table className="w-full text-sm text-left">
             <thead className="bg-gray-50 border-b border-gray-100 text-gray-600 font-medium">
               <tr>
-                <th className="px-6 py-4 w-20 text-center">Sr. No.</th>
+                <th className="px-6 py-4 w-20 text-center">Sr.</th>
                 <th className="px-6 py-4">COMPANY DETAILS</th>
                 <th className="px-6 py-4">STATUTORY INFO</th>
                 <th className="px-6 py-4">CONTACT</th>
@@ -202,7 +219,7 @@ export default function LogisticsManagementPage() {
               ) : (
                 logistics.map((logistic, index) => (
                   <tr key={logistic._id} className="hover:bg-gray-50/80 transition-colors group">
-                    <td className="px-6 py-4 text-center font-bold text-gray-500">{index + 1}</td>
+                    <td className="px-6 py-4 text-center font-semibold text-slate-700">{index + 1}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-brand-primary/10 flex items-center justify-center shrink-0 border border-brand-primary/20 overflow-hidden">
@@ -256,13 +273,26 @@ export default function LogisticsManagementPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50" onClick={() => setViewLogistic(logistic)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50" title="View Details" onClick={() => setViewLogistic(logistic)}>
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10" onClick={() => openEditModal(logistic)}>
+                        {/* {logistic.phone && (
+                          <a
+                            href={getWhatsAppShareUrl(logistic)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center h-8 w-8 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                            title="Share Credentials via WhatsApp"
+                          >
+                            <svg className="w-4 h-4 fill-current text-emerald-600" viewBox="0 0 24 24">
+                              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.968C16.638 1.97 14.162.945 11.53.945c-5.442 0-9.87 4.372-9.874 9.802-.001 1.777.467 3.51 1.358 5.021l-.993 3.624 3.746-.983zm13.757-11.232c-.322-.162-1.9-.938-2.193-1.046-.294-.107-.507-.162-.72.162-.213.324-.827 1.046-1.013 1.262-.187.218-.374.245-.697.082-.323-.162-1.362-.502-2.595-1.602-.96-.856-1.607-1.912-1.794-2.236-.187-.324-.02-.501.141-.661.145-.143.323-.378.485-.568.162-.189.215-.324.322-.541.108-.217.053-.406-.027-.568-.08-.162-.72-1.737-.987-2.383-.26-.627-.525-.541-.72-.551-.19-.01-.406-.01-.623-.01-.217 0-.569.082-.867.406-.298.324-1.137 1.11-1.137 2.707 0 1.597 1.157 3.137 1.319 3.353.162.217 2.277 3.477 5.518 4.877.771.332 1.373.53 1.84.678.775.246 1.48.212 2.037.129.62-.093 1.9-.778 2.167-1.493.267-.715.267-1.326.187-1.493-.08-.162-.293-.267-.615-.429z" />
+                            </svg>
+                          </a>
+                        )} */}
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10" title="Edit Company" onClick={() => openEditModal(logistic)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50" onClick={() => setDeleteId(logistic._id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50" title="Delete Company" onClick={() => setDeleteId(logistic._id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -296,22 +326,50 @@ export default function LogisticsManagementPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">{viewLogistic.name}</h3>
-                  <p className="text-sm text-gray-500 uppercase tracking-wider font-medium">{viewLogistic.transporterId || 'NO TRANSIN'}</p>
+                  <p className="text-sm text-slate-700 font-semibold uppercase tracking-wider font-medium">{viewLogistic.transporterId || 'NO TRANSIN'}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs text-gray-500 font-medium">Email Address</p>
-                  <p className="text-sm font-medium text-gray-900">{viewLogistic.email}</p>
+                  <p className="text-sm font-medium text-gray-900 break-all font-mono">{viewLogistic.email}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-gray-500 font-medium">Password</p>
-                  <p className="text-sm font-medium text-gray-900 font-mono bg-gray-50 px-2 py-0.5 rounded border border-gray-100 w-fit">{viewLogistic.plainPassword || '•••••••• (Unchanged)'}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900 font-mono bg-gray-50 px-2.5 py-0.5 rounded border border-gray-100 w-fit">
+                      {viewLogistic.plainPassword || '•••••••• (Unchanged)'}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-gray-500 hover:text-brand-primary hover:bg-brand-primary/10 rounded-lg shrink-0 cursor-pointer"
+                      title="Copy Email & Password"
+                      onClick={() => handleCopyCredentials()}
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-gray-500 font-medium">Phone Number</p>
-                  <p className="text-sm font-medium text-gray-900">{viewLogistic.phone || '-'}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-medium text-gray-900">{viewLogistic.phone || '-'}</p>
+                    {viewLogistic.phone && (
+                      <a 
+                        href={getWhatsAppShareUrl(viewLogistic)}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center h-6 w-6 text-emerald-600 hover:text-white bg-emerald-50 hover:bg-emerald-600 border border-emerald-200 hover:border-emerald-600 rounded-full transition-all shrink-0 ml-1 shadow-sm cursor-pointer"
+                        title="Send via WhatsApp"
+                      >
+                        <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.968C16.638 1.97 14.162.945 11.53.945c-5.442 0-9.87 4.372-9.874 9.802-.001 1.777.467 3.51 1.358 5.021l-.993 3.624 3.746-.983zm13.757-11.232c-.322-.162-1.9-.938-2.193-1.046-.294-.107-.507-.162-.72.162-.213.324-.827 1.046-1.013 1.262-.187.218-.374.245-.697.082-.323-.162-1.362-.502-2.595-1.602-.96-.856-1.607-1.912-1.794-2.236-.187-.324-.02-.501.141-.661.145-.143.323-.378.485-.568.162-.189.215-.324.322-.541.108-.217.053-.406-.027-.568-.08-.162-.72-1.737-.987-2.383-.26-.627-.525-.541-.72-.551-.19-.01-.406-.01-.623-.01-.217 0-.569.082-.867.406-.298.324-1.137 1.11-1.137 2.707 0 1.597 1.157 3.137 1.319 3.353.162.217 2.277 3.477 5.518 4.877.771.332 1.373.53 1.84.678.775.246 1.48.212 2.037.129.62-.093 1.9-.778 2.167-1.493.267-.715.267-1.326.187-1.493-.08-.162-.293-.267-.615-.429z" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-gray-500 font-medium">GST Number</p>
@@ -339,8 +397,33 @@ export default function LogisticsManagementPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button type="button" onClick={() => setViewLogistic(null)}>Close</Button>
+          <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-gray-100 pt-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                className="gap-2 text-xs font-semibold text-slate-700 hover:text-brand-primary border-gray-200 cursor-pointer"
+                onClick={() => handleCopyCredentials()}
+              >
+                <Copy className="w-3.5 h-3.5" />
+                Copy Credentials
+              </Button>
+              {viewLogistic?.phone && (
+                <a
+                  href={getWhatsAppShareUrl(viewLogistic)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.968C16.638 1.97 14.162.945 11.53.945c-5.442 0-9.87 4.372-9.874 9.802-.001 1.777.467 3.51 1.358 5.021l-.993 3.624 3.746-.983zm13.757-11.232c-.322-.162-1.9-.938-2.193-1.046-.294-.107-.507-.162-.72.162-.213.324-.827 1.046-1.013 1.262-.187.218-.374.245-.697.082-.323-.162-1.362-.502-2.595-1.602-.96-.856-1.607-1.912-1.794-2.236-.187-.324-.02-.501.141-.661.145-.143.323-.378.485-.568.162-.189.215-.324.322-.541.108-.217.053-.406-.027-.568-.08-.162-.72-1.737-.987-2.383-.26-.627-.525-.541-.72-.551-.19-.01-.406-.01-.623-.01-.217 0-.569.082-.867.406-.298.324-1.137 1.11-1.137 2.707 0 1.597 1.157 3.137 1.319 3.353.162.217 2.277 3.477 5.518 4.877.771.332 1.373.53 1.84.678.775.246 1.48.212 2.037.129.62-.093 1.9-.778 2.167-1.493.267-.715.267-1.326.187-1.493-.08-.162-.293-.267-.615-.429z" />
+                  </svg>
+                  Share on WhatsApp
+                </a>
+              )}
+            </div>
+            <Button type="button" variant="secondary" onClick={() => setViewLogistic(null)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -382,3 +465,6 @@ export default function LogisticsManagementPage() {
     </div>
   );
 }
+
+
+

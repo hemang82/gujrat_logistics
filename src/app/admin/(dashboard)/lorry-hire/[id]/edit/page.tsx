@@ -42,8 +42,11 @@ export default function LorryHireEditForm() {
     fromBranch: userBranch,
     toBranch: '',
     truckNo: '',
+    driver: '',
     totalAmount: '',
     advanceAmount: '',
+    commission: '',
+    hamali: '',
     balancePaidBy: '',
     status: 'pending',
     remark: ''
@@ -72,6 +75,12 @@ export default function LorryHireEditForm() {
   const [truckHighlightIndex, setTruckHighlightIndex] = useState(-1);
   const [truckSuggestions, setTruckSuggestions] = useState<any[]>([]);
 
+  const [drivers, setDrivers] = useState<any[]>([]);
+  const [driverSearch, setDriverSearch] = useState('');
+  const [showDriverDropdown, setShowDriverDropdown] = useState(false);
+  const [driverHighlightIndex, setDriverHighlightIndex] = useState(-1);
+  const [driverSuggestions, setDriverSuggestions] = useState<any[]>([]);
+
   const [balancePaidBySearch, setBalancePaidBySearch] = useState('');
   const [showBalancePaidByDropdown, setShowBalancePaidByDropdown] = useState(false);
   const [balancePaidByHighlightIndex, setBalancePaidByHighlightIndex] = useState(-1);
@@ -87,22 +96,26 @@ export default function LorryHireEditForm() {
 
   const fetchMasters = async () => {
     try {
-      const [branchRes, vehicleRes, challanRes] = await Promise.all([
+      const [branchRes, vehicleRes, challanRes, driverRes] = await Promise.all([
         fetch('/api/admin/branches?limit=1000'),
         fetch('/api/admin/vehicles'),
-        fetch('/api/admin/challans?status=pending&limit=1000') 
+        fetch('/api/admin/challans?status=pending&limit=1000'),
+        fetch('/api/admin/drivers?limit=1000')
       ]);
       
       const branchData = await branchRes.json();
       const vehicleData = await vehicleRes.json();
       const challanData = await challanRes.json();
+      const driverData = await driverRes.json();
       
       const loadedBranches = branchData.branches || branchData || [];
       const loadedVehicles = vehicleData.vehicles || vehicleData || [];
+      const loadedDrivers = driverData.drivers || driverData || [];
 
       setBranches(loadedBranches);
       setVehicles(loadedVehicles);
       setChallans(challanData.challans || challanData || []);
+      setDrivers(loadedDrivers);
 
       if (userBranch && loadedBranches.length > 0) {
         const userBranchObj = loadedBranches.find((b: any) => b._id === userBranch);
@@ -124,8 +137,11 @@ export default function LorryHireEditForm() {
                 fromBranch: data.fromBranch?._id || data.fromBranch || '',
                 toBranch: data.toBranch?._id || data.toBranch || '',
                 truckNo: data.truckNo?._id || data.truckNo || '',
+                driver: data.driver?._id || data.driver || '',
                 totalAmount: data.totalAmount?.toString() || '0',
                 advanceAmount: data.advanceAmount?.toString() || '0',
+                commission: data.commission?.toString() || '',
+                hamali: data.hamali?.toString() || '',
                 balancePaidBy: data.balancePaidBy?._id || data.balancePaidBy || '',
                 status: data.status || 'pending',
                 remark: data.remark || ''
@@ -134,6 +150,7 @@ export default function LorryHireEditForm() {
               if (data.fromBranch) setFromBranchSearch(`${data.fromBranch.name} (${data.fromBranch.code})`);
               if (data.toBranch) setToBranchSearch(`${data.toBranch.name} (${data.toBranch.code})`);
               if (data.truckNo) setTruckSearch(data.truckNo.vehicleNumber || data.truckNo.vehicleNo || '');
+              if (data.driver) setDriverSearch(data.driver.name || '');
               if (data.balancePaidBy) setBalancePaidBySearch(`${data.balancePaidBy.name} (${data.balancePaidBy.code})`);
 
               if (data.challans && data.challans.length > 0) {
@@ -339,8 +356,20 @@ export default function LorryHireEditForm() {
     if (e.key === 'Tab') {
       const firstMatch = truckSuggestions[0];
       if (firstMatch && truckSearch && firstMatch.label.toLowerCase().startsWith(truckSearch.toLowerCase())) {
-        setFormData(prev => ({ ...prev, truckNo: firstMatch.value }));
+        let newDriver = formData.driver;
+        let newDriverSearch = driverSearch;
+        const truckDriver = firstMatch.original?.driver;
+        if (truckDriver) {
+          const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+          const driverObj = drivers.find(d => d._id === did);
+          if (driverObj) {
+            newDriver = driverObj._id;
+            newDriverSearch = driverObj.name;
+          }
+        }
+        setFormData(prev => ({ ...prev, truckNo: firstMatch.value, driver: newDriver }));
         setTruckSearch(firstMatch.label);
+        setDriverSearch(newDriverSearch);
         setShowTruckDropdown(false);
         setTruckHighlightIndex(-1);
         setErrors(prev => ({ ...prev, truckNo: '' }));
@@ -354,13 +383,72 @@ export default function LorryHireEditForm() {
       if (truckHighlightIndex >= 0 && truckHighlightIndex < truckSuggestions.length) {
         e.preventDefault();
         const selected = truckSuggestions[truckHighlightIndex];
-        setFormData(prev => ({ ...prev, truckNo: selected.value }));
+        
+        let newDriver = formData.driver;
+        let newDriverSearch = driverSearch;
+        const truckDriver = selected.original?.driver;
+        if (truckDriver) {
+          const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+          const driverObj = drivers.find(d => d._id === did);
+          if (driverObj) {
+            newDriver = driverObj._id;
+            newDriverSearch = driverObj.name;
+          }
+        }
+        
+        setFormData(prev => ({ ...prev, truckNo: selected.value, driver: newDriver }));
         setTruckSearch(selected.label);
+        setDriverSearch(newDriverSearch);
         setShowTruckDropdown(false);
         setTruckHighlightIndex(-1);
         setErrors(prev => ({ ...prev, truckNo: '' }));
       }
     } else if (e.key === 'Escape') { setShowTruckDropdown(false); setTruckHighlightIndex(-1); }
+  };
+
+  // ------------- DRIVER AUTOCOMPLETE -------------
+  const driverOptions = drivers.map(d => ({ value: d._id, label: d.name || 'Unknown' }));
+
+  useEffect(() => {
+    if (!driverSearch || driverSearch.trim().length < 1) {
+      setDriverSuggestions([]);
+      return;
+    }
+    const query = driverSearch.trim().toLowerCase();
+    const filtered = driverOptions.filter(d => 
+      d.label.toLowerCase().includes(query) || d.value.toLowerCase().includes(query)
+    );
+    setDriverSuggestions(filtered);
+  }, [driverSearch, drivers]);
+
+  useEffect(() => setDriverHighlightIndex(-1), [driverSuggestions]);
+
+  const handleDriverKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab') {
+      const firstMatch = driverSuggestions[0];
+      if (firstMatch && driverSearch && firstMatch.label.toLowerCase().startsWith(driverSearch.toLowerCase())) {
+        setFormData(prev => ({ ...prev, driver: firstMatch.value }));
+        setDriverSearch(firstMatch.label);
+        setShowDriverDropdown(false);
+        setDriverHighlightIndex(-1);
+        setErrors(prev => ({ ...prev, driver: '' }));
+        return;
+      }
+    }
+    if (!showDriverDropdown || driverSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); setDriverHighlightIndex(prev => prev < driverSuggestions.length - 1 ? prev + 1 : 0); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setDriverHighlightIndex(prev => prev > 0 ? prev - 1 : driverSuggestions.length - 1); }
+    else if (e.key === 'Enter') {
+      if (driverHighlightIndex >= 0 && driverHighlightIndex < driverSuggestions.length) {
+        e.preventDefault();
+        const selected = driverSuggestions[driverHighlightIndex];
+        setFormData(prev => ({ ...prev, driver: selected.value }));
+        setDriverSearch(selected.label);
+        setShowDriverDropdown(false);
+        setDriverHighlightIndex(-1);
+        setErrors(prev => ({ ...prev, driver: '' }));
+      }
+    } else if (e.key === 'Escape') { setShowDriverDropdown(false); setDriverHighlightIndex(-1); }
   };
 
   // ------------- BALANCE PAID BY AUTOCOMPLETE -------------
@@ -438,11 +526,53 @@ export default function LorryHireEditForm() {
       // Calculate total from LR charges instead of truckFreight
       const lrTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
       
+      let newDriver = formData.driver, newDriverSearch = driverSearch;
+
+      // Priority 1: Use driver directly assigned to the Challan
+      const challanDriver = challan.driverName?._id || challan.driverName;
+      if (challanDriver) {
+        if (typeof challan.driverName === 'object' && challan.driverName?.name) {
+          newDriver = challan.driverName._id;
+          newDriverSearch = challan.driverName.name;
+        } else {
+          const did = challanDriver.toString();
+          const driverObj = drivers.find(d => d._id === did);
+          if (driverObj) {
+            newDriver = driverObj._id;
+            newDriverSearch = driverObj.name;
+          }
+        }
+      }
+
+      // Priority 2: If challan had no driver, fallback to vehicle's assigned driver
+      if (truck) {
+        const truckObj = vehicles.find(v => v._id === truck);
+        if (truckObj) {
+          setTruckSearch(truckObj.vehicleNumber || '');
+          if (!newDriver) {
+            const truckDriver = truckObj.assignedDriver || truckObj.driver;
+            if (truckDriver) {
+              const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+              const driverObj = drivers.find(d => d._id === did);
+              if (driverObj) {
+                newDriver = driverObj._id;
+                newDriverSearch = driverObj.name;
+              }
+            }
+          }
+        }
+      } else if (challan.truckNo?.vehicleNumber) {
+        setTruckSearch(challan.truckNo.vehicleNumber);
+      }
+
+      setDriverSearch(newDriverSearch);
+
       setFormData(prev => ({
         ...prev,
         fromBranch: fromBranch,
         toBranch: toBranch,
         truckNo: truck,
+        driver: newDriver,
         totalAmount: lrTotal.toString(),
         advanceAmount: challan.advanceAmount?.toString() || ''
       }));
@@ -455,10 +585,6 @@ export default function LorryHireEditForm() {
       if (toBranch) {
         const branchObj = branches.find(b => b._id === toBranch);
         if (branchObj) setToBranchSearch(`${branchObj.name || ''} (${branchObj.code || ''})`);
-      }
-      if (truck) {
-        const truckObj = vehicles.find(v => v._id === truck);
-        if (truckObj) setTruckSearch(truckObj.vehicleNumber || '');
       }
     } else {
       // Sum LR charges for the new challan being added
@@ -481,7 +607,9 @@ export default function LorryHireEditForm() {
   const calculateBalance = () => {
     const total = Number(formData.totalAmount) || 0;
     const advance = Number(formData.advanceAmount) || 0;
-    return total - advance;
+    const comm = Number(formData.commission) || 0;
+    const hamaliAmt = Number(formData.hamali) || 0;
+    return total - advance - comm + hamaliAmt;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -510,9 +638,13 @@ export default function LorryHireEditForm() {
         fromBranch: formData.fromBranch,
         toBranch: formData.toBranch,
         truckNo: formData.truckNo,
+        driver: formData.driver || null,
         challans: selectedChallans.map(c => c._id),
         totalAmount: Number(formData.totalAmount) || 0,
         advanceAmount: Number(formData.advanceAmount) || 0,
+        commission: Number(formData.commission) || 0,
+        hamali: Number(formData.hamali) || 0,
+        tds: 0,
         balanceAmount: calculateBalance(),
         balancePaidBy: formData.balancePaidBy || null,
         status: formData.status,
@@ -539,62 +671,95 @@ export default function LorryHireEditForm() {
 
   const renderError = (field: string) => {
     if (errors[field]) {
-      return <p className="text-red-500 text-xs font-semibold absolute bottom-0">{errors[field]}</p>;
+      return <p className="text-rose-500 text-[11px] font-semibold mt-1 leading-tight flex items-center gap-1">{errors[field]}</p>;
     }
     return null;
   };
 
   return (
-    <div className="w-full pb-8 space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">Edit Lorry Hire Voucher</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Update voucher details and challans</p>
-        </div>
-        <Link href="/admin/lorry-hire">
-          <Button variant="outline" className="h-9 px-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5 transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back
+    <div className="w-full pb-4">
+      {/* Compact Header Bar - Synced with LR & Challan */}
+      <div className="mb-2.5 flex items-center justify-between bg-white py-2 px-3.5 rounded-xl shadow-xs border border-slate-200/90">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            variant="outline"
+            className="h-8 w-8 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors border border-gray-200"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
-        </Link>
+          <div>
+            <h1 className="text-sm sm:text-base font-bold text-gray-800 leading-tight">Edit Lorry Hire Voucher</h1>
+            <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Update voucher details and assigned challans</p>
+          </div>
+        </div>
+
+        {/* Status Dropdown in Header */}
+        <div className="flex items-center gap-2">
+          <Label className="text-xs font-bold text-slate-700 hidden sm:inline-block">Status:</Label>
+          <ThemeSelect
+            name="status"
+            value={formData.status}
+            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'pending' | 'completed' }))}
+            options={[
+              { value: 'pending', label: 'Pending' },
+              { value: 'completed', label: 'Completed' }
+            ]}
+            className="h-8 rounded-[8px] border-[#64748b59] text-xs font-bold min-w-[120px]"
+          />
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Section 1 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-20 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              1. Lorry Hire Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Voucher No</Label>
-                <Input value={voucherNo} disabled className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 font-bold text-sm" />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Date <span className="text-red-500">*</span></Label>
-                <DatePicker
-                  value={formData.date}
-                  onChange={(date) => setFormData(prev => ({ ...prev, date }))}
-                  className="h-10 rounded-lg border-gray-200 text-sm"
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Unified Single Sheet Card Container */}
+        <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
+          
+          {/* Section 1: Hire & Route Information */}
+          <div className="relative z-20 !overflow-visible">
+            <div className="flex items-center gap-2 pb-2 mb-3.5 border-b border-slate-100">
+              <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+              <span className="text-xs font-bold text-slate-700 tracking-wide">
+                1. Hire & Route Information
+              </span>
+            </div>
+
+            {/* Row 1: Primary Document Details (3 Balanced Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Voucher No</Label>
+                <Input
+                  value={voucherNo}
+                  disabled
+                  className="h-9 text-xs font-bold bg-slate-50 border-slate-200 text-slate-600 rounded-[8px]"
                 />
               </div>
 
-              {/* Challan Search at the Top */}
-              <div className="space-y-1 relative pb-4 md:col-span-1 lg:col-span-1">
-                <Label className="text-[10px] font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/10 px-2 py-0.5 rounded text-brand-primary">
-                  🔍 Super Auto-Fill (Search Challan) <span className="text-red-500">*</span>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Date <span className="text-red-500">*</span></Label>
+                <DatePicker
+                  value={formData.date}
+                  onChange={(date) => setFormData(prev => ({ ...prev, date }))}
+                  className="h-9 rounded-[8px] border-[#64748b59] text-xs font-semibold"
+                />
+              </div>
+
+              {/* Challan Super Auto-Fill */}
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-brand-primary flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
+                  Super Auto-Fill (Search Challan) <span className="text-red-500">*</span>
                 </Label>
-                <div className="flex gap-2 mt-1 relative">
+                <div className="flex gap-1.5 relative">
                   <div className="relative flex-1">
                     {scanChallanNo && challanSuggestions.length > 0 && challanSuggestions[0].label.toLowerCase().startsWith(scanChallanNo.toLowerCase()) && (
-                      <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <div className="absolute left-8 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                         <span className="opacity-0">{challanSuggestions[0].label.slice(0, scanChallanNo.length)}</span>
                         <span>{challanSuggestions[0].label.slice(scanChallanNo.length)}</span>
                       </div>
                     )}
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brand-primary" />
                     <Input
                       placeholder="e.g. 1001..."
                       value={scanChallanNo}
@@ -604,22 +769,21 @@ export default function LorryHireEditForm() {
                       onFocus={() => setShowChallanDropdown(true)}
                       onBlur={() => setTimeout(() => setShowChallanDropdown(false), 250)}
                       onKeyDown={handleChallanKeyDown}
-                      className="h-10 pl-9 rounded-lg text-sm bg-white border-brand-primary/50 ring-2 ring-brand-primary/20 focus-visible:ring-brand-primary"
-                      autoFocus
+                      className="h-9 pl-8 text-xs font-bold text-slate-800 rounded-[8px] bg-brand-primary/5 border-brand-primary/40 focus-visible:ring-1 focus-visible:ring-brand-primary"
                     />
                   </div>
                   <Button 
                     id="add-challan-btn"
                     type="button" 
                     onClick={handleScanChallan} 
-                    className="bg-brand-primary hover:bg-brand-primary-dark shrink-0 px-3"
+                    className="h-9 bg-brand-primary hover:bg-brand-primary-dark shrink-0 px-3.5 text-xs font-bold rounded-[8px] shadow-xs"
                   >
                     Add
                   </Button>
                   
                   {/* Dropdown for Challan */}
                   {showChallanDropdown && challanSuggestions.length > 0 && (
-                    <div className="absolute z-50 top-full left-0 mt-1 w-[300px] bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    <div className="absolute z-50 top-full left-0 mt-1 w-[320px] bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {challanSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.value}
@@ -632,134 +796,38 @@ export default function LorryHireEditForm() {
                             }, 50);
                           }}
                           onMouseEnter={() => setChallanHighlightIndex(index)}
-                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors flex justify-between ${challanHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                          className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors flex justify-between items-center ${challanHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                         >
                           <span className="font-bold">{suggestion.label}</span>
-                          <span className="text-xs text-gray-500">{suggestion.original?.memoDestinationBranch?.code || 'N/A'}</span>
+                          <span className="text-[11px] text-gray-500 font-medium">{suggestion.original?.memoDestinationBranch?.code || 'N/A'}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="col-span-full border-t border-gray-100 my-2"></div>
-
-              {/* Truck Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Status</Label>
-                <ThemeSelect
-                  name="status"
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'pending' | 'completed' }))}
-                  options={[
-                    { value: 'pending', label: 'Pending' },
-                    { value: 'completed', label: 'Completed' }
-                  ]}
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold w-full"
+            {/* Row 2: From Branch (Disabled), To Branch, Truck No, Driver Name (4 Balanced Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 items-start">
+              {/* From Branch (Disabled) */}
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">From Branch <span className="text-red-500">*</span></Label>
+                <Input
+                  value={fromBranchSearch}
+                  disabled
+                  readOnly
+                  className="h-9 text-xs font-bold text-slate-600 rounded-[8px] bg-slate-100/80 border-[#64748b59] cursor-not-allowed select-none"
                 />
-              </div>
-
-              {/* Truck Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  {truckSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckSearch.length)}</span>
-                      <span>{truckSuggestions[0].label.slice(truckSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={truckSearch}
-                    onChange={(e) => {
-                      setTruckSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, truckNo: '' }));
-                    }}
-                    onFocus={() => setShowTruckDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowTruckDropdown(false), 250)}
-                    onKeyDown={handleTruckKeyDown}
-                    placeholder="Search or type Truck..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-gray-200'}`}
-                  />
-                </div>
-                {renderError('truckNo')}
-
-                {showTruckDropdown && truckSuggestions.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                    {truckSuggestions.map((suggestion, index) => (
-                      <div
-                        key={suggestion.value}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, truckNo: suggestion.value }));
-                          setTruckSearch(suggestion.label);
-                          setShowTruckDropdown(false);
-                          setTruckHighlightIndex(-1);
-                          setErrors(prev => ({ ...prev, truckNo: '' }));
-                        }}
-                        onMouseEnter={() => setTruckHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${truckHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        {suggestion.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* From Branch Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">From Branch <span className="text-red-500">*</span></Label>
-                <div className="relative">
-                  {fromBranchSearch && fromBranchSuggestions.length > 0 && fromBranchSuggestions[0].label.toLowerCase().startsWith(fromBranchSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                      <span className="opacity-0">{fromBranchSuggestions[0].label.slice(0, fromBranchSearch.length)}</span>
-                      <span>{fromBranchSuggestions[0].label.slice(fromBranchSearch.length)}</span>
-                    </div>
-                  )}
-                  <Input
-                    value={fromBranchSearch}
-                    onChange={(e) => {
-                      setFromBranchSearch(e.target.value);
-                      setFormData(prev => ({ ...prev, fromBranch: '' }));
-                    }}
-                    onFocus={() => setShowFromBranchDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowFromBranchDropdown(false), 250)}
-                    onKeyDown={handleFromBranchKeyDown}
-                    placeholder="Search or type Branch..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.fromBranch ? 'border-red-500' : 'border-gray-200'}`}
-                  />
-                </div>
                 {renderError('fromBranch')}
-
-                {showFromBranchDropdown && fromBranchSuggestions.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                    {fromBranchSuggestions.map((suggestion, index) => (
-                      <div
-                        key={suggestion.value}
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, fromBranch: suggestion.value }));
-                          setFromBranchSearch(suggestion.label);
-                          setShowFromBranchDropdown(false);
-                          setFromBranchHighlightIndex(-1);
-                          setErrors(prev => ({ ...prev, fromBranch: '' }));
-                        }}
-                        onMouseEnter={() => setFromBranchHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${fromBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        {suggestion.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* To Branch Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">To Branch <span className="text-red-500">*</span></Label>
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">To Branch <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {toBranchSearch && toBranchSuggestions.length > 0 && toBranchSuggestions[0].label.toLowerCase().startsWith(toBranchSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{toBranchSuggestions[0].label.slice(0, toBranchSearch.length)}</span>
                       <span>{toBranchSuggestions[0].label.slice(toBranchSearch.length)}</span>
                     </div>
@@ -774,7 +842,7 @@ export default function LorryHireEditForm() {
                     onBlur={() => setTimeout(() => setShowToBranchDropdown(false), 250)}
                     onKeyDown={handleToBranchKeyDown}
                     placeholder="Search or type Branch..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-gray-200'}`}
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-[#64748b59]'}`}
                   />
                 </div>
                 {renderError('toBranch')}
@@ -792,7 +860,7 @@ export default function LorryHireEditForm() {
                           setErrors(prev => ({ ...prev, toBranch: '' }));
                         }}
                         onMouseEnter={() => setToBranchHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -801,137 +869,271 @@ export default function LorryHireEditForm() {
                 )}
               </div>
 
-              {/* Challan Search removed from here and moved to top */}
-            </div>
-          </CardContent>
-        </Card>
+              {/* Truck Dropdown */}
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">Truck No <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  {truckSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckSearch.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckSearch.length)}</span>
+                      <span>{truckSuggestions[0].label.slice(truckSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={truckSearch}
+                    onChange={(e) => {
+                      setTruckSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, truckNo: '' }));
+                    }}
+                    onFocus={() => setShowTruckDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowTruckDropdown(false), 250)}
+                    onKeyDown={handleTruckKeyDown}
+                    placeholder="Search or type Truck..."
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-[#64748b59]'}`}
+                  />
+                </div>
+                {renderError('truckNo')}
 
-        {/* Section 2 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl flex justify-between items-center flex-row">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              2. Challans Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
+                {showTruckDropdown && truckSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    {truckSuggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion.value}
+                        onClick={() => {
+                          let newDriver = formData.driver;
+                          let newDriverSearch = driverSearch;
+                          const truckDriver = suggestion.original?.driver;
+                          if (truckDriver) {
+                            const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+                            const driverObj = drivers.find(d => d._id === did);
+                            if (driverObj) {
+                              newDriver = driverObj._id;
+                              newDriverSearch = driverObj.name;
+                            }
+                          }
+
+                          setFormData(prev => ({ ...prev, truckNo: suggestion.value, driver: newDriver }));
+                          setTruckSearch(suggestion.label);
+                          setDriverSearch(newDriverSearch);
+                          setShowTruckDropdown(false);
+                          setTruckHighlightIndex(-1);
+                          setErrors(prev => ({ ...prev, truckNo: '' }));
+                        }}
+                        onMouseEnter={() => setTruckHighlightIndex(index)}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${truckHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        {suggestion.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Driver Dropdown */}
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">Driver Name</Label>
+                <div className="relative">
+                  {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
+                      <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={driverSearch}
+                    onChange={(e) => {
+                      setDriverSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, driver: '' }));
+                    }}
+                    onFocus={() => setShowDriverDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDriverDropdown(false), 250)}
+                    onKeyDown={handleDriverKeyDown}
+                    placeholder="Search or type Driver..."
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.driver ? 'border-red-500' : 'border-[#64748b59]'}`}
+                  />
+                </div>
+                {renderError('driver')}
+
+                {showDriverDropdown && driverSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    {driverSuggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion.value}
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, driver: suggestion.value }));
+                          setDriverSearch(suggestion.label);
+                          setShowDriverDropdown(false);
+                          setDriverHighlightIndex(-1);
+                          setErrors(prev => ({ ...prev, driver: '' }));
+                        }}
+                        onMouseEnter={() => setDriverHighlightIndex(index)}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${driverHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        {suggestion.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Attached Challans Information */}
+          <div className="relative z-10 !overflow-visible">
+            <div className="flex items-center justify-between pb-2 mb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+                <span className="text-[11px] font-bold text-slate-700 tracking-wider uppercase">
+                  2. Attached Challans Information
+                </span>
+              </div>
+              <span className="text-xs font-bold text-slate-500">
+                {selectedChallans.length} {selectedChallans.length === 1 ? 'Challan' : 'Challans'} Attached
+              </span>
+            </div>
+
             {selectedChallans.length > 0 ? (
-              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-600 font-semibold text-xs uppercase tracking-wide">
+              <div className="border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200/90">
                     <tr>
-                      <th className="px-4 py-3 border-r border-gray-200">Challan No</th>
-                      <th className="px-4 py-3 border-r border-gray-200">Station</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">LRs</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Articles</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Weight</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-right">Freight</th>
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90">Challan No</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90">Station</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center">LRs</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center">Articles</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center">Weight</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-right">Freight</th>
+                      <th className="px-3.5 py-2.5 text-right w-16">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-100">
                     {selectedChallans.map(c => {
                       const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                       const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
                       return (
-                        <tr key={c._id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
-                          <td className="px-4 py-3 font-semibold text-gray-700 uppercase border-r border-gray-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
-                          <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
-                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>
-                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{totalLRFreight.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right">
+                        <tr key={c._id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="px-3.5 py-2 font-bold text-brand-primary border-r border-slate-100">CH-{c.challanNumber}</td>
+                          <td className="px-3.5 py-2 font-bold text-slate-700 uppercase border-r border-slate-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
+                          <td className="px-3.5 py-2 font-bold text-slate-800 text-center border-r border-slate-100">{c.bookings?.length || 0}</td>
+                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalPackages}</td>
+                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalWeight}</td>
+                          <td className="px-3.5 py-2 text-right font-bold text-slate-800 border-r border-slate-100">₹{totalLRFreight.toFixed(2)}</td>
+                          <td className="px-3.5 py-2 text-right">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 rounded-md"
                               onClick={() => removeChallan(c._id)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </td>
                         </tr>
                       );
                     })}
-                    {/* Summary Row */}
-                    <tr className="bg-gray-50/80 font-black text-gray-900 border-t border-gray-200">
-                      <td colSpan={2} className="px-4 py-3 text-right border-r border-gray-200">TOTAL:</td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                  </tbody>
+                  <tfoot className="bg-slate-50/90 font-bold text-slate-800 border-t border-slate-200">
+                    <tr>
+                      <td colSpan={2} className="px-3.5 py-2 text-right border-r border-slate-200/90 font-black tracking-wider uppercase text-[11px] text-slate-600">TOTAL:</td>
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.length || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200 text-brand-primary">
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 text-brand-primary font-black">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-right border-r border-gray-200 text-brand-primary">
+                      <td className="px-3.5 py-2 text-right border-r border-slate-200/90 text-brand-primary font-black">
                         ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3"></td>
+                      <td className="px-3.5 py-2"></td>
                     </tr>
-                  </tbody>
+                  </tfoot>
                 </table>
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-400 text-sm">
+              <div className="text-center py-8 text-gray-400 text-xs font-medium border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 {(!formData.fromBranch || !formData.toBranch) 
-                  ? "Select From Branch and To Branch to search for challans." 
-                  : "No Challans added yet. Search and add challans."}
+                  ? "Select From Branch and To Branch or use Super Auto-Fill to search Challan." 
+                  : "No Challans added yet. Search and add Challan using the box above."}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Section 3 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              3. Amount Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
+          {/* Section 3: Amount & Financial Details */}
+          <div className="relative z-10 !overflow-visible">
+            <div className="flex items-center gap-2 pb-2 mb-3.5 border-b border-slate-100">
+              <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+              <span className="text-xs font-bold text-slate-700 tracking-wide">
+                3. Amount & Financial Details
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Total Amount</Label>
                 <Input
                   type="number"
                   name="totalAmount"
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold bg-gray-50 px-3"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] bg-slate-50 px-3"
                 />
               </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Advance Amount</Label>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Advance Amount</Label>
                 <Input
                   type="number"
                   name="advanceAmount"
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-800 uppercase">Balance Amount</Label>
-                <Input
-                  type="text"
-                  value={calculateBalance()}
-                  disabled
-                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm px-3 text-gray-900"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
                 />
               </div>
 
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Commission</Label>
+                <Input
+                  type="number"
+                  name="commission"
+                  value={formData.commission}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Hamali</Label>
+                <Input
+                  type="number"
+                  name="hamali"
+                  value={formData.hamali}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Balance Amount</Label>
+                <div className="h-9 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-center px-3 font-bold text-sm tracking-wide">
+                  {'\u20B9'}{Number(calculateBalance() || 0).toFixed(2)}
+                </div>
+              </div>
+
               {/* Balance Paid By Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Balance Paid By</Label>
+              <div className="space-y-1 relative sm:col-span-1 lg:col-span-1">
+                <Label className="text-xs font-bold text-slate-800">Balance Paid By</Label>
                 <div className="relative">
                   {balancePaidBySearch && balancePaidBySuggestions.length > 0 && balancePaidBySuggestions[0].label.toLowerCase().startsWith(balancePaidBySearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{balancePaidBySuggestions[0].label.slice(0, balancePaidBySearch.length)}</span>
                       <span>{balancePaidBySuggestions[0].label.slice(balancePaidBySearch.length)}</span>
                     </div>
@@ -946,7 +1148,7 @@ export default function LorryHireEditForm() {
                     onBlur={() => setTimeout(() => setShowBalancePaidByDropdown(false), 250)}
                     onKeyDown={handleBalancePaidByKeyDown}
                     placeholder="Search or type Branch..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent border-[#64748b59]"
                   />
                 </div>
 
@@ -962,7 +1164,7 @@ export default function LorryHireEditForm() {
                           setBalancePaidByHighlightIndex(-1);
                         }}
                         onMouseEnter={() => setBalancePaidByHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${balancePaidByHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${balancePaidByHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -971,26 +1173,38 @@ export default function LorryHireEditForm() {
                 )}
               </div>
 
-              {/* Remark */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Remark (Optional)</Label>
+              {/* Remark / Notes right next to Balance Paid By */}
+              <div className="space-y-1 sm:col-span-2 lg:col-span-2">
+                <Label className="text-xs font-bold text-slate-800">Remark / Notes (Optional)</Label>
                 <Input
                   name="remark"
                   value={formData.remark}
                   onChange={handleChange}
-                  placeholder="Any notes..."
-                  className="h-10 text-sm rounded-lg border-gray-200"
+                  placeholder="Enter remarks or notes..."
+                  className="h-9 text-xs font-medium text-slate-800 rounded-[8px] border-[#64748b59] placeholder:text-slate-300 w-full"
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        </div>
+
+        {/* Action Buttons - Synced with LR Style */}
+        <div className="flex items-center justify-end gap-2 pt-1">
           <Link href="/admin/lorry-hire">
-            <Button variant="outline" type="button" className="h-10 px-6 rounded-lg font-semibold">Cancel</Button>
+            <Button 
+              type="button" 
+              variant="outline"
+              className="h-9 px-4 rounded-[8px] border border-gray-300 hover:bg-gray-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors"
+            >
+              Cancel
+            </Button>
           </Link>
-          <Button type="submit" disabled={isLoading} className="h-10 px-6 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-sm shadow-sm flex items-center gap-2 transition-colors">
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+          >
             {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
             {isLoading ? 'Updating...' : 'Update Voucher'}
           </Button>
@@ -999,3 +1213,7 @@ export default function LorryHireEditForm() {
     </div>
   );
 }
+
+
+
+

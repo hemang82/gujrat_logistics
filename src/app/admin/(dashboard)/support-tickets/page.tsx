@@ -143,7 +143,7 @@ export default function SuperAdminSupportTickets() {
                     </div>
                   </div>
                   <div className="shrink-0">
-                    <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
+                    <span className="text-xs font-semibold text-slate-700 bg-gray-100 px-3 py-1.5 rounded-lg">
                       {ticket.replies?.length || 0} Messages
                     </span>
                   </div>
@@ -176,7 +176,7 @@ export default function SuperAdminSupportTickets() {
                 
                 {/* Admin Actions */}
                 <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                  <span className="text-xs font-semibold text-gray-500 mr-2">Admin Actions:</span>
+                  <span className="text-xs font-semibold text-slate-700 mr-2">Admin Actions:</span>
                   {selectedTicket.status !== 'open' && (
                     <Button variant="outline" size="sm" onClick={() => handleChangeStatus('open')} className="h-7 text-xs border-orange-200 text-orange-700 hover:bg-orange-50">
                       Re-open
@@ -205,7 +205,7 @@ export default function SuperAdminSupportTickets() {
                         {isMine ? (
                           <>
                             <span className="text-[10px] text-gray-400 font-medium">{new Date(reply.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            <span className="text-xs font-bold text-gray-600">Super Admin</span>
+                            <span className="text-xs font-semibold text-slate-700">Super Admin</span>
                             <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
                           </>
                         ) : (
@@ -250,3 +250,6 @@ export default function SuperAdminSupportTickets() {
     </div>
   );
 }
+
+
+

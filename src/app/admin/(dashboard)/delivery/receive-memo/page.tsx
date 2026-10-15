@@ -222,7 +222,7 @@ export default function ReceiveMemoPage() {
                       <p className="text-xs text-gray-500">{ch.driverName?.name || 'Unknown Driver'}</p>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 text-xs font-medium text-gray-600">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                         <span className="truncate max-w-[100px]">{ch.branch?.name || 'N/A'}</span>
                         <span className="text-gray-300">→</span>
                         <span className="truncate max-w-[100px] text-brand-primary">{ch.memoDestinationBranch?.name || 'N/A'}</span>
@@ -273,3 +273,5 @@ export default function ReceiveMemoPage() {
     </div>
   );
 }
+
+

@@ -56,12 +56,14 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
   const isMasterActive = pathname.startsWith('/admin/branches') || pathname.startsWith('/admin/clients') || pathname.startsWith('/admin/agents') || pathname.startsWith('/admin/masters');
   const isDeliveryActive = pathname.startsWith('/admin/delivery');
   const isAccountsActive = pathname.startsWith('/admin/accounts');
+  const isReportsActive = pathname.startsWith('/admin/reports');
 
   const [isFleetOpen, setIsFleetOpen] = React.useState(isFleetActive);
   const [isBookingOpen, setIsBookingOpen] = React.useState(isBookingActive);
   const [isMasterOpen, setIsMasterOpen] = React.useState(isMasterActive);
   const [isDeliveryOpen, setIsDeliveryOpen] = React.useState(isDeliveryActive);
   const [isAccountsOpen, setIsAccountsOpen] = React.useState(isAccountsActive);
+  const [isReportsOpen, setIsReportsOpen] = React.useState(isReportsActive);
 
   // Auto expand when matching route is loaded/reloaded
   React.useEffect(() => {
@@ -93,6 +95,12 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
       setIsAccountsOpen(true);
     }
   }, [pathname, isAccountsActive]);
+
+  React.useEffect(() => {
+    if (isReportsActive) {
+      setIsReportsOpen(true);
+    }
+  }, [pathname, isReportsActive]);
 
   const navItems: any[] = [];
 
@@ -235,8 +243,26 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
     }
   }
 
-  if (user?.role === 'superadmin' || user?.role === 'logistic') {
-    navItems.push({ name: 'Reports', href: '/admin/reports', icon: <BarChart3 className="w-5 h-5" />, isDropdown: false });
+  if (user?.role === 'superadmin' || user?.role === 'logistic' || user?.role === 'branch_user' || user?.role === 'branch') {
+    navItems.push({ 
+      name: 'Reports', 
+      icon: <FileText className="w-5 h-5" />, 
+      isDropdown: true,
+      isOpen: isReportsOpen,
+      setIsOpen: setIsReportsOpen,
+      isActive: isReportsActive,
+      children: [
+        { name: '📊 All Reports Hub', href: '/admin/reports', exact: true },
+        { name: 'Daily Booking Register', href: '/admin/reports/daily-booking', exact: false },
+        { name: 'Left Booking', href: '/admin/reports/left-booking', exact: false },
+        { name: 'Booking Summary', href: '/admin/reports/booking-summary', exact: false },
+        { name: 'GST Tax Register', href: '/admin/reports/gst-tax', exact: false },
+        { name: 'Charges Register', href: '/admin/reports/charges', exact: false },
+        { name: 'Memo Report', href: '/admin/reports/memo', exact: false },
+        { name: 'Lorry Hire Report', href: '/admin/reports/lorry-hire', exact: false },
+        { name: 'Invoice & Billing (TBB)', href: '/admin/reports/invoice', exact: false },
+      ]
+    });
   }
   
   if (user?.role === 'logistic' || user?.role === 'branch_user' || user?.role === 'branch') {
@@ -324,6 +350,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
                           <Link
                             key={child.name}
                             href={child.href}
+                            prefetch={true}
                             onClick={() => onClose && onClose()}
                             className={`block px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                               isChildActive 
@@ -346,6 +373,7 @@ export function AdminSidebar({ isOpen = false, onClose }: { isOpen?: boolean, on
               <Link 
                 key={item.href} 
                 href={item.href || ''}
+                prefetch={true}
                 onClick={() => onClose && onClose()}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 font-medium text-sm group ${
                   isActive 

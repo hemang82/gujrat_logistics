@@ -169,7 +169,7 @@ export default function AnnouncementsPage() {
                         {!ann.isActive && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
                       </div>
                       <p className="text-gray-700 text-sm mb-3">{ann.message}</p>
-                      <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
+                      <div className="flex items-center gap-4 text-xs font-semibold text-slate-700">
                         {ann.startDate || ann.endDate ? (
                           <span className="flex items-center gap-1 bg-white px-2 py-1 rounded-md border shadow-sm">
                             <Calendar className="w-3.5 h-3.5" />
@@ -188,7 +188,7 @@ export default function AnnouncementsPage() {
                   </div>
                   <div className="shrink-0 flex items-center gap-4 border-t md:border-t-0 md:border-l border-gray-200/50 pt-4 md:pt-0 md:pl-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-gray-500">{ann.isActive ? 'Active' : 'Hidden'}</span>
+                      <span className="text-xs font-semibold text-slate-700">{ann.isActive ? 'Active' : 'Hidden'}</span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" className="sr-only peer" checked={ann.isActive} onChange={() => toggleStatus(ann._id, ann.isActive)} />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
@@ -216,17 +216,17 @@ export default function AnnouncementsPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5 pt-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Title</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Title</label>
               <Input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="e.g., Scheduled Maintenance" className="h-11 rounded-xl" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Message</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Message</label>
               <Textarea required value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} placeholder="Announcement details..." className="h-28 rounded-xl resize-none" />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Alert Type</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Alert Type</label>
                 <select 
                   value={formData.type}
                   onChange={e => setFormData({...formData, type: e.target.value})}
@@ -238,24 +238,24 @@ export default function AnnouncementsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Status</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
                 <div className="h-11 flex items-center gap-3">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" className="sr-only peer" checked={formData.isActive} onChange={e => setFormData({...formData, isActive: e.target.checked})} />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
                   </label>
-                  <span className="text-sm font-medium text-gray-600">{formData.isActive ? 'Active' : 'Inactive'}</span>
+                  <span className="text-sm font-semibold text-slate-700">{formData.isActive ? 'Active' : 'Inactive'}</span>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Start Date (Optional)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Start Date (Optional)</label>
                 <Input type="date" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} className="h-11 rounded-xl" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">End Date (Optional)</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">End Date (Optional)</label>
                 <Input type="date" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} className="h-11 rounded-xl" />
               </div>
             </div>
@@ -272,3 +272,6 @@ export default function AnnouncementsPage() {
     </div>
   );
 }
+
+
+

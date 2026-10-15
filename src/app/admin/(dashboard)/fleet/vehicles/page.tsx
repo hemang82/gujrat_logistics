@@ -102,7 +102,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
             <div className="p-12 text-center text-gray-500">
               <div className="flex flex-col items-center justify-center">
                 <Truck className="w-16 h-16 text-gray-200 mb-4" />
-                <p className="text-lg font-medium text-gray-600">No vehicles found.</p>
+                <p className="text-lg font-semibold text-slate-700">No vehicles found.</p>
                 <p className="text-sm mt-1">Click 'Add New Vehicle' to register your first vehicle.</p>
               </div>
             </div>
@@ -113,7 +113,7 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-gray-50/80 text-gray-600 text-sm border-b border-gray-100">
-                      <th className="font-semibold p-4 w-20 text-center">Sr. No.</th>
+                      <th className="font-semibold p-4 w-20 text-center">Sr.</th>
                       <th className="font-semibold p-4">Vehicle Details</th>
                       <th className="font-semibold p-4">Type & Capacity</th>
                       {(session?.user as any)?.role === 'logistic' && (
@@ -130,13 +130,13 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
                       const isInsuranceExpiring = v.insuranceExpiry && new Date(v.insuranceExpiry) < new Date(Date.now() + 30*24*60*60*1000);
                       return (
                         <tr key={v._id.toString()} className="hover:bg-brand-primary/5 transition-colors">
-                          <td className="p-4 text-center font-bold text-gray-500">{index + 1}</td>
+                          <td className="p-4 text-center font-semibold text-slate-700">{index + 1}</td>
                           <td className="p-4">
                             <p className="font-bold text-brand-primary text-lg tracking-wide">{v.vehicleNumber}</p>
                             <p className="text-xs text-gray-500 font-medium mt-0.5">{v.make || 'Unknown Make'} {v.model}</p>
                           </td>
                           <td className="p-4">
-                            <p className="font-semibold text-gray-700">{v.type}</p>
+                            <p className="font-semibold text-slate-700">{v.type}</p>
                             <p className="text-xs text-gray-500 font-medium">{v.capacity}</p>
                           </td>
                           {(session?.user as any)?.role === 'logistic' && (
@@ -270,3 +270,6 @@ export default async function VehiclesPage({ searchParams }: { searchParams: Pro
     </div>
   );
 }
+
+
+

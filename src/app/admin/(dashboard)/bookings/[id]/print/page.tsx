@@ -39,11 +39,11 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
         <div className="flex flex-col items-center justify-center self-center text-center">
           <div className="border border-brand-primary rounded-lg px-4 py-2 bg-gray-50/30 flex flex-col gap-1.5 min-w-[130px]">
             <div className="flex items-center justify-between gap-3 font-bold">
-              <span className="text-[9px] text-gray-500 uppercase font-semibold">LR No :</span>
+              <span className="text-[9px] text-slate-700 font-semibold uppercase font-semibold">LR No :</span>
               <span className="text-brand-primary text-sm font-black">{booking.lrNumber}</span>
             </div>
             <div className="flex items-center justify-between gap-3 font-bold border-t border-gray-200 pt-1">
-              <span className="text-[9px] text-gray-500 uppercase font-semibold">Date :</span>
+              <span className="text-[9px] text-slate-700 font-semibold uppercase font-semibold">Date :</span>
               <span className="text-xs text-gray-800 font-extrabold">{formatDate(booking.bookingDate)}</span>
             </div>
           </div>
@@ -70,15 +70,15 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
         {/* Row 1: Branches */}
         <div className="flex border-b border-gray-400">
           <div className="flex-1 p-1 border-r border-gray-400">
-            <span className="font-bold text-gray-500 uppercase mr-2">From:</span>
+            <span className="font-semibold text-slate-700 uppercase mr-2">From:</span>
             <span className="font-bold text-gray-900 text-xs">{booking.bookingBranch?.name || booking.branch?.name} ({booking.bookingBranch?.code || booking.branch?.code})</span>
           </div>
           <div className="flex-1 p-1 border-r border-gray-400">
-            <span className="font-bold text-gray-500 uppercase mr-2">To:</span>
+            <span className="font-semibold text-slate-700 uppercase mr-2">To:</span>
             <span className="font-bold text-gray-900 text-xs">{booking.destinationBranch?.name} ({booking.destinationBranch?.code})</span>
           </div>
           <div className="w-[100px] p-1 text-center bg-gray-50">
-            <span className="font-bold text-gray-500 uppercase block text-[9px] mb-0.5">Pay Basis</span>
+            <span className="font-semibold text-slate-700 uppercase block text-[9px] mb-0.5">Pay Basis</span>
             <span className="font-bold text-brand-primary uppercase text-xs">{booking.paymentCondition?.replace('_', ' ')}</span>
           </div>
         </div>
@@ -87,17 +87,17 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
         <div className="flex border-b border-gray-400 flex-1">
           {/* Consignor */}
           <div className="flex-1 p-1.5 border-r border-gray-400">
-            <p className="font-bold text-gray-600 border-b border-gray-200 pb-1 mb-1 uppercase text-[10px]">Consignor (Sender)</p>
+            <p className="font-semibold text-slate-700 border-b border-gray-200 pb-1 mb-1 uppercase text-[10px]">Consignor (Sender)</p>
             <p className="font-bold text-gray-900 text-xs">{booking.consignor.name}</p>
-            {booking.consignor.address && <p className="text-gray-600 line-clamp-2">{booking.consignor.address}</p>}
+            {booking.consignor.address && !/^[0-9a-fA-F]{24}$/.test(booking.consignor.address) && <p className="text-gray-600 line-clamp-2">{booking.consignor.address}</p>}
             <p className="text-gray-600">Ph: {booking.consignor.phone}</p>
             {booking.consignor.gstNumber && <p className="text-gray-600">GST: <span className="font-semibold">{booking.consignor.gstNumber}</span></p>}
           </div>
           {/* Consignee */}
           <div className="flex-1 p-1.5">
-            <p className="font-bold text-gray-600 border-b border-gray-200 pb-1 mb-1 uppercase text-[10px]">Consignee (Receiver)</p>
+            <p className="font-semibold text-slate-700 border-b border-gray-200 pb-1 mb-1 uppercase text-[10px]">Consignee (Receiver)</p>
             <p className="font-bold text-gray-900 text-xs">{booking.consignee.name}</p>
-            {booking.consignee.address && <p className="text-gray-600 line-clamp-2">{booking.consignee.address}</p>}
+            {booking.consignee.address && !/^[0-9a-fA-F]{24}$/.test(booking.consignee.address) && <p className="text-gray-600 line-clamp-2">{booking.consignee.address}</p>}
             <p className="text-gray-600">Ph: {booking.consignee.phone}</p>
             {booking.consignee.gstNumber && <p className="text-gray-600">GST: <span className="font-semibold">{booking.consignee.gstNumber}</span></p>}
           </div>
@@ -111,13 +111,13 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
               <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-100 border-b border-gray-400">
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">Pkgs</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">Packaging</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400">Description</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-right">Weight</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-center">N / W</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase border-r border-gray-400 text-right">Rate</th>
-                  <th className="p-0.5 font-bold text-gray-700 text-[8px] uppercase text-right">Amount</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400 text-center">Pkgs</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400 text-center">Packaging</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400">Description</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400 text-right">Weight</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400 text-center">N / W</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase border-r border-gray-400 text-right">Rate</th>
+                  <th className="p-0.5 font-semibold text-slate-700 text-[8px] uppercase text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="text-[8px]">
@@ -150,9 +150,9 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
             
             {/* Invoice & Eway Bill Info */}
             <div className="mt-auto p-1 border-t border-gray-400 bg-gray-50/50 flex flex-wrap gap-2 text-[10px]">
-               <div><span className="font-semibold text-gray-500 mr-1">Invoice No:</span> <span className="font-bold">{booking.invoiceNo || 'N/A'}</span></div>
-               <div><span className="font-semibold text-gray-500 mr-1">E-Way Bill:</span> <span className="font-bold">{booking.ewayBillNo || 'N/A'}</span></div>
-               <div><span className="font-semibold text-gray-500 mr-1">Vehicle:</span> <span className="font-bold">{booking.vehicle?.vehicleNumber || 'N/A'}</span></div>
+               <div><span className="font-semibold text-slate-700 mr-1">Invoice No:</span> <span className="font-bold">{booking.invoiceNo || 'N/A'}</span></div>
+               <div><span className="font-semibold text-slate-700 mr-1">E-Way Bill:</span> <span className="font-bold">{booking.ewayBillNo || 'N/A'}</span></div>
+               <div><span className="font-semibold text-slate-700 mr-1">Vehicle:</span> <span className="font-bold">{booking.vehicle?.vehicleNumber || 'N/A'}</span></div>
             </div>
           </div>
 
@@ -192,7 +192,7 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
       {/* Footer - Terms & Signatures */}
       <div className="border-x border-b border-gray-400 p-2 flex justify-between items-end bg-gray-50/30">
         <div className="text-[8px] text-gray-500 leading-tight flex-1">
-          <p className="font-bold text-gray-700 uppercase mb-0.5">Terms & Conditions:</p>
+          <p className="font-semibold text-slate-700 uppercase mb-0.5">Terms & Conditions:</p>
           <ul className="list-disc pl-3 m-0">
             <li>Subject to Ahmedabad Jurisdiction only.</li>
             <li>Carrier is not responsible for leakage or breakage.</li>
@@ -200,7 +200,7 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
           </ul>
         </div>
         
-        <div className="flex gap-12 text-[10px] font-bold text-gray-700 uppercase text-center pr-4 pb-1">
+        <div className="flex gap-12 text-[10px] font-semibold text-slate-700 uppercase text-center pr-4 pb-1">
           <div className="border-t border-gray-400 pt-1 w-24">Receiver Sign</div>
           <div className="border-t border-gray-400 pt-1 w-24">Driver Sign</div>
           <div className="border-t border-gray-400 pt-1 w-32">For, {logisticName || 'Trust Logistic'}</div>
@@ -296,3 +296,6 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
     </div>
   );
 }
+
+
+

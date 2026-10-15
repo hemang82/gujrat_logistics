@@ -194,11 +194,22 @@ Your logistics company account has been successfully ${editingId ? 'updated' : '
 Thank you,
 *Trust Logistics Team*`;
 
-        // Redirect the blank tab to WhatsApp URL
+        // Copy credentials to clipboard automatically
+        try {
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(waMessage);
+            toast.success('Account credentials copied to clipboard!');
+          }
+        } catch (clipErr) {
+          console.error('Clipboard copy failed:', clipErr);
+        }
+
+        // Open WhatsApp URL if phone number is provided
         const cleanPhone = formData.phone.replace(/\D/g, '');
-        const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
-        
-        window.open(waUrl, '_blank');
+        if (cleanPhone) {
+          const waUrl = `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
+          window.open(waUrl, '_blank');
+        }
 
         router.push('/admin/logistics');
         router.refresh();
@@ -257,32 +268,32 @@ Thank you,
         {/* Section 1: Login Information */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Login & Contact Information
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Company Name <span className="text-red-500">*</span></Label>
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Enter Company Name" className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Company Name <span className="text-red-500">*</span></Label>
+                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Enter Company Name" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('name')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Login Email <span className="text-red-500">*</span></Label>
-                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Enter Login Email" className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Login Email <span className="text-red-500">*</span></Label>
+                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Enter Login Email" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('email')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">
+                <Label className="text-xs font-semibold text-slate-700 uppercase">
                   {editingId ? 'New Password (Optional)' : 'Password (Auto-Generated) *'}
                 </Label>
-                <Input name="password" type="text" value={formData.password} onChange={handleChange} placeholder="Enter Password" className={`h-10 text-sm rounded-lg ${errors.password ? 'border-red-500' : 'border-gray-200'}`} />
+                <Input name="password" type="text" value={formData.password} onChange={handleChange} placeholder="Enter Password" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.password ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('password')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Phone Number <span className="text-red-500">*</span></Label>
-                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter Phone Number" className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Phone Number <span className="text-red-500">*</span></Label>
+                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter Phone Number" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('phone')}
               </div>
             </div>
@@ -292,31 +303,31 @@ Thank you,
         {/* Section 2: Statutory Information */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Statutory & Branding
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Transporter ID (TRANSIN)</Label>
-                <Input name="transporterId" value={formData.transporterId} onChange={handleChange} placeholder="Enter Transporter ID" maxLength={15} className={`h-10 text-sm rounded-lg uppercase ${errors.transporterId ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Transporter ID (TRANSIN)</Label>
+                <Input name="transporterId" value={formData.transporterId} onChange={handleChange} placeholder="Enter Transporter ID" maxLength={15} className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase ${errors.transporterId ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('transporterId')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Number</Label>
-                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Enter GST Number" maxLength={15} className={`h-10 text-sm rounded-lg uppercase ${errors.gstNumber ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">GST Number</Label>
+                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Enter GST Number" maxLength={15} className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase ${errors.gstNumber ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('gstNumber')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">PAN Number</Label>
-                <Input name="panNumber" value={formData.panNumber} onChange={handleChange} placeholder="Enter PAN Number" maxLength={10} className={`h-10 text-sm rounded-lg uppercase ${errors.panNumber ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">PAN Number</Label>
+                <Input name="panNumber" value={formData.panNumber} onChange={handleChange} placeholder="Enter PAN Number" maxLength={10} className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase ${errors.panNumber ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('panNumber')}
               </div>
               <div className="space-y-1 md:col-span-3">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Company Logo (Image URL)</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Company Logo (Image URL)</Label>
                 <div className="flex gap-3 items-center">
-                  <Input name="companyLogo" value={formData.companyLogo} onChange={handleChange} placeholder="Enter Company Logo URL" className="h-10 text-sm rounded-lg border-gray-200 flex-1" />
+                  <Input name="companyLogo" value={formData.companyLogo} onChange={handleChange} placeholder="Enter Company Logo URL" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] flex-1" />
                   {formData.companyLogo && (
                     <div className="w-10 h-10 rounded border border-gray-200 overflow-hidden shrink-0 bg-white shadow-sm">
                       <img src={formData.companyLogo} alt="Logo Preview" className="w-full h-full object-contain" />
@@ -331,14 +342,14 @@ Thank you,
         {/* Section 3: API & Status Permissions */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               API & Status Permissions
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-1 flex flex-col justify-center">
-                <Label className="text-xs font-semibold text-gray-600 uppercase mb-2">E-Way Bill API Access</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase mb-2">E-Way Bill API Access</Label>
                 <div className="flex items-center gap-3">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
@@ -356,7 +367,7 @@ Thank you,
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">API Quota (Requests per month)</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">API Quota (Requests per month)</Label>
                 <Input 
                   name="ewbApiQuota" 
                   type="number" 
@@ -364,12 +375,12 @@ Thank you,
                   onChange={handleChange} 
                   placeholder="e.g. 1000" 
                   disabled={!formData.ewbApiAccess}
-                  className={`h-10 text-sm rounded-lg ${errors.ewbApiQuota ? 'border-red-500' : 'border-gray-200'} ${!formData.ewbApiAccess ? 'bg-gray-50 text-gray-400' : ''}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.ewbApiQuota ? 'border-red-500' : 'border-[#64748b59]'} ${!formData.ewbApiAccess ? 'bg-gray-50 text-gray-400' : ''}`} 
                 />
                 {renderError('ewbApiQuota')}
               </div>
               <div className="space-y-1 flex flex-col justify-center">
-                <Label className="text-xs font-semibold text-gray-600 uppercase mb-2">Company Login Status</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase mb-2">Company Login Status</Label>
                 <div className="flex items-center gap-3">
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input 
@@ -396,7 +407,7 @@ Thank you,
             variant="outline" 
             type="button" 
             onClick={() => router.back()} 
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
           </Button>
@@ -421,3 +432,8 @@ export default function NewLogisticsPage() {
     </Suspense>
   );
 }
+
+
+
+
+

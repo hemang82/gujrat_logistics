@@ -118,7 +118,7 @@ export default function UsersPage() {
               placeholder="Search branch logins by name or email..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 w-full text-sm rounded-lg border border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary outline-none transition-all"
+              className="pl-9 h-9 w-full text-sm font-semibold text-slate-900 rounded-[8px] border border-gray-200 bg-white focus-visible:ring-2 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary outline-none transition-all"
             />
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function UsersPage() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-500 bg-gray-50 uppercase tracking-wider border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 font-semibold w-20 text-center">Sr. No.</th>
+                  <th className="px-4 py-3 font-semibold w-20 text-center">Sr.</th>
                   <th className="px-4 py-3 font-semibold">Name & Email</th>
                   <th className="px-4 py-3 font-semibold">Role</th>
                   <th className="px-4 py-3 font-semibold">Assigned Branch</th>
@@ -245,7 +245,7 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">{viewUser.name}</h3>
-                  <p className="text-sm text-gray-500 uppercase tracking-wider font-medium">
+                  <p className="text-sm text-slate-700 font-semibold uppercase tracking-wider font-medium">
                     {viewUser.role === 'manager' ? 'Branch Manager' : viewUser.role === 'admin' ? 'Administrator' : 'Branch User / Staff'}
                   </p>
                 </div>
@@ -336,14 +336,14 @@ export default function UsersPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200 bg-white">
                       <tr>
-                        <td className="p-2.5 pl-3 font-semibold text-gray-700">Bookings & LR</td>
+                        <td className="p-2.5 pl-3 font-semibold text-slate-700">Bookings & LR</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canView ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canAdd ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canEdit ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.bookings?.canDelete ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                       </tr>
                       <tr>
-                        <td className="p-2.5 pl-3 font-semibold text-gray-700">Challans & Lorry Hire</td>
+                        <td className="p-2.5 pl-3 font-semibold text-slate-700">Challans & Lorry Hire</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canView ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canAdd ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
                         <td className="p-2.5 text-center font-bold">{viewUser.permissions?.challans?.canEdit ? <span className="text-emerald-600">ON</span> : <span className="text-gray-300">OFF</span>}</td>
@@ -357,7 +357,7 @@ export default function UsersPage() {
               <div className="pt-4 border-t border-gray-100 flex justify-end">
                 <Button 
                   onClick={() => setViewUser(null)}
-                  className="bg-brand-primary hover:bg-brand-primary-dark text-white font-bold px-5 rounded-lg text-sm h-10 shadow-sm"
+                  className="bg-brand-primary hover:bg-brand-primary-dark text-white font-bold px-5 rounded-[8px] text-sm font-semibold text-slate-900 h-10 shadow-sm"
                 >
                   Close
                 </Button>
@@ -369,3 +369,8 @@ export default function UsersPage() {
     </div>
   );
 }
+
+
+
+
+

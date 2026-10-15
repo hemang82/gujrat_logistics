@@ -195,7 +195,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
-                  <th className="font-semibold p-4 w-20 text-center">Sr. No.</th>
+                  <th className="font-semibold p-4 w-20 text-center">Sr.</th>
                   <th className="font-semibold p-4">Date</th>
                   <th className="font-semibold p-4">Type</th>
                   <th className="font-semibold p-4">Vehicle</th>
@@ -221,7 +221,7 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
                 ) : (
                   expenses.map((expense: any, index: number) => (
                     <tr key={expense._id.toString()} className="hover:bg-gray-50/50 transition-colors whitespace-nowrap">
-                      <td className="p-4 text-center font-bold text-gray-500">{(page - 1) * limit + index + 1}</td>
+                      <td className="p-4 text-center font-semibold text-slate-700">{(page - 1) * limit + index + 1}</td>
                       <td className="p-4 text-sm text-gray-600">
                         {formatDate(expense.date)}
                       </td>
@@ -316,3 +316,5 @@ export default async function ExpensesPage({ searchParams }: { searchParams: Pro
     </div>
   );
 }
+
+

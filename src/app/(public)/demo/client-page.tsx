@@ -139,19 +139,19 @@ export default function DemoPage() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700 flex items-center gap-1">Your Name <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700 flex items-center gap-1">Your Name <span className="text-red-500">*</span></Label>
                     <Input 
                       {...register('name')}
-                      className={`h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.name ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+                      className={`h-14 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.name ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
                       placeholder="Enter Your Name" 
                     />
                     <ErrorMessage message={errors.name?.message} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700 flex items-center gap-1">Company Name <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700 flex items-center gap-1">Company Name <span className="text-red-500">*</span></Label>
                     <Input 
                       {...register('companyName')}
-                      className={`h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.companyName ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+                      className={`h-14 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.companyName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
                       placeholder="Enter Company Name" 
                     />
                     <ErrorMessage message={errors.companyName?.message} />
@@ -160,21 +160,21 @@ export default function DemoPage() {
                 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700 flex items-center gap-1">Phone Number <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700 flex items-center gap-1">Phone Number <span className="text-red-500">*</span></Label>
                     <Input 
                       {...register('phone')}
                       type="tel" 
-                      className={`h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.phone ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+                      className={`h-14 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.phone ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
                       placeholder="Enter Phone Number" 
                     />
                     <ErrorMessage message={errors.phone?.message} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700 flex items-center gap-1">Email Address <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700 flex items-center gap-1">Email Address <span className="text-red-500">*</span></Label>
                     <Input 
                       {...register('email')}
                       type="email" 
-                      className={`h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.email ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+                      className={`h-14 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.email ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
                       placeholder="Enter Email Address" 
                     />
                     <ErrorMessage message={errors.email?.message} />
@@ -183,22 +183,22 @@ export default function DemoPage() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700 flex items-center gap-1">City / Location <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700 flex items-center gap-1">City / Location <span className="text-red-500">*</span></Label>
                     <Input 
                       {...register('city')}
-                      className={`h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.city ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+                      className={`h-14 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus:bg-white focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-colors ${errors.city ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
                       placeholder="Enter City" 
                     />
                     <ErrorMessage message={errors.city?.message} />
                   </div>
                   <div className="space-y-2">
-                    <Label className="font-semibold text-gray-700">Fleet Size <span className="text-red-500">*</span></Label>
+                    <Label className="font-semibold text-slate-700">Fleet Size <span className="text-red-500">*</span></Label>
                     <Controller
                       name="fleetSize"
                       control={control}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger className={`!w-full !h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary px-3 rounded-full transition-colors ${errors.fleetSize ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}>
+                          <SelectTrigger className={`!w-full !h-14 bg-gray-50/50 border-[1.5px] border-[#64748B] focus:bg-white focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary px-3 rounded-[6px] transition-colors ${errors.fleetSize ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : ''}`}>
                             <SelectValue placeholder="Select Fleet Size" />
                           </SelectTrigger>
                           <SelectContent>
@@ -215,13 +215,13 @@ export default function DemoPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-semibold text-gray-700 flex items-center gap-1">What is your biggest operational challenge? <span className="text-red-500">*</span></Label>
+                  <Label className="font-semibold text-slate-700 flex items-center gap-1">What is your biggest operational challenge? <span className="text-red-500">*</span></Label>
                   <Controller
                     name="painPoint"
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value || ""}>
-                        <SelectTrigger className={`!w-full !h-14 bg-gray-50/50 border-gray-200 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary px-3 rounded-full transition-colors ${errors.painPoint ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}>
+                        <SelectTrigger className={`!w-full !h-14 bg-gray-50/50 border-[1.5px] border-[#64748B] focus:bg-white focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary px-3 rounded-[6px] transition-colors ${errors.painPoint ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : ''}`}>
                           <SelectValue placeholder="Select a challenge..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -252,3 +252,5 @@ export default function DemoPage() {
     </div>
   );
 }
+
+

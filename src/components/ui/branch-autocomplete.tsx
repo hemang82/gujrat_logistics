@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, MapPin } from 'lucide-react';
 import { Input } from './input';
+import { cn } from '@/lib/utils';
 
 interface Option {
   value: string;
@@ -153,9 +154,12 @@ export function BranchAutocomplete({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`h-10 w-full rounded-lg border px-3 pr-10 text-sm bg-white focus-visible:outline-none ${
-            error ? 'border-red-500' : 'border-gray-200 focus:border-brand-primary/50 focus:ring-1 focus:ring-brand-primary/50'
-          } ${className} ${disabled ? 'bg-gray-50 cursor-not-allowed opacity-70' : ''}`}
+          className={cn(
+            "h-9 w-full rounded-[8px] border border-[#64748b59] font-medium text-slate-800 px-3 pr-10 text-sm bg-white focus-visible:outline-none transition-all",
+            error ? 'border-red-500' : 'border-[#64748b59] focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 focus:bg-teal-50/20',
+            disabled && 'bg-gray-50 cursor-not-allowed opacity-70',
+            className
+          )}
           autoComplete="off"
           disabled={disabled}
         />

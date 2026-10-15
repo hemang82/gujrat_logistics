@@ -218,7 +218,7 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
                       <p className="text-lg font-bold text-gray-800">
                         {(vehicle.assignedDriver as any).name}
                       </p>
-                      <p className="text-sm font-medium text-gray-500 mt-0.5 flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-slate-700 mt-0.5 flex items-center gap-1.5">
                         <UserCircle className="w-3.5 h-3.5" /> {(vehicle.assignedDriver as any).phone}
                       </p>
                     </div>
@@ -243,3 +243,5 @@ export default async function ViewVehiclePage({ params }: { params: Promise<{ id
     </div>
   );
 }
+
+

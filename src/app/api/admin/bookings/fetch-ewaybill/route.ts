@@ -5,6 +5,7 @@ import dbConnect from '@/lib/db';
 import User from '@/models/User';
 import ApiLog from '@/models/ApiLog';
 import Client from '@/models/Client';
+import Branch from '@/models/Branch';
 import { EwayBillService } from '@/services/ewaybillService';
 
 export async function GET(request: Request) {
@@ -99,6 +100,41 @@ export async function GET(request: Request) {
       if (consigneeClient && consigneeClient.phone) consigneePhone = consigneeClient.phone;
     }
 
+    // Look up Destination Branch by Consignee Pincode or City / Place
+    let matchedDestinationBranchId = '';
+    const consigneePincode = (ewbData.pincode_of_consignee || '').toString().trim();
+    const consigneePlace = (ewbData.place_of_consignee || '').trim();
+
+    if (activeLogisticId && (consigneePincode || consigneePlace)) {
+      // 1. First priority: match by exact pincode
+      if (consigneePincode) {
+        const branchByPin = await Branch.findOne({
+          logisticId: activeLogisticId,
+          isDeleted: { $ne: true },
+          pincode: consigneePincode
+        });
+        if (branchByPin) {
+          matchedDestinationBranchId = branchByPin._id.toString();
+        }
+      }
+
+      // 2. Second priority: match by city / name
+      if (!matchedDestinationBranchId && consigneePlace) {
+        const placeRegex = new RegExp(consigneePlace, 'i');
+        const branchByPlace = await Branch.findOne({
+          logisticId: activeLogisticId,
+          isDeleted: { $ne: true },
+          $or: [
+            { city: placeRegex },
+            { name: placeRegex }
+          ]
+        });
+        if (branchByPlace) {
+          matchedDestinationBranchId = branchByPlace._id.toString();
+        }
+      }
+    }
+
     // Map Masters India response to our Frontend UI format
     const mappedDetails = {
       ewayBillNo: ewbData.eway_bill_number || number,
@@ -115,7 +151,7 @@ export async function GET(request: Request) {
         phone: consigneePhone, // Populated from Client DB!
         address: [ewbData.address1_of_consignee, ewbData.address2_of_consignee, ewbData.place_of_consignee, ewbData.state_of_consignee, ewbData.pincode_of_consignee].filter(Boolean).join(', ')
       },
-      destinationBranch: '', // Requires manual selection by user
+      destinationBranch: matchedDestinationBranchId || '',
       invoiceNumber: ewbData.document_number || '',
       invoiceDate: ewbData.document_date || '',
       totalValue: ewbData.total_invoice_value || ewbData.taxable_amount || 0,

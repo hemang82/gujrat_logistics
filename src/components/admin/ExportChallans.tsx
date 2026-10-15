@@ -134,9 +134,9 @@ export default function ExportChallans({ search = '', status = '', branch = '', 
         onClick={handleExportPDF}
         disabled={isExporting}
         variant="outline" 
-        className="h-12 w-full sm:w-auto px-5 rounded-xl font-semibold shadow-sm border-gray-200 text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
+        className="h-9 w-full sm:w-auto px-3.5 rounded-lg text-xs font-semibold shadow-2xs border-gray-200 text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center gap-1.5"
       >
-        <Printer className="w-5 h-5 text-red-500" />
+        <Printer className="w-4 h-4 text-red-500" />
         PDF
       </Button>
       
@@ -144,9 +144,9 @@ export default function ExportChallans({ search = '', status = '', branch = '', 
         onClick={handleExportExcel}
         disabled={isExporting}
         variant="outline"
-        className="h-12 w-full sm:w-auto px-5 rounded-xl font-semibold shadow-sm border-gray-200 text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center gap-2"
+        className="h-9 w-full sm:w-auto px-3.5 rounded-lg text-xs font-semibold shadow-2xs border-gray-200 text-gray-700 bg-white hover:bg-gray-50 flex items-center justify-center gap-1.5"
       >
-        <Download className="w-5 h-5 text-green-600" />
+        <Download className="w-4 h-4 text-green-600" />
         Excel
       </Button>
     </>

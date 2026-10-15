@@ -323,7 +323,7 @@ export default function EditAgentPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <Card className="border-none shadow-sm rounded-2xl bg-white">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-2xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Fillup Information
             </CardTitle>
           </CardHeader>
@@ -331,7 +331,7 @@ export default function EditAgentPage() {
             {(user?.role === 'logistic' || user?.role === 'superadmin') && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 <div className="space-y-1 relative md:col-span-3">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Assign Branch <span className="text-red-500">*</span></Label>
+                  <Label className="text-xs font-semibold text-slate-700 uppercase">Assign Branch <span className="text-red-500">*</span></Label>
                   <div className="relative">
                     {branchSearch && filteredBranches.length > 0 && filteredBranches[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -346,7 +346,7 @@ export default function EditAgentPage() {
                       onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
                       onKeyDown={handleBranchKeyDown}
                       placeholder="Search Branch..."
-                      className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                      className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                     />
                     {showBranchDropdown && filteredBranches.length > 0 && (
                       <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -378,18 +378,18 @@ export default function EditAgentPage() {
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Agent Name <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent Name <span className="text-red-500">*</span></Label>
                 <Input
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="ex. Agent Name"
-                  className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                 />
                 {renderError('name')}
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Agent Type <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent Type <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {typeSearch && typeSuggestions.length > 0 && typeSuggestions[0].toLowerCase().startsWith(typeSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -408,7 +408,7 @@ export default function EditAgentPage() {
                     onBlur={() => setTimeout(() => setShowTypeDropdown(false), 250)}
                     onKeyDown={handleTypeKeyDown}
                     placeholder="Search Agent Type..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.agentType ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                    className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent ${errors.agentType ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                   />
                   {showTypeDropdown && typeSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -435,13 +435,13 @@ export default function EditAgentPage() {
                 {renderError('agentType')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Contact No <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Contact No <span className="text-red-500">*</span></Label>
                 <Input
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="9966XXXXX8"
-                  className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                 />
                 {renderError('phone')}
               </div>
@@ -450,37 +450,37 @@ export default function EditAgentPage() {
             {/* Row 2 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Email ID</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Email ID</Label>
                 <Input
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="mail@transbook.com"
-                  className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                 />
                 {renderError('email')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Number</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">GST Number</Label>
                 <Input
                   name="gstNumber"
                   value={formData.gstNumber}
                   onChange={handleChange}
                   placeholder="ex. 24AAAAA0000A1Z5"
-                  className="h-10 text-sm rounded-lg border-gray-200 uppercase"
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] uppercase"
                 />
               </div>
 
 
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Opening Balance</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Opening Balance</Label>
                 <Input
                   name="openingBalance"
                   value={formData.openingBalance}
                   onChange={handleChange}
                   placeholder="e.g. 15000"
-                  className="h-10 text-sm rounded-lg border-gray-200"
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]"
                 />
               </div>
             </div>
@@ -488,7 +488,7 @@ export default function EditAgentPage() {
             {/* Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Agent Address</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent Address</Label>
                 <textarea
                   name="address"
                   rows={3}
@@ -510,7 +510,7 @@ export default function EditAgentPage() {
             type="button"
             onClick={() => router.push('/admin/agents')}
             disabled={isLoading}
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
           </Button>
@@ -526,3 +526,7 @@ export default function EditAgentPage() {
     </div>
   );
 }
+
+
+
+

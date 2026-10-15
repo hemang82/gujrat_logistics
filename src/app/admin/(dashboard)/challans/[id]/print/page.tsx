@@ -94,23 +94,23 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
           <div className="grid grid-cols-2 gap-6 mb-6">
             {/* Left Col: Trip Details */}
             <div className="border border-gray-300 rounded-lg p-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase border-b border-gray-200 pb-2 mb-2">Trip Details</h3>
+              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Trip Details</h3>
               <table className="w-full text-sm">
                 <tbody>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600 w-1/3">From Branch:</td>
+                    <td className="py-1 font-semibold text-slate-700 w-1/3">From Branch:</td>
                     <td className="py-1 font-bold">{ch.branch?.name || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">To Branch:</td>
+                    <td className="py-1 font-semibold text-slate-700">To Branch:</td>
                     <td className="py-1 font-bold">{ch.lrToBranch?.name || ch.memoDestinationBranch?.name || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Final Dest:</td>
+                    <td className="py-1 font-semibold text-slate-700">Final Dest:</td>
                     <td className="py-1 font-bold">{ch.memoDestinationBranch?.name || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Status:</td>
+                    <td className="py-1 font-semibold text-slate-700">Status:</td>
                     <td className="py-1 font-bold uppercase">{ch.status.replace('_', ' ')}</td>
                   </tr>
                 </tbody>
@@ -119,19 +119,19 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
 
             {/* Right Col: Vehicle & Driver */}
             <div className="border border-gray-300 rounded-lg p-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase border-b border-gray-200 pb-2 mb-2">Vehicle & Driver</h3>
+              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Vehicle & Driver</h3>
               <table className="w-full text-sm">
                 <tbody>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600 w-1/3">Truck No:</td>
+                    <td className="py-1 font-semibold text-slate-700 w-1/3">Truck No:</td>
                     <td className="py-1 font-bold text-lg">{ch.truckNo?.vehicleNumber || ch.truckNo || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Driver Name:</td>
+                    <td className="py-1 font-semibold text-slate-700">Driver Name:</td>
                     <td className="py-1 font-bold">{ch.driverName?.name || ch.driverName || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Agent/Broker:</td>
+                    <td className="py-1 font-semibold text-slate-700">Agent/Broker:</td>
                     <td className="py-1 font-bold">{ch.agent || 'N/A'}</td>
                   </tr>
                 </tbody>
@@ -141,7 +141,7 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
 
           {/* LRs Table */}
           <div className="mb-6">
-            <h3 className="text-xs font-bold text-gray-500 uppercase mb-2">Loaded Consignments ({bookings.length})</h3>
+            <h3 className="text-xs font-semibold text-slate-700 uppercase mb-2">Loaded Consignments ({bookings.length})</h3>
             <table className="w-full border-collapse border border-gray-400 text-xs">
               <thead>
                 <tr className="bg-gray-100">
@@ -187,24 +187,24 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
           {/* Financials & Remarks */}
           <div className="grid grid-cols-2 gap-6 mt-6">
             <div className="border border-gray-300 rounded-lg p-3 h-full">
-              <h3 className="text-xs font-bold text-gray-500 uppercase border-b border-gray-200 pb-2 mb-2">Remarks</h3>
+              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Remarks</h3>
               <p className="text-sm font-medium text-gray-800 whitespace-pre-wrap min-h-[60px]">{ch.remark || 'N/A'}</p>
             </div>
 
             <div className="border border-gray-300 rounded-lg p-3">
-              <h3 className="text-xs font-bold text-gray-500 uppercase border-b border-gray-200 pb-2 mb-2">Truck Fare Details</h3>
+              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Truck Fare Details</h3>
               <table className="w-full text-sm">
                 <tbody>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Truck Freight:</td>
+                    <td className="py-1 font-semibold text-slate-700">Truck Freight:</td>
                     <td className="py-1 font-bold text-right">₹{ch.truckFreight || 0}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600">Advance Paid:</td>
+                    <td className="py-1 font-semibold text-slate-700">Advance Paid:</td>
                     <td className="py-1 font-bold text-right text-red-600">- ₹{ch.advanceAmount || 0}</td>
                   </tr>
                   <tr>
-                    <td className="py-1 font-semibold text-gray-600 border-b border-gray-200 pb-1">Commission:</td>
+                    <td className="py-1 font-semibold text-slate-700 border-b border-gray-200 pb-1">Commission:</td>
                     <td className="py-1 font-bold text-right border-b border-gray-200 pb-1">- ₹{ch.commission || 0}</td>
                   </tr>
                   <tr>
@@ -220,11 +220,11 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
           <div className="flex justify-between items-end mt-16 px-4">
             <div className="text-center">
               <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
-              <p className="text-xs font-bold text-gray-600 uppercase">Driver Signature</p>
+              <p className="text-xs font-semibold text-slate-700 uppercase">Driver Signature</p>
             </div>
             <div className="text-center">
               <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
-              <p className="text-xs font-bold text-gray-600 uppercase">Broker Signature</p>
+              <p className="text-xs font-semibold text-slate-700 uppercase">Broker Signature</p>
             </div>
             <div className="text-center">
               <div className="border-t border-gray-400 w-32 mx-auto mb-1"></div>
@@ -238,3 +238,6 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
     </div>
   );
 }
+
+
+

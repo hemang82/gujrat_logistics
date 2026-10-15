@@ -81,21 +81,21 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
             <CardContent className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-10">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1">Amount</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Amount</p>
                   <p className="text-3xl font-bold text-gray-800">₹{expense.amount.toLocaleString('en-IN')}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5"><CalendarIcon className="w-4 h-4" /> Date</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5"><CalendarIcon className="w-4 h-4" /> Date</p>
                   <p className="text-lg font-semibold text-brand-text-primary">
                     {formatDate(expense.date)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-1 flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> Payment Method</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-1.5"><CreditCard className="w-4 h-4" /> Payment Method</p>
                   <p className="text-base font-semibold text-gray-800 capitalize">{expense.paymentMethod}</p>
                 </div>
                 <div className="sm:col-span-2 mt-2">
-                  <p className="text-sm font-medium text-gray-500 mb-1">Description / Remarks</p>
+                  <p className="text-sm font-semibold text-slate-700 mb-1">Description / Remarks</p>
                   <p className="text-base text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100">
                     {expense.description || 'No description provided.'}
                   </p>
@@ -119,7 +119,7 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
                   <Truck className="w-5 h-5 text-brand-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Vehicle</p>
+                  <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Vehicle</p>
                   <Link href={`/admin/fleet/vehicles/${expense.vehicle?._id}`} className="text-base font-bold text-brand-primary hover:underline block mt-0.5">
                     {expense.vehicle?.vehicleNumber || 'Unknown'}
                   </Link>
@@ -133,7 +133,7 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
                     <UserCircle className="w-5 h-5 text-brand-secondary" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Driver</p>
+                    <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Driver</p>
                     <Link href={`/admin/fleet/drivers/${expense.driver._id}`} className="text-base font-bold text-brand-text-primary hover:underline block mt-0.5">
                       {expense.driver.name}
                     </Link>
@@ -148,7 +148,7 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
                     <FileText className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Trip / LR</p>
+                    <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Trip / LR</p>
                     <Link href={`/admin/bookings/${expense.booking._id}`} className="text-base font-bold text-blue-600 hover:underline block mt-0.5">
                       {expense.booking.lrNumber}
                     </Link>
@@ -163,3 +163,5 @@ export default async function ViewExpensePage({ params }: { params: Promise<{ id
     </div>
   );
 }
+
+

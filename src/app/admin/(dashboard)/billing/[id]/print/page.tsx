@@ -65,12 +65,12 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
               <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary uppercase">{logisticName}</h1>
               <p className="text-sm text-gray-500 font-medium mt-1">Fast, Safe & Reliable Transport Services</p>
               <p className="text-xs sm:text-xs text-gray-400 mt-1">H.O: Ahmedabad, Gujarat, India</p>
-              <p className="text-xs font-bold text-gray-700 mt-1">GSTIN: 24AAAAA1234A1Z5</p>
+              <p className="text-xs font-semibold text-slate-700 mt-1">GSTIN: 24AAAAA1234A1Z5</p>
             </div>
           </div>
           <div className="text-left sm:text-right flex flex-col items-start sm:items-end w-full sm:w-auto">
             <h2 className="text-xl sm:text-2xl font-bold text-brand-primary uppercase tracking-widest">TAX INVOICE</h2>
-            <div className="mt-1 mb-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
+            <div className="mt-1 mb-2 text-xs font-semibold text-slate-700 uppercase tracking-widest">
               Master Bill
             </div>
             
@@ -151,10 +151,10 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
              </ul>
              
              <h4 className="font-bold text-xs uppercase text-gray-500 mb-2 mt-4 border-t border-gray-200 pt-4">Bank Details</h4>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">Bank:</span> HDFC Bank</p>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C Name:</span> {logisticName}</p>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">A/C No:</span> 50200012345678</p>
-             <p className="text-xs text-gray-700"><span className="font-semibold text-gray-500">IFSC:</span> HDFC0001234</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-slate-700">Bank:</span> HDFC Bank</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-slate-700">A/C Name:</span> {logisticName}</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-slate-700">A/C No:</span> 50200012345678</p>
+             <p className="text-xs text-gray-700"><span className="font-semibold text-slate-700">IFSC:</span> HDFC0001234</p>
           </div>
 
           <div className="border border-gray-100 rounded-xl overflow-hidden h-fit">
@@ -197,8 +197,8 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
         <div className="flex justify-end pt-12 border-t border-gray-100 mt-10">
           <div className="text-center w-48 mt-6">
             <div className="border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Authorized Signatory</p>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-bold">For {logisticName}</p>
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Authorized Signatory</p>
+            <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide font-bold">For {logisticName}</p>
           </div>
         </div>
 
@@ -207,3 +207,6 @@ export default async function InvoicePrintPage({ params }: { params: Promise<{ i
     </div>
   );
 }
+
+
+

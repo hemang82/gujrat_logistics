@@ -483,9 +483,7 @@ export default function EditBranchPage() {
     if (!formData.code.trim()) newErrors.code = "Please enter Branch Code";
     if (!formData.state) newErrors.state = "Please select a State";
     
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Please enter Contact Number";
-    } else if (formData.phone.length !== 10) {
+    if (formData.phone && formData.phone.trim() && formData.phone.trim().length !== 10) {
       newErrors.phone = "Phone must be exactly 10 digits";
     }
 
@@ -583,7 +581,7 @@ export default function EditBranchPage() {
         {/* Section 1: Fillup Information */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Fillup Information
             </CardTitle>
           </CardHeader>
@@ -592,24 +590,24 @@ export default function EditBranchPage() {
             {/* Row 1 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Name <span className="text-red-500">*</span></Label>
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="ex. Ahmedabad" className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Name <span className="text-red-500">*</span></Label>
+                <Input name="name" value={formData.name} onChange={handleChange} placeholder="ex. Ahmedabad" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('name')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Code <span className="text-red-500">*</span></Label>
                 <Input 
                   name="code" 
                   value={formData.code} 
                   readOnly 
                   disabled 
-                  className="h-10 text-sm rounded-lg uppercase bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200" 
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200" 
                 />
                 {renderError('code')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Contact No <span className="text-red-500">*</span></Label>
-                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="9966XXXXX8" className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Contact No <span className="text-red-500">*</span></Label>
+                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="9966XXXXX8" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('phone')}
               </div>
             </div>
@@ -617,9 +615,9 @@ export default function EditBranchPage() {
             {/* Row 2 */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">PinCode</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">PinCode</Label>
                 <div className="relative">
-                  <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm rounded-lg border-gray-200" />
+                  <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
                   {isFetchingPincode && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>}
                   {showPostOfficeDropdown && postOfficeOptions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -647,7 +645,7 @@ export default function EditBranchPage() {
                 {renderError('pincode')}
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">State <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">State <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {/* Backdrop autocomplete suggestion */}
                   {formData.state && stateSuggestions.length > 0 && stateSuggestions[0].toLowerCase().startsWith(formData.state.toLowerCase()) && (
@@ -667,7 +665,7 @@ export default function EditBranchPage() {
                     onBlur={() => setTimeout(() => setShowStateDropdown(false), 250)}
                     onKeyDown={handleStateKeyDown}
                     placeholder="Search State..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.state ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                    className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent ${errors.state ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                   />
                   {showStateDropdown && stateSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -693,36 +691,36 @@ export default function EditBranchPage() {
                 {renderError('state')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">City / District</Label>
-                <Input name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g. Ahmedabad" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">City / District</Label>
+                <Input name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g. Ahmedabad" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Distance (KM)</Label>
-                <Input name="distance" value={formData.distance} onChange={handleChange} placeholder="ex. 15000" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Distance (KM)</Label>
+                <Input name="distance" value={formData.distance} onChange={handleChange} placeholder="ex. 15000" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Number</Label>
-                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Service Tax Number" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">GST Number</Label>
+                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Service Tax Number" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] uppercase" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Email</Label>
-                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="example@transbook.com" className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Email</Label>
+                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="example@transbook.com" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('email')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Address</Label>
-                <Input name="address" value={formData.address} onChange={handleChange} placeholder="Address details" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Address</Label>
+                <Input name="address" value={formData.address} onChange={handleChange} placeholder="Address details" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 5 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Agent</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent</Label>
                 <div className="relative">
                   {agentSearch && agentSuggestions.length > 0 && agentSuggestions[0].label.toLowerCase().startsWith(agentSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -741,7 +739,7 @@ export default function EditBranchPage() {
                     onBlur={() => setTimeout(() => setShowAgentDropdown(false), 250)}
                     onKeyDown={handleAgentKeyDown}
                     placeholder="Search Agent..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showAgentDropdown && agentSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -767,7 +765,7 @@ export default function EditBranchPage() {
                 </div>
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Booking / Inward</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Booking / Inward</Label>
                 <div className="relative">
                   {bookingInwardSearch && bookingInwardSuggestions.length > 0 && bookingInwardSuggestions[0].label.toLowerCase().startsWith(bookingInwardSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -786,7 +784,7 @@ export default function EditBranchPage() {
                     onBlur={() => setTimeout(() => setShowBookingInwardDropdown(false), 250)}
                     onKeyDown={handleBookingInwardKeyDown}
                     placeholder="Search Option..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showBookingInwardDropdown && bookingInwardSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -812,47 +810,47 @@ export default function EditBranchPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Commi. (N / W)</Label>
-                <Input name="commiBasis" value={formData.commiBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Commi. (N / W)</Label>
+                <Input name="commiBasis" value={formData.commiBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Commi. Amount</Label>
-                <Input name="commiAmount" value={formData.commiAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Commi. Amount</Label>
+                <Input name="commiAmount" value={formData.commiAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 6 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">D.C. (N / W / P)</Label>
-                <Input name="dcBasis" value={formData.dcBasis} onChange={handleChange} placeholder="e.g. W" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">D.C. (N / W / P)</Label>
+                <Input name="dcBasis" value={formData.dcBasis} onChange={handleChange} placeholder="e.g. W" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">D.C. Amount</Label>
-                <Input name="dcAmount" value={formData.dcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">D.C. Amount</Label>
+                <Input name="dcAmount" value={formData.dcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">L.C. (N / W / P)</Label>
-                <Input name="lcBasis" value={formData.lcBasis} onChange={handleChange} placeholder="e.g. P" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">L.C. (N / W / P)</Label>
+                <Input name="lcBasis" value={formData.lcBasis} onChange={handleChange} placeholder="e.g. P" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">L.C. Amount</Label>
-                <Input name="lcAmount" value={formData.lcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">L.C. Amount</Label>
+                <Input name="lcAmount" value={formData.lcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 7 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Brn. Rate. (N / W)</Label>
-                <Input name="brnRateBasis" value={formData.brnRateBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Brn. Rate. (N / W)</Label>
+                <Input name="brnRateBasis" value={formData.brnRateBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Brn. Amount</Label>
-                <Input name="brnAmount" value={formData.brnAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Brn. Amount</Label>
+                <Input name="brnAmount" value={formData.brnAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Direct Data ?</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Direct Data ?</Label>
                 <div className="relative">
                   {directDataSearch && directDataSuggestions.length > 0 && directDataSuggestions[0].label.toLowerCase().startsWith(directDataSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -871,7 +869,7 @@ export default function EditBranchPage() {
                     onBlur={() => setTimeout(() => setShowDirectDataDropdown(false), 250)}
                     onKeyDown={handleDirectDataKeyDown}
                     placeholder="Search Option..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showDirectDataDropdown && directDataSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -907,7 +905,7 @@ export default function EditBranchPage() {
             variant="outline" 
             type="button" 
             onClick={() => router.back()} 
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
           </Button>
@@ -923,3 +921,7 @@ export default function EditBranchPage() {
     </div>
   );
 }
+
+
+
+

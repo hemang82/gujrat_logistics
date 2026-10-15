@@ -172,27 +172,27 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const canCreate = !isLogisticAdmin && canAddBooking;
 
   return (
-    <div className="space-y-6">
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="w-full pb-8 space-y-4">
+      {/* Top Title Bar - Slim & Optimized, Synced with Challans */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white px-4 py-2.5 rounded-xl shadow-xs border border-gray-100 gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-text-primary">Bookings & LR </h1>
-          <p className="text-brand-text-secondary mt-1">Manage Lorry Receipts (LR) and track parcels.</p>
+          <h1 className="text-base sm:text-lg font-extrabold text-gray-800 tracking-tight">Bookings & LR</h1>
+          <p className="text-[11px] text-gray-500">Manage Lorry Receipts (LR) and track parcels</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto print:hidden">
+        <div className="flex items-center gap-2 w-full sm:w-auto print:hidden">
           <ExportBookings search={search} date={dateStr} branch={filterBranch} />
 
           {canCreate && (
-            <div className="flex gap-3 w-full sm:w-auto">
-              <Link href="/admin/bookings/new" className="flex-1 sm:flex-none">
-                <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-12 w-full px-6 rounded-xl font-bold shadow-md flex items-center justify-center gap-2 transition-colors">
-                  <Plus className="w-5 h-5" />
-                  CREATE
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Link href="/admin/bookings/new" className="w-full sm:w-auto">
+                <Button className="bg-brand-primary hover:bg-brand-primary-dark text-white h-9 px-4 rounded-lg text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 transition-all">
+                  <Plus className="w-4 h-4" />
+                  Create LR
                 </Button>
               </Link>
-              <Link href="/admin/bookings/new?type=manual" className="flex-1 sm:flex-none">
-                <Button className="bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary border border-brand-primary/20 h-12 w-full px-6 rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 transition-colors">
-                  <Plus className="w-5 h-5" />
+              <Link href="/admin/bookings/new?type=manual" className="w-full sm:w-auto">
+                <Button variant="outline" className="bg-brand-primary/5 hover:bg-brand-primary/10 text-brand-primary border border-brand-primary/20 h-9 px-3.5 rounded-lg text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5 transition-all">
+                  <Plus className="w-4 h-4" />
                   Manual
                 </Button>
               </Link>
@@ -201,20 +201,20 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
-      <Card className="border-none shadow-sm rounded-2xl bg-white overflow-visible">
-        <CardHeader className="border-b border-gray-100 pb-4">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <CardTitle className="text-xl font-bold text-brand-text-primary">Recent Bookings</CardTitle>
+      <Card className="border-none shadow-xs rounded-xl bg-white overflow-visible">
+        <div className="border-b border-gray-100 px-4 py-2.5">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2.5">
+            <h2 className="text-sm font-bold text-slate-800">Recent Bookings</h2>
             <BookingsFilter branches={branches} />
           </div>
-        </CardHeader>
+        </div>
         <CardContent className="p-0">
           {/* Desktop View: Table */}
           <div className="overflow-x-auto hidden md:block">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-sm border-b border-gray-100 whitespace-nowrap">
-                  <th className="font-semibold p-3 w-20 whitespace-nowrap text-center">Sr. No.</th>
+                  <th className="font-semibold p-3 w-20 whitespace-nowrap text-center">Sr.</th>
                   <th className="font-semibold p-3">LR Number</th>
                   <th className="font-semibold p-3">Date</th>
                   <th className="font-semibold p-3">Consignor (Sender)</th>

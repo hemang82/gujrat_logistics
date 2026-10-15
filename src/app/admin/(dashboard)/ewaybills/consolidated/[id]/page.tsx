@@ -323,12 +323,12 @@ export default function CEWBDetailsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100 print:bg-white print:border-black">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600 w-12">#</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">LR NUMBER</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">CONSIGNOR</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">DESTINATION</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">ITEM</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-600">EWB NUMBER</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 w-12">#</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">LR NUMBER</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">CONSIGNOR</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">DESTINATION</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">ITEM</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">EWB NUMBER</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 print:divide-black">
@@ -361,7 +361,7 @@ export default function CEWBDetailsPage() {
                 </table>
               </div>
               <div className="p-4 bg-gray-50 border-t border-gray-100 print:bg-white print:border-black flex justify-between items-center">
-                <span className="font-semibold text-gray-600">Total LRs included:</span>
+                <span className="font-semibold text-slate-700">Total LRs included:</span>
                 <span className="font-bold text-xl text-brand-primary">{bill.ewbNoDetails?.length || 0}</span>
               </div>
             </CardContent>
@@ -472,3 +472,5 @@ export default function CEWBDetailsPage() {
     </div>
   );
 }
+
+

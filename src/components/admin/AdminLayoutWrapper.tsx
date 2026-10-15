@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopbar } from './AdminTopbar';
 import { useUserStore } from '@/store/useUserStore';
@@ -15,6 +16,9 @@ export function AdminLayoutWrapper({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const setUser = useUserStore((state) => state.setUser);
+  const pathname = usePathname();
+  const isPrintPage = pathname?.endsWith('/print');
+  const hideTopbar = isPrintPage || pathname === '/admin/bookings/new' || pathname === '/admin/challans/new' || pathname === '/admin/challans/crossing/new' || pathname === '/admin/lorry-hire/new';
 
   useEffect(() => {
     // 1. Set initial values from NextAuth session
@@ -95,12 +99,14 @@ export function AdminLayoutWrapper({
       <GlobalAnnouncementBar />
 
       {/* Main Content wrapper */}
-      <div className="flex flex-col min-h-screen lg:ml-64 transition-all duration-300 print:ml-0 min-w-0 w-full lg:w-auto pt-4">
-        <AdminTopbar 
-          user={user} 
-          onMenuClick={() => setSidebarOpen(true)} 
-        />
-        <main className="flex-1 p-2 sm:p-3 md:p-4 overflow-x-hidden w-full max-w-full print:p-0 print:m-0">
+      <div className={`flex flex-col min-h-screen lg:ml-64 transition-all duration-300 print:ml-0 min-w-0 w-full lg:w-auto ${hideTopbar ? 'pt-0' : 'pt-2'}`}>
+        {!hideTopbar && (
+          <AdminTopbar 
+            user={user} 
+            onMenuClick={() => setSidebarOpen(true)} 
+          />
+        )}
+        <main className={`flex-1 ${isPrintPage ? 'p-2 sm:p-4' : 'p-2 sm:p-3 md:p-4'} overflow-x-hidden w-full max-w-full print:p-0 print:m-0`}>
           {children}
         </main>
       </div>

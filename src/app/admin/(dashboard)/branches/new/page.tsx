@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ThemeSelect } from '@/components/ui/theme-select';
 
 const ALL_STATES = [
@@ -29,6 +29,10 @@ export default function NewBranchPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingPincode, setIsFetchingPincode] = useState(false);
+  const [areaSearchQuery, setAreaSearchQuery] = useState('');
+  const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
+  const [isSearchingArea, setIsSearchingArea] = useState(false);
+  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [stateSuggestions, setStateSuggestions] = useState<string[]>([]);
@@ -129,6 +133,93 @@ export default function NewBranchPage() {
         });
     }
   }, [formData.pincode]);
+
+  // Search Area via India Postal Service & OpenStreetMap Fallback
+  useEffect(() => {
+    if (!areaSearchQuery || areaSearchQuery.trim().length < 2) {
+      setAreaSuggestions([]);
+      setShowAreaDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingArea(true);
+      try {
+        const query = areaSearchQuery.trim();
+        const postalRes = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(query)}`);
+        const postalData = await postalRes.json();
+
+        if (postalData && postalData[0] && postalData[0].Status === 'Success' && postalData[0].PostOffice?.length > 0) {
+          const suggestions = postalData[0].PostOffice.slice(0, 10).map((po: any) => ({
+            displayName: `${po.Name}, ${po.District}, ${po.State} - ${po.Pincode}`,
+            areaName: po.Name,
+            city: po.District,
+            state: po.State,
+            pincode: po.Pincode
+          }));
+          setAreaSuggestions(suggestions);
+          setShowAreaDropdown(true);
+        } else {
+          const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&countrycodes=in`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          const osmData = await osmRes.json();
+          if (Array.isArray(osmData) && osmData.length > 0) {
+            const suggestions = osmData.map((item: any) => {
+              const addr = item.address || {};
+              const areaName = addr.suburb || addr.neighbourhood || addr.quarter || addr.residential || addr.city_district || item.name || '';
+              const city = addr.city || addr.town || addr.district || addr.county || '';
+              const state = addr.state || 'Gujarat';
+              const pincode = (addr.postcode || '').replace(/\D/g, '').slice(0, 6);
+
+              return {
+                displayName: item.display_name,
+                areaName: areaName || city || item.name,
+                city: city || areaName,
+                state: state,
+                pincode: pincode
+              };
+            });
+            setAreaSuggestions(suggestions);
+            setShowAreaDropdown(true);
+          } else {
+            setAreaSuggestions([]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching area suggestions:', err);
+      } finally {
+        setIsSearchingArea(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [areaSearchQuery]);
+
+  const handleSelectArea = (item: any) => {
+    const selectedArea = item.areaName || item.city;
+    setAreaSearchQuery(selectedArea);
+    setShowAreaDropdown(false);
+    setAreaSuggestions([]);
+
+    setFormData(prev => ({
+      ...prev,
+      city: item.city || prev.city,
+      state: item.state || prev.state,
+      pincode: item.pincode || prev.pincode
+    }));
+
+    if (errors.pincode || errors.state) {
+      setErrors(prev => {
+        const copy = { ...prev };
+        delete copy.pincode;
+        delete copy.state;
+        return copy;
+      });
+    }
+
+    toast.success(`Applied: ${item.city || selectedArea}, ${item.state} ${item.pincode ? '(' + item.pincode + ')' : ''}`);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     let { name, value } = e.target;
@@ -422,9 +513,7 @@ export default function NewBranchPage() {
     if (!formData.code.trim()) newErrors.code = "Please enter Branch Code";
     if (!formData.state) newErrors.state = "Please select a State";
     
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Please enter Contact Number";
-    } else if (formData.phone.length !== 10) {
+    if (formData.phone && formData.phone.trim() && formData.phone.length !== 10) {
       newErrors.phone = "Phone must be exactly 10 digits";
     }
 
@@ -518,44 +607,94 @@ export default function NewBranchPage() {
         {/* Section 1: Fillup Information */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Fillup Information
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-4">
             
             {/* Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Name <span className="text-red-500">*</span></Label>
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="ex. Ahmedabad" className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Name <span className="text-red-500">*</span></Label>
+                <Input name="name" value={formData.name} onChange={handleChange} placeholder="ex. Ahmedabad" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('name')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Code <span className="text-red-500">*</span></Label>
                 <Input 
                   name="code" 
                   value={formData.code} 
                   readOnly 
                   disabled 
                   placeholder="Auto-generated" 
-                  className="h-10 text-sm rounded-lg uppercase bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200" 
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200" 
                 />
                 {renderError('code')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Contact No <span className="text-red-500">*</span></Label>
-                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="9966XXXXX8" className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Contact No</Label>
+                <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="9966XXXXX8" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('phone')}
+              </div>
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-semibold text-slate-700 capitalize">Area / Search Location</Label>
+                <div className="relative">
+                  <Input
+                    name="areaSearchQuery"
+                    value={areaSearchQuery}
+                    onChange={(e) => setAreaSearchQuery(e.target.value)}
+                    onFocus={() => {
+                      if (areaSuggestions.length > 0) setShowAreaDropdown(true);
+                    }}
+                    onClick={() => {
+                      if (areaSuggestions.length > 0) setShowAreaDropdown(prev => !prev);
+                    }}
+                    onBlur={() => setTimeout(() => setShowAreaDropdown(false), 200)}
+                    placeholder="Type area (e.g. Varachha, Naroda)..."
+                    autoComplete="off"
+                    className="h-10 pr-8 text-sm font-semibold text-slate-900 rounded-[8px] border-[#64748b59]"
+                  />
+                  {isSearchingArea && (
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                      <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
+                  {showAreaDropdown && areaSuggestions.length > 0 && (
+                    <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white rounded-xl border border-slate-200 p-1.5 shadow-2xl max-h-56 overflow-y-auto">
+                      <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Location:</div>
+                      {areaSuggestions.map((item, idx) => (
+                        <div
+                          key={idx}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectArea(item);
+                          }}
+                          className="px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:bg-brand-primary/10 hover:text-brand-primary text-slate-800 flex flex-col gap-0.5"
+                        >
+                          <div className="font-bold flex items-center justify-between">
+                            <span>{item.areaName}</span>
+                            {item.pincode && (
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold">
+                                {item.pincode}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-500 truncate">{item.displayName}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Row 2 */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">PinCode</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">PinCode</Label>
                 <div className="relative">
-                  <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm rounded-lg border-gray-200" />
+                  <Input name="pincode" value={formData.pincode} onChange={handleChange} placeholder="ex. 380015" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
                   {isFetchingPincode && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>}
                   {showPostOfficeDropdown && postOfficeOptions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -583,7 +722,7 @@ export default function NewBranchPage() {
                 {renderError('pincode')}
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">State <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">State <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {/* Backdrop autocomplete suggestion */}
                   {formData.state && stateSuggestions.length > 0 && stateSuggestions[0].toLowerCase().startsWith(formData.state.toLowerCase()) && (
@@ -603,7 +742,7 @@ export default function NewBranchPage() {
                     onBlur={() => setTimeout(() => setShowStateDropdown(false), 250)}
                     onKeyDown={handleStateKeyDown}
                     placeholder="Search State..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.state ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`}
+                    className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent ${errors.state ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`}
                   />
                   {showStateDropdown && stateSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -629,36 +768,36 @@ export default function NewBranchPage() {
                 {renderError('state')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">City / District</Label>
-                <Input name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g. Ahmedabad" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">City / District</Label>
+                <Input name="city" value={formData.city || ''} onChange={handleChange} placeholder="e.g. Ahmedabad" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Distance (KM)</Label>
-                <Input name="distance" value={formData.distance} onChange={handleChange} placeholder="ex. 15000" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Distance (KM)</Label>
+                <Input name="distance" value={formData.distance} onChange={handleChange} placeholder="ex. 15000" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 3 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Number</Label>
-                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Service Tax Number" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">GST Number</Label>
+                <Input name="gstNumber" value={formData.gstNumber} onChange={handleChange} placeholder="Service Tax Number" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] uppercase" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Email</Label>
-                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="example@transbook.com" className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Email</Label>
+                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="example@transbook.com" className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 {renderError('email')}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Address</Label>
-                <Input name="address" value={formData.address} onChange={handleChange} placeholder="Address details" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Address</Label>
+                <Input name="address" value={formData.address} onChange={handleChange} placeholder="Address details" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 5 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Agent</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent</Label>
                 <div className="relative">
                   {agentSearch && agentSuggestions.length > 0 && agentSuggestions[0].label.toLowerCase().startsWith(agentSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -677,7 +816,7 @@ export default function NewBranchPage() {
                     onBlur={() => setTimeout(() => setShowAgentDropdown(false), 250)}
                     onKeyDown={handleAgentKeyDown}
                     placeholder="Search Agent..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showAgentDropdown && agentSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -703,7 +842,7 @@ export default function NewBranchPage() {
                 </div>
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Booking / Inward</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Booking / Inward</Label>
                 <div className="relative">
                   {bookingInwardSearch && bookingInwardSuggestions.length > 0 && bookingInwardSuggestions[0].label.toLowerCase().startsWith(bookingInwardSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -722,7 +861,7 @@ export default function NewBranchPage() {
                     onBlur={() => setTimeout(() => setShowBookingInwardDropdown(false), 250)}
                     onKeyDown={handleBookingInwardKeyDown}
                     placeholder="Search Option..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showBookingInwardDropdown && bookingInwardSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -748,47 +887,47 @@ export default function NewBranchPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Commi. (N / W)</Label>
-                <Input name="commiBasis" value={formData.commiBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Commi. (N / W)</Label>
+                <Input name="commiBasis" value={formData.commiBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Commi. Amount</Label>
-                <Input name="commiAmount" value={formData.commiAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Commi. Amount</Label>
+                <Input name="commiAmount" value={formData.commiAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 6 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">D.C. (N / W / P)</Label>
-                <Input name="dcBasis" value={formData.dcBasis} onChange={handleChange} placeholder="e.g. W" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">D.C. (N / W / P)</Label>
+                <Input name="dcBasis" value={formData.dcBasis} onChange={handleChange} placeholder="e.g. W" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">D.C. Amount</Label>
-                <Input name="dcAmount" value={formData.dcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">D.C. Amount</Label>
+                <Input name="dcAmount" value={formData.dcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">L.C. (N / W / P)</Label>
-                <Input name="lcBasis" value={formData.lcBasis} onChange={handleChange} placeholder="e.g. P" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">L.C. (N / W / P)</Label>
+                <Input name="lcBasis" value={formData.lcBasis} onChange={handleChange} placeholder="e.g. P" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">L.C. Amount</Label>
-                <Input name="lcAmount" value={formData.lcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">L.C. Amount</Label>
+                <Input name="lcAmount" value={formData.lcAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
             </div>
 
             {/* Row 7 */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Brn. Rate. (N / W)</Label>
-                <Input name="brnRateBasis" value={formData.brnRateBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Brn. Rate. (N / W)</Label>
+                <Input name="brnRateBasis" value={formData.brnRateBasis} onChange={handleChange} placeholder="e.g. N" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Brn. Amount</Label>
-                <Input name="brnAmount" value={formData.brnAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Brn. Amount</Label>
+                <Input name="brnAmount" value={formData.brnAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" />
               </div>
               <div className="space-y-1 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Direct Data ?</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Direct Data ?</Label>
                 <div className="relative">
                   {directDataSearch && directDataSuggestions.length > 0 && directDataSuggestions[0].label.toLowerCase().startsWith(directDataSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -807,7 +946,7 @@ export default function NewBranchPage() {
                     onBlur={() => setTimeout(() => setShowDirectDataDropdown(false), 250)}
                     onKeyDown={handleDirectDataKeyDown}
                     placeholder="Search Option..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                   />
                   {showDirectDataDropdown && directDataSuggestions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
@@ -843,7 +982,7 @@ export default function NewBranchPage() {
             variant="outline" 
             type="button" 
             onClick={() => router.back()} 
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
           </Button>
@@ -859,3 +998,8 @@ export default function NewBranchPage() {
     </div>
   );
 }
+
+
+
+
+

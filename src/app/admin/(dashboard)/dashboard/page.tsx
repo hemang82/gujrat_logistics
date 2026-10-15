@@ -200,7 +200,7 @@ export default async function AdminDashboard() {
         {stats.map((stat, index) => (
           <Card key={index} className="border-none shadow-sm rounded-2xl hover:shadow-md transition-shadow bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
                 {stat.title}
               </CardTitle>
               <div className="p-2 bg-gray-50 rounded-xl">
@@ -275,7 +275,7 @@ export default async function AdminDashboard() {
               {alerts.length === 0 ? (
                 <div className="p-6 text-center">
                   <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-gray-700">All Vehicles Compliant</p>
+                  <p className="text-sm font-semibold text-slate-700">All Vehicles Compliant</p>
                   <p className="text-xs text-gray-500 mt-1">No documents expiring in the next 15 days.</p>
                 </div>
               ) : (
@@ -284,7 +284,7 @@ export default async function AdminDashboard() {
                     <div key={idx} className={`p-4 flex justify-between items-start hover:bg-gray-50 transition-colors ${alert.isExpired ? 'bg-red-50/30' : ''}`}>
                       <div>
                         <p className="font-bold text-gray-900 text-sm">{alert.vehicle}</p>
-                        <p className="text-xs font-medium text-gray-500 mt-0.5">{alert.document} Expiry</p>
+                        <p className="text-xs font-semibold text-slate-700 mt-0.5">{alert.document} Expiry</p>
                       </div>
                       <div className="text-right">
                         <p className={`text-xs font-bold px-2 py-1 rounded-md inline-block ${alert.isExpired ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
@@ -369,3 +369,5 @@ export default async function AdminDashboard() {
     </div>
   );
 }
+
+

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, RefreshCw, ShieldCheck, ChevronDown, MapPin, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, RefreshCw, ShieldCheck, ChevronDown, MapPin, AlertTriangle, CheckCircle2, Lock, RotateCcw, Building2, Loader2 } from 'lucide-react';
 import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -23,6 +23,275 @@ function NewBookingForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitAction, setSubmitAction] = useState<'save' | 'print'>('save');
   const [isFetchingEway, setIsFetchingEway] = useState(false);
+  const [isEwbLocked, setIsEwbLocked] = useState(false);
+  const [showChangeEwbModal, setShowChangeEwbModal] = useState(false);
+
+  // Quick-Add Destination Branch Modal State
+  const [isQuickBranchModalOpen, setIsQuickBranchModalOpen] = useState(false);
+  const [isSavingQuickBranch, setIsSavingQuickBranch] = useState(false);
+  const [isFetchingQuickPincode, setIsFetchingQuickPincode] = useState(false);
+  const [quickBranchData, setQuickBranchData] = useState({
+    name: '',
+    code: '',
+    phone: '',
+    pincode: '',
+    state: 'Gujarat',
+    city: ''
+  });
+  const [quickBranchErrors, setQuickBranchErrors] = useState<Record<string, string>>({});
+  const [areaSearchQuery, setAreaSearchQuery] = useState('');
+  const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
+  const [isSearchingArea, setIsSearchingArea] = useState(false);
+  const [showAreaDropdown, setShowAreaDropdown] = useState(false);
+  const [areaHighlightIndex, setAreaHighlightIndex] = useState(-1);
+
+  // Search Area via India Postal Service & OpenStreetMap Fallback (Super Fast, 100% Free & Accurate for India)
+  useEffect(() => {
+    if (!areaSearchQuery || areaSearchQuery.trim().length < 2) {
+      setAreaSuggestions([]);
+      setShowAreaDropdown(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingArea(true);
+      try {
+        const query = areaSearchQuery.trim();
+        
+        // 1. First priority: India Postal Database API
+        const postalRes = await fetch(`https://api.postalpincode.in/postoffice/${encodeURIComponent(query)}`);
+        const postalData = await postalRes.json();
+        
+        if (postalData && postalData[0] && postalData[0].Status === 'Success' && postalData[0].PostOffice?.length > 0) {
+          const suggestions = postalData[0].PostOffice.slice(0, 10).map((po: any) => ({
+            displayName: `${po.Name}, ${po.District}, ${po.State} - ${po.Pincode}`,
+            areaName: po.Name,
+            city: po.District,
+            state: po.State,
+            pincode: po.Pincode
+          }));
+          setAreaSuggestions(suggestions);
+          setShowAreaDropdown(true);
+        } else {
+          // 2. Fallback to OpenStreetMap if not found in postal directory
+          const osmRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=6&countrycodes=in`, {
+            headers: { 'Accept-Language': 'en' }
+          });
+          const osmData = await osmRes.json();
+          if (Array.isArray(osmData) && osmData.length > 0) {
+            const suggestions = osmData.map((item: any) => {
+              const addr = item.address || {};
+              const areaName = addr.suburb || addr.neighbourhood || addr.quarter || addr.residential || addr.city_district || item.name || '';
+              const city = addr.city || addr.town || addr.district || addr.county || '';
+              const state = addr.state || 'Gujarat';
+              const pincode = (addr.postcode || '').replace(/\D/g, '').slice(0, 6);
+
+              return {
+                displayName: item.display_name,
+                areaName: areaName || city || item.name,
+                city: city || areaName,
+                state: state,
+                pincode: pincode
+              };
+            });
+            setAreaSuggestions(suggestions);
+            setShowAreaDropdown(true);
+          } else {
+            setAreaSuggestions([]);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching area suggestions:', err);
+      } finally {
+        setIsSearchingArea(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [areaSearchQuery]);
+
+  // Handle Area Selection from dropdown
+  const handleSelectArea = async (item: any) => {
+    const selectedArea = item.areaName || item.city;
+    setAreaSearchQuery(selectedArea);
+    setShowAreaDropdown(false);
+    setAreaSuggestions([]);
+    setAreaHighlightIndex(-1);
+
+    const pin = item.pincode || '';
+    setQuickBranchData(prev => ({
+      ...prev,
+      pincode: pin
+    }));
+
+    if (quickBranchErrors.area || quickBranchErrors.pincode) {
+      setQuickBranchErrors(prev => {
+        const copy = { ...prev };
+        delete copy.area;
+        delete copy.pincode;
+        return copy;
+      });
+    }
+
+    // If pincode found, fetch post offices so user can select location for exact city & state
+    if (pin && pin.length === 6) {
+      setIsFetchingQuickPincode(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const json = await res.json();
+        if (json && json[0] && json[0].Status === 'Success' && json[0].PostOffice?.length > 0) {
+          const offices = json[0].PostOffice;
+          setPincodePostOffices(offices);
+          toast.info(`Pincode ${pin}: Select location below in PinCode to set City & State`);
+        } else {
+          // If no postal options, fall back to item city/state
+          setQuickBranchData(prev => ({
+            ...prev,
+            city: item.city || prev.city,
+            state: item.state || prev.state
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching pincode:', err);
+      } finally {
+        setIsFetchingQuickPincode(false);
+      }
+    } else {
+      // Direct set if no 6 digit pin
+      setQuickBranchData(prev => ({
+        ...prev,
+        city: item.city || prev.city,
+        state: item.state || prev.state
+      }));
+    }
+  };
+  const [pincodePostOffices, setPincodePostOffices] = useState<any[]>([]);
+  const [quickStateSuggestions, setQuickStateSuggestions] = useState<string[]>([]);
+  const [showQuickStateDropdown, setShowQuickStateDropdown] = useState(false);
+  const [quickStateHighlightIndex, setQuickStateHighlightIndex] = useState(-1);
+
+  // Function to refresh branches list
+  const refreshBranchesList = async (selectBranchId?: string) => {
+    try {
+      const url = selectedLogisticId ? `/api/admin/branches?limit=200&logisticId=${selectedLogisticId}` : '/api/admin/branches?limit=200';
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.branches && data.branches.length > 0) {
+        const list = data.branches.map((b: any) => ({
+          value: b._id,
+          label: b.name
+        }));
+        setBranchesList(list);
+        if (selectBranchId) {
+          setFormData(prev => ({ ...prev, destinationBranch: selectBranchId }));
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing branches:', e);
+    }
+  };
+
+  // Pincode auto-lookup in Quick-Add modal
+  const handleQuickPincodeChange = async (pinValue: string) => {
+    const cleaned = pinValue.replace(/\D/g, '').slice(0, 6);
+    setQuickBranchData(prev => ({ ...prev, pincode: cleaned }));
+    setPincodePostOffices([]);
+
+    if (quickBranchErrors.pincode) {
+      setQuickBranchErrors(prev => {
+        const copy = { ...prev };
+        delete copy.pincode;
+        return copy;
+      });
+    }
+
+    if (cleaned.length === 6) {
+      setIsFetchingQuickPincode(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`);
+        const json = await res.json();
+        if (json && json[0] && json[0].Status === 'Success' && json[0].PostOffice?.length > 0) {
+          const offices = json[0].PostOffice;
+          setPincodePostOffices(offices);
+          toast.info(`Found ${offices.length} location(s). Select one to set City & State.`);
+        } else {
+          toast.error("Invalid Pincode or no data found.");
+        }
+      } catch (err) {
+        console.error('Error fetching pincode:', err);
+      } finally {
+        setIsFetchingQuickPincode(false);
+      }
+    }
+  };
+
+  // Clear & Close Quick-Add Branch Modal
+  const closeQuickBranchModal = () => {
+    setIsQuickBranchModalOpen(false);
+    setQuickBranchData({ name: '', code: '', phone: '', pincode: '', state: 'Gujarat', city: '' });
+    setAreaSearchQuery('');
+    setAreaSuggestions([]);
+    setShowAreaDropdown(false);
+    setPincodePostOffices([]);
+    setQuickBranchErrors({});
+    setIsFetchingQuickPincode(false);
+  };
+
+  const handleSaveQuickBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!quickBranchData.name.trim()) errs.name = "Please enter Branch Name";
+    if (!quickBranchData.code.trim()) errs.code = "Please enter Branch Code";
+    if (!quickBranchData.state.trim()) errs.state = "Please select a State";
+    if (quickBranchData.phone && quickBranchData.phone.length !== 10) {
+      errs.phone = "Phone must be exactly 10 digits";
+    }
+    if (quickBranchData.pincode && quickBranchData.pincode.length !== 6) {
+      errs.pincode = "PinCode must be exactly 6 digits";
+    }
+
+    setQuickBranchErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      toast.error("Please fill in all required fields correctly.");
+      return;
+    }
+
+    setIsSavingQuickBranch(true);
+    try {
+      const payload: any = {
+        name: quickBranchData.name.trim(),
+        code: quickBranchData.code.trim().toUpperCase(),
+        phone: quickBranchData.phone.trim(),
+        pincode: quickBranchData.pincode.trim(),
+        state: quickBranchData.state.trim() || 'Gujarat',
+        city: quickBranchData.city.trim()
+      };
+
+      if (user?.role === 'superadmin' && selectedLogisticId) {
+        payload.logisticId = selectedLogisticId;
+      }
+
+      const res = await fetch('/api/admin/branches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create branch');
+      }
+
+      toast.success(`Branch "${data.name}" created and selected!`);
+      closeQuickBranchModal();
+      
+      // Refresh branch list and auto select the newly created branch
+      await refreshBranchesList(data._id);
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving branch');
+    } finally {
+      setIsSavingQuickBranch(false);
+    }
+  };
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [grNo, setGrNo] = useState('');
   const user = useUserStore((state) => state.user);
@@ -107,7 +376,6 @@ function NewBookingForm() {
         consigneeGst: data.consignee.gst,
         consigneePhone: data.consignee.phone,
         destinationBranch: data.destinationBranch,
-        invoiceNo: data.invoiceNumber,
         value: data.totalValue.toString(),
         freightAmount: data.items.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0).toString()
       }));
@@ -125,7 +393,8 @@ function NewBookingForm() {
         })));
       }
 
-      toast.success("E-Way Bill details fetched and auto-filled!");
+      setIsEwbLocked(true);
+      toast.success("E-Way Bill details fetched and verified!");
     } catch (err: any) {
       setErrors(prev => ({
         ...prev,
@@ -136,6 +405,43 @@ function NewBookingForm() {
     }
   };
 
+  const handleOpenChangeModal = () => {
+    setShowChangeEwbModal(true);
+  };
+
+  const handleConfirmChangeEwb = () => {
+    setShowChangeEwbModal(false);
+    setIsEwbLocked(false);
+    setFormData(prev => ({
+      ...prev,
+      ewayBillNo: '',
+      consignorName: '',
+      consignorGst: '',
+      consignorPhone: '',
+      consigneeName: '',
+      consigneeGst: '',
+      consigneePhone: '',
+      destinationBranch: '',
+      invoiceNo: '',
+      value: '',
+      freightAmount: '0.00'
+    }));
+    setItems([{
+      packages: '1',
+      packaging: 'Bora',
+      description: 'Goods',
+      weight: '0',
+      nw: 'N',
+      rate: '0',
+      amount: '0'
+    }]);
+    setErrors(prev => {
+      const copy = { ...prev };
+      delete copy.ewayBillNo;
+      return copy;
+    });
+    toast.info("E-Way Bill cleared. You can now enter a new number.");
+  };
   const [branchesList, setBranchesList] = useState<{ value: string; label: string }[]>([]);
 
   // Form State
@@ -413,7 +719,7 @@ function NewBookingForm() {
       if (name === 'grNo') {
         value = value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase(); // alphanumerics and dashes for manual LR
       } else if (name === 'ewayBillNo') {
-        value = value.replace(/\D/g, '');
+        value = value.replace(/\D/g, '').slice(0, 12);
       } else {
         value = value.replace(/[^0-9.]/g, '');
         if ((value.match(/\./g) || []).length > 1) {
@@ -639,6 +945,20 @@ function NewBookingForm() {
     return { subTotal, gstAmount, total };
   };
 
+  // Keyboard Shortcut: Ctrl + Enter to instantly Save, Print & Share
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        setSubmitAction('print');
+        const form = document.getElementById('booking-form') as HTMLFormElement;
+        if (form) form.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -706,13 +1026,13 @@ function NewBookingForm() {
       consignor: {
         name: formData.consignorName,
         phone: formData.consignorPhone || '0000000000',
-        address: formData.branch,
+        address: "",
         gstNumber: formData.consignorGst
       },
       consignee: {
         name: formData.consigneeName,
         phone: formData.consigneePhone || '0000000000',
-        address: formData.destinationBranch,
+        address: "",
         gstNumber: formData.consigneeGst
       },
 
@@ -826,45 +1146,46 @@ function NewBookingForm() {
   }
 
   return (
-    <div className="w-full pb-8">
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
+    <div className="w-full pb-4">
+      {/* Compact Header Card */}
+      <div className="mb-2.5 flex items-center justify-between bg-white py-2 px-3.5 rounded-xl shadow-xs border border-slate-200/90">
         <div className="flex items-center gap-3">
           <Button
             type="button"
             onClick={() => router.back()}
             variant="outline"
-            className="h-9 w-9 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors"
+            className="h-8 w-8 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors border border-gray-200"
             title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-gray-800">
-            {isManual ? 'Add Manual Booking' : 'Add New Booking'}
-          </h1>
-            <p className="text-xs text-gray-500 mt-0.5">
-            {isManual ? 'Create handwritten Lorry Receipt (Bilty)' : 'Generate auto Lorry Receipt (Bilty)'}
-          </p>
+            <h1 className="text-sm sm:text-base font-bold text-gray-800 leading-tight">
+              {isManual ? 'Add Manual Booking' : 'Add New Booking'}
+            </h1>
+            <p className="text-[11px] text-gray-500 leading-tight mt-0.5">
+              {isManual ? 'Create handwritten lorry receipt (bilty)' : 'Generate auto lorry receipt (bilty)'}
+            </p>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      <form id="booking-form" onSubmit={handleSubmit} noValidate className="space-y-3">
       
         {/* Superadmin Logistic Selection */}
         {user?.role === 'superadmin' && (
-          <Card className="border border-blue-200 shadow-sm rounded-xl overflow-visible mb-6 bg-blue-50/50">
-            <CardHeader className="border-b border-blue-100 py-3 px-4">
-              <CardTitle className="text-sm font-bold text-blue-800 flex items-center gap-2">
+          <Card className="border border-blue-200 shadow-sm rounded-xl overflow-visible mb-4 bg-blue-50/50">
+            <CardHeader className="border-b border-blue-100 py-2 px-3.5">
+              <CardTitle className="text-xs font-bold text-blue-800 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4" />
                 Super Admin: Select Logistic Company
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
+            <CardContent className="p-3">
               <div className="max-w-md">
-                <Label className="text-xs font-semibold text-gray-700 uppercase mb-2 block">Logistic Company <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 mb-1.5 block">Logistic Company <span className="text-red-500">*</span></Label>
                 <select 
-                  className={`flex h-10 w-full items-center justify-between rounded-lg border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary ${errors.selectedLogisticId ? 'border-red-500' : 'border-gray-200'}`}
+                  className={`flex h-9 w-full items-center justify-between rounded-lg border bg-white px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary ${errors.selectedLogisticId ? 'border-red-500' : 'border-[#64748b59]'}`}
                   value={selectedLogisticId}
                   onChange={(e) => {
                     setSelectedLogisticId(e.target.value);
@@ -890,106 +1211,33 @@ function NewBookingForm() {
           </Card>
         )}
 
-        {/* Section 1: Booking & Route Details */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-20 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              1. Booking & Route Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
+        {/* Unified Single Sheet Card Container */}
+        <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-4 relative z-10 !overflow-visible space-y-4">
+          {/* Section 1: Booking & Route Details */}
+          <div className="relative z-20 !overflow-visible">
+            <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
+              <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+              <span className="text-[11px] font-bold text-slate-700 tracking-wider">
+                1. Booking & Route Details
+              </span>
+            </div>
+          <div className="space-y-2.5">
             {isManual ? (
-              /* Manual Mode Row 1 (5 columns) */
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Branch <span className="text-red-500">*</span></Label>
-                  {user?.role === 'branch' ? (
-                    <Input name="branch" value={(() => {
-                      const b = branches.find(b => b._id === formData.branch);
-                      return b ? `${b.name} (${b.code})` : formData.branch;
-                    })()} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm" />
-                  ) : (
-                    <BranchAutocomplete
-                      name="branch"
-                      value={formData.branch}
-                      onChange={handleChange as any}
-                      options={branchesList}
-                      placeholder="Search or type Branch..."
-                      error={!formData.branch && !!errors.branch}
-                    />
-                  )}
-                  {renderError('branch')}
-                </div>
-                <div className="space-y-1 relative pb-4">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">LR No <span className="text-red-500">*</span></Label>
-                  <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Please enter LR No" className={`h-10 rounded-lg text-sm font-semibold uppercase ${errors.grNo ? 'border-red-500' : 'border-gray-200'}`} />
-                  {renderError('grNo')}
-                </div>
-                <div className="space-y-1 flex flex-col justify-start">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
-                  <DatePicker
-                    value={formData.bookingDate}
-                    onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
-                    className="h-10 rounded-lg border-gray-200 text-sm"
-                  />
-                  {renderError('bookingDate')}
-                </div>
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                  <BranchAutocomplete
-                    name="destinationBranch"
-                    value={formData.destinationBranch}
-                    onChange={handleChange as any}
-                    options={branchesList}
-                    placeholder="Search or type Branch..."
-                    error={!formData.destinationBranch && !!errors.destinationBranch}
-                  />
-                  {renderError('destinationBranch')}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
-                  <ThemeSelect
-                    name="rateType"
-                    value={formData.rateType}
-                    onChange={handleChange as any}
-                    options={[
-                      { value: 'to_pay', label: 'To Pay' },
-                      { value: 'paid', label: 'Paid' },
-                      { value: 'tbb', label: 'T.B.B. (Account)' }
-                    ]}
-                    className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
-                  />
-                </div>
-              </div>
-            ) : (
-              /* Auto Mode (Row 1 & Row 2) */
+              /* Manual Mode (Row 1 & Row 2) */
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
-                    <div className="flex gap-2">
-                      <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg font-semibold text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-emerald-500 focus-visible:ring-emerald-500'}`} />
-                      {user?.ewbApiAccess && (
-                        <Button
-                          type="button"
-                          onClick={handleFetchEwayBill}
-                          disabled={isFetchingEway}
-                          className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
-                        >
-                          {isFetchingEway ? 'Fetching...' : 'Fetch'}
-                        </Button>
-                      )}
-                    </div>
-                    {renderError('ewayBillNo')}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="space-y-1 relative pb-4 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">LR No <span className="text-red-500">*</span></Label>
+                    <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Please enter LR No" className={`h-9 rounded-[8px] text-sm font-medium text-slate-800 uppercase ${errors.grNo ? 'border-red-500' : 'border-[#64748b59]'}`} />
+                    {renderError('grNo')}
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">LR No</Label>
-                    <Input name="grNo" value={formData.grNo || grNo} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed font-semibold text-sm" />
-                  </div>
-                  <div className="space-y-1 relative">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch <span className="text-red-500">*</span></Label>
+                  <div className="space-y-1 relative sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Branch <span className="text-red-500">*</span></Label>
                     {user?.role === 'branch' ? (
-                      <Input name="branch" value={branchesList.find(b => b.value === formData.branch)?.label || formData.branch} readOnly className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-semibold" />
+                      <Input name="branch" value={(() => {
+                        const b = branches.find(b => b._id === formData.branch);
+                        return b ? `${b.name} (${b.code})` : formData.branch;
+                      })()} readOnly className="h-9 rounded-[8px] border border-[#64748b59] bg-gray-50 text-gray-500 cursor-not-allowed text-sm font-medium" />
                     ) : (
                       <BranchAutocomplete
                         name="branch"
@@ -1002,20 +1250,92 @@ function NewBookingForm() {
                     )}
                     {renderError('branch')}
                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
-                  <div className="space-y-1 flex flex-col justify-start">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
+                  <div className="space-y-1 flex flex-col justify-start sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800 mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
                     <DatePicker
                       value={formData.bookingDate}
                       onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
-                      className="h-10 rounded-lg border-gray-200 text-sm"
+                      className="h-9 rounded-[8px] border border-[#64748b59] text-sm"
                     />
                     {renderError('bookingDate')}
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Rate Type</Label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">E Way Bill No</Label>
+                    <div className="relative flex items-center">
+                      <Input 
+                        name="ewayBillNo" 
+                        value={formData.ewayBillNo} 
+                        onChange={handleChange} 
+                        maxLength={12}
+                        readOnly={isEwbLocked}
+                        placeholder="e.g. 123456789012" 
+                        className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 ${isEwbLocked ? 'bg-emerald-50/70 border-emerald-400 font-bold text-emerald-950 pr-24 cursor-not-allowed select-none' : user?.ewbApiAccess ? 'pr-16 border-[#64748b59]' : 'border-[#64748b59]'} ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                      />
+                      {user?.ewbApiAccess && (
+                        isEwbLocked ? (
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <span className="hidden sm:inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded border border-emerald-300">
+                              <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" /> Verified
+                            </span>
+                            <Button
+                              type="button"
+                              onClick={handleOpenChangeModal}
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 rounded-md border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-none transition-colors"
+                              title="Change E-Way Bill"
+                            >
+                              <RotateCcw className="w-3 h-3 mr-0.5 text-amber-700" /> Change
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={handleFetchEwayBill}
+                            disabled={isFetchingEway}
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
+                          >
+                            {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                          </Button>
+                        )
+                      )}
+                    </div>
+                    {renderError('ewayBillNo')}
+                  </div>
+                  <div className="space-y-1 relative sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Destination Branch <span className="text-red-500">*</span></Label>
+                    <div className="flex gap-1.5 items-center">
+                      <div className="flex-1">
+                        <BranchAutocomplete
+                          name="destinationBranch"
+                          value={formData.destinationBranch}
+                          onChange={handleChange as any}
+                          options={branchesList}
+                          placeholder="Search or type Branch..."
+                          error={!formData.destinationBranch && !!errors.destinationBranch}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => {
+                          setQuickBranchErrors({});
+                          setIsQuickBranchModalOpen(true);
+                        }}
+                        className="h-9 w-9 p-0 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary rounded-[8px] font-bold shrink-0 border border-brand-primary/20 flex items-center justify-center cursor-pointer transition-colors shadow-none"
+                        title="Add New Destination Branch"
+                      >
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                      </Button>
+                    </div>
+                    {renderError('destinationBranch')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Rate Type</Label>
                     <ThemeSelect
                       name="rateType"
                       value={formData.rateType}
@@ -1025,45 +1345,157 @@ function NewBookingForm() {
                         { value: 'paid', label: 'Paid' },
                         { value: 'tbb', label: 'T.B.B. (Account)' }
                       ]}
-                      className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                      className="flex h-9 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
                     />
                   </div>
-                  <div className="space-y-1 relative">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Destination Branch <span className="text-red-500">*</span></Label>
-                    <BranchAutocomplete
-                      name="destinationBranch"
-                      value={formData.destinationBranch}
-                      onChange={handleChange as any}
-                      options={branchesList}
-                      placeholder="Search or type Branch..."
-                      error={!formData.destinationBranch && !!errors.destinationBranch}
+                </div>
+              </>
+            ) : (
+              /* Auto Mode (Row 1 & Row 2) */
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">LR No</Label>
+                    <Input name="grNo" value={formData.grNo || grNo} readOnly disabled tabIndex={-1} className="h-9 rounded-[8px] border border-[#64748b59] bg-slate-100/70 text-slate-400 cursor-not-allowed select-none font-medium text-sm" />
+                  </div>
+                  <div className="space-y-1 relative sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Branch <span className="text-red-500">*</span></Label>
+                    {user?.role === 'branch' ? (
+                      <Input name="branch" value={branchesList.find(b => b.value === formData.branch)?.label || formData.branch} readOnly disabled tabIndex={-1} className="h-9 rounded-[8px] border border-[#64748b59] bg-slate-100/70 text-slate-400 cursor-not-allowed select-none text-sm font-medium" />
+                    ) : (
+                      <BranchAutocomplete
+                        name="branch"
+                        value={formData.branch}
+                        onChange={handleChange as any}
+                        options={branchesList}
+                        placeholder="Search or type Branch..."
+                        error={!formData.branch && !!errors.branch}
+                      />
+                    )}
+                    {renderError('branch')}
+                  </div>
+                  <div className="space-y-1 flex flex-col justify-start sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800 mb-0.5">Booking Date <span className="text-red-500">*</span></Label>
+                    <DatePicker
+                      value={formData.bookingDate}
+                      onChange={(dateStr) => setFormData(prev => ({ ...prev, bookingDate: dateStr }))}
+                      className="h-9 rounded-[8px] border border-[#64748b59] text-sm"
                     />
+                    {renderError('bookingDate')}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">E Way Bill No</Label>
+                    <div className="relative flex items-center">
+                      <Input 
+                        name="ewayBillNo" 
+                        value={formData.ewayBillNo} 
+                        onChange={handleChange} 
+                        maxLength={12}
+                        readOnly={isEwbLocked}
+                        placeholder="e.g. 123456789012" 
+                        className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 ${isEwbLocked ? 'bg-emerald-50/70 border-emerald-400 font-bold text-emerald-950 pr-24 cursor-not-allowed select-none' : user?.ewbApiAccess ? 'pr-16 border-[#64748b59]' : 'border-[#64748b59]'} ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                      />
+                      {user?.ewbApiAccess && (
+                        isEwbLocked ? (
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <span className="hidden sm:inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded border border-emerald-300">
+                              <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" /> Verified
+                            </span>
+                            <Button
+                              type="button"
+                              onClick={handleOpenChangeModal}
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 rounded-md border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-none transition-colors"
+                              title="Change E-Way Bill"
+                            >
+                              <RotateCcw className="w-3 h-3 mr-0.5 text-amber-700" /> Change
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={handleFetchEwayBill}
+                            disabled={isFetchingEway}
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
+                          >
+                            {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                          </Button>
+                        )
+                      )}
+                    </div>
+                    {renderError('ewayBillNo')}
+                  </div>
+                  <div className="space-y-1 relative sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Destination Branch <span className="text-red-500">*</span></Label>
+                    <div className="flex gap-1.5 items-center">
+                      <div className="flex-1">
+                        <BranchAutocomplete
+                          name="destinationBranch"
+                          value={formData.destinationBranch}
+                          onChange={handleChange as any}
+                          options={branchesList}
+                          placeholder="Search or type Branch..."
+                          error={!formData.destinationBranch && !!errors.destinationBranch}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => {
+                          setQuickBranchErrors({});
+                          setIsQuickBranchModalOpen(true);
+                        }}
+                        className="h-9 w-9 p-0 bg-brand-primary/10 hover:bg-brand-primary/20 text-brand-primary rounded-[8px] font-bold shrink-0 border border-brand-primary/20 flex items-center justify-center cursor-pointer transition-colors shadow-none"
+                        title="Add New Destination Branch"
+                      >
+                        <Plus className="w-4 h-4 stroke-[2.5]" />
+                      </Button>
+                    </div>
                     {renderError('destinationBranch')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Rate Type</Label>
+                    <ThemeSelect
+                      name="rateType"
+                      value={formData.rateType}
+                      onChange={handleChange as any}
+                      options={[
+                        { value: 'to_pay', label: 'To Pay' },
+                        { value: 'paid', label: 'Paid' },
+                        { value: 'tbb', label: 'T.B.B. (Account)' }
+                      ]}
+                      className="flex h-9 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                    />
                   </div>
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Section 2: Consignor & Consignee Details */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+        <div className="relative z-10 !overflow-visible">
+          <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
+            <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+            <span className="text-[11px] font-bold text-slate-700 tracking-wider">
               2. Consignor & Consignee Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            </span>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
             {/* Left side: Consignor */}
-            <div className="space-y-3.5 pr-0 md:pr-6">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Consignor (Sender)</h3>
-              <div className="space-y-3.5">
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignor Name <span className="text-red-500">*</span></Label>
+            <div className="pr-0 lg:pr-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div className="sm:col-span-2 space-y-1 relative sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignor Name (Sender) <span className="text-red-500">*</span></Label>
                   <div className="relative">
                     {/* Backdrop autocomplete suggestion */}
                     {formData.consignorName && consignorSuggestions.length > 0 && consignorSuggestions[0].name.toLowerCase().startsWith(formData.consignorName.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-slate-300 select-none font-medium z-0 pl-[1px]">
                         <span className="opacity-0">{consignorSuggestions[0].name.slice(0, formData.consignorName.length)}</span>
                         <span>{consignorSuggestions[0].name.slice(formData.consignorName.length)}</span>
                       </div>
@@ -1075,8 +1507,8 @@ function NewBookingForm() {
                       onFocus={() => setShowConsignorDropdown(true)}
                       onBlur={() => setTimeout(() => setShowConsignorDropdown(false), 250)}
                       onKeyDown={handleConsignorKeyDown}
-                      placeholder="e.g. ABC Corporation"
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.consignorName ? 'border-red-500' : 'border-gray-200'}`}
+                      placeholder="ABC Corporation"
+                      className={`h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.consignorName ? 'border-red-500' : 'border-[#64748b59]'}`}
                     />
                   </div>
                   {renderError('consignorName')}
@@ -1111,31 +1543,30 @@ function NewBookingForm() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignor GST</Label>
-                  <Input name="consignorGst" value={formData.consignorGst} onChange={handleChange} placeholder="e.g. 24ABCDE1234F1Z1" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                <div className="sm:col-span-1 space-y-1 sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignor GST</Label>
+                  <Input name="consignorGst" value={formData.consignorGst} onChange={handleChange} placeholder="24ABCDE1234F1Z1" className="h-9 text-xs sm:text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] uppercase px-2.5" />
                   {renderError('consignorGst')}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Contact Phone</Label>
-                  <Input name="consignorPhone" value={formData.consignorPhone} onChange={handleChange} placeholder="e.g. 9876543210" className="h-10 text-sm rounded-lg border-gray-200" />
+                <div className="sm:col-span-1 space-y-1 sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Contact Phone</Label>
+                  <Input name="consignorPhone" value={formData.consignorPhone} onChange={handleChange} placeholder="9876543210" className="h-9 text-xs sm:text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] px-2.5" />
                   {renderError('consignorPhone')}
                 </div>
               </div>
             </div>
 
             {/* Right side: Consignee */}
-            <div className="space-y-3.5 pt-4 md:pt-0 pl-0 md:pl-6">
-              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Consignee (Receiver)</h3>
-              <div className="space-y-3.5">
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignee Name <span className="text-red-500">*</span></Label>
+            <div className="pt-3 lg:pt-0 pl-0 lg:pl-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <div className="sm:col-span-2 space-y-1 relative sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignee Name (Receiver) <span className="text-red-500">*</span></Label>
                   <div className="relative">
                     {/* Backdrop autocomplete suggestion */}
-                    {formData.consigneeName && consigneeSuggestions.length > 0 && consigneeSuggestions[0].name.toLowerCase().startsWith(formData.consigneeName.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{consigneeSuggestions[0].name.slice(0, formData.consigneeName.length)}</span>
-                        <span>{consigneeSuggestions[0].name.slice(formData.consigneeName.length)}</span>
+                    {formData.consigneeName && consignorSuggestions.length > 0 && consignorSuggestions[0]?.name.toLowerCase().startsWith(formData.consigneeName.toLowerCase()) && (
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-slate-300 select-none font-medium z-0 pl-[1px]">
+                        <span className="opacity-0">{consignorSuggestions[0].name.slice(0, formData.consigneeName.length)}</span>
+                        <span>{consignorSuggestions[0].name.slice(formData.consigneeName.length)}</span>
                       </div>
                     )}
                     <Input
@@ -1145,8 +1576,8 @@ function NewBookingForm() {
                       onFocus={() => setShowConsigneeDropdown(true)}
                       onBlur={() => setTimeout(() => setShowConsigneeDropdown(false), 250)}
                       onKeyDown={handleConsigneeKeyDown}
-                      placeholder="e.g. XYZ Enterprises"
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.consigneeName ? 'border-red-500' : 'border-gray-200'}`}
+                      placeholder="XYZ Enterprises"
+                      className={`h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.consigneeName ? 'border-red-500' : 'border-[#64748b59]'}`}
                     />
                   </div>
                   {renderError('consigneeName')}
@@ -1181,31 +1612,32 @@ function NewBookingForm() {
                     </div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Consignee GST</Label>
-                  <Input name="consigneeGst" value={formData.consigneeGst} onChange={handleChange} placeholder="e.g. 24ABCDE1234F1Z1" className="h-10 text-sm rounded-lg border-gray-200 uppercase" />
+                <div className="sm:col-span-1 space-y-1 sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignee GST</Label>
+                  <Input name="consigneeGst" value={formData.consigneeGst} onChange={handleChange} placeholder="24ABCDE1234F1Z1" className="h-9 text-xs sm:text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] uppercase px-2.5" />
                   {renderError('consigneeGst')}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Contact Phone</Label>
-                  <Input name="consigneePhone" value={formData.consigneePhone} onChange={handleChange} placeholder="e.g. 9876543210" className="h-10 text-sm rounded-lg border-gray-200" />
+                <div className="sm:col-span-1 space-y-1 sm:max-w-[96%]">
+                  <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Contact Phone</Label>
+                  <Input name="consigneePhone" value={formData.consigneePhone} onChange={handleChange} placeholder="9876543210" className="h-9 text-xs sm:text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] px-2.5" />
                   {renderError('consigneePhone')}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Section 3: Material & Parcel Details */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+        <div className="overflow-visible">
+          <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
+            <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+            <span className="text-[11px] font-bold text-slate-700 tracking-wider">
               3. Material & Packages Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            <div className="border border-gray-200 rounded-lg overflow-visible">
-              <div className="bg-gray-50 border-b border-gray-200 p-2.5 grid grid-cols-12 gap-3 text-xs font-bold text-gray-700 hidden lg:grid uppercase tracking-wider rounded-t-lg">
+            </span>
+          </div>
+          <div className="space-y-2">
+            <div className="border border-[#64748b59] rounded-[8px] overflow-visible">
+              <div className="bg-slate-50 border-b border-gray-200 py-1.5 px-2.5 grid grid-cols-12 gap-2.5 text-xs font-bold text-slate-800 hidden lg:grid tracking-wider rounded-t-lg">
                 <div className="col-span-1 text-center">Pkgs <span className="text-red-500">*</span></div>
                 <div className="col-span-2">Packaging</div>
                 <div className="col-span-3">Description <span className="text-red-500">*</span></div>
@@ -1214,25 +1646,25 @@ function NewBookingForm() {
                 <div className="col-span-1">Rate</div>
                 <div className="col-span-2">Amount</div>
               </div>
-              <div className="p-2.5 space-y-2 bg-white">
+              <div className="p-2 space-y-1.5 bg-white">
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
                     <div className="col-span-1 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
                       <Input
                         value={item.packages}
                         onChange={(e) => handleItemChange(index, 'packages', e.target.value)}
                         placeholder="Qty"
-                        className={`h-10 text-sm rounded-lg text-center ${errors[`item_${index}_packages`] ? 'border-red-500' : 'border-gray-200'}`}
+                        className={`h-9 text-sm font-medium text-slate-800 rounded-[8px] text-center ${errors[`item_${index}_packages`] ? 'border-red-500' : 'border-[#64748b59]'}`}
                       />
                       {renderCellError(`item_${index}_packages`)}
                     </div>
                     <div className="col-span-2 relative pb-4" ref={el => { packagingDropdownRefs.current[index] = el; }}>
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Packaging</Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">Packaging</Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
                         {item.packaging && activePackagingIndex === index && packagingSuggestions.length > 0 && packagingSuggestions[0].toLowerCase().startsWith(item.packaging.toLowerCase()) && (
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-slate-300 select-none font-medium z-0 pl-[1px]">
                             <span className="opacity-0">{packagingSuggestions[0].slice(0, item.packaging.length)}</span>
                             <span>{packagingSuggestions[0].slice(item.packaging.length)}</span>
                           </div>
@@ -1244,7 +1676,7 @@ function NewBookingForm() {
                           onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
                           onKeyDown={(e) => handlePackagingKeyDown(index, e)}
                           placeholder="Bora / Bag / Roll"
-                          className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                          className="h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent border-gray-200"
                           autoComplete="off"
                         />
                         {activePackagingIndex === index && packagingSuggestions.length > 0 && (
@@ -1266,11 +1698,11 @@ function NewBookingForm() {
                       </div>
                     </div>
                     <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Description <span className="text-red-500">*</span></Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">Description <span className="text-red-500">*</span></Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
                         {item.description && activeDescriptionIndex === index && descriptionSuggestions.length > 0 && descriptionSuggestions[0].toLowerCase().startsWith(item.description.toLowerCase()) && (
-                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-slate-300 select-none font-medium z-0 pl-[1px]">
                             <span className="opacity-0">{descriptionSuggestions[0].slice(0, item.description.length)}</span>
                             <span>{descriptionSuggestions[0].slice(item.description.length)}</span>
                           </div>
@@ -1282,7 +1714,7 @@ function NewBookingForm() {
                           onBlur={() => setTimeout(() => setActiveDescriptionIndex(null), 200)}
                           onKeyDown={(e) => handleDescriptionKeyDown(index, e)}
                           placeholder="Hardware / Cycle / Kirana"
-                          className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-gray-200'}`}
+                          className={`h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors[`item_${index}_description`] ? 'border-red-500' : 'border-[#64748b59]'}`}
                           autoComplete="off"
                         />
                         {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
@@ -1305,40 +1737,40 @@ function NewBookingForm() {
                       {renderCellError(`item_${index}_description`)}
                     </div>
                     <div className="col-span-2 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Weight</Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">Weight</Label>
                       <Input
                         value={item.weight}
                         onChange={(e) => handleItemChange(index, 'weight', e.target.value)}
                         placeholder="0.00"
-                        className="h-10 text-sm rounded-lg border-gray-200"
+                        className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]"
                       />
                     </div>
                     <div className="col-span-1 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">N / W</Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">N / W</Label>
                       <Input
                         value={item.nw}
                         onChange={(e) => handleItemChange(index, 'nw', e.target.value)}
                         placeholder="N"
-                        className="h-10 text-sm rounded-lg border-gray-200 text-center"
+                        className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] text-center"
                       />
                     </div>
                     <div className="col-span-1 relative pb-4">
-                      <Label className="text-xs font-semibold text-gray-500 lg:hidden">Rate</Label>
+                      <Label className="text-xs font-bold text-slate-800 lg:hidden">Rate</Label>
                       <Input
                         value={item.rate}
                         onChange={(e) => handleItemChange(index, 'rate', e.target.value)}
                         placeholder="Rate"
-                        className="h-10 text-sm rounded-lg border-gray-200"
+                        className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]"
                       />
                     </div>
                     <div className="col-span-2 relative pb-4 flex items-start gap-2">
                       <div className="w-full">
-                        <Label className="text-xs font-semibold text-gray-500 lg:hidden">Amount</Label>
+                        <Label className="text-xs font-bold text-slate-800 lg:hidden">Amount</Label>
                         <Input
                           value={item.amount}
                           onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
                           placeholder="Amount"
-                          className="h-10 text-sm rounded-lg border-gray-200"
+                          className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]"
                         />
                       </div>
                       {items.length > 1 && (
@@ -1346,7 +1778,7 @@ function NewBookingForm() {
                           type="button"
                           variant="ghost"
                           onClick={() => deleteItem(index)}
-                          className="h-10 w-10 rounded-lg text-red-500 hover:text-red-700 shrink-0 mt-0 lg:mt-0"
+                          className="h-9 w-9 rounded-lg text-red-500 hover:text-red-700 shrink-0 mt-0 lg:mt-0"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -1366,163 +1798,481 @@ function NewBookingForm() {
                 <Plus className="w-3.5 h-3.5" /> Add New Row
               </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 4: Additional Details */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              4. Additional Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className={`grid grid-cols-1 sm:grid-cols-2 ${isManual ? 'md:grid-cols-5' : 'md:grid-cols-4'} gap-3.5`}>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Value</Label>
-                <Input name="value" value={formData.value} onChange={handleChange} placeholder="Goods Value" className="h-10 text-sm rounded-lg border-gray-200" />
-                {renderError('value')}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Del. Type</Label>
-                <ThemeSelect
-                  name="deliveryType"
-                  value={formData.deliveryType}
-                  onChange={handleChange as any}
-                  options={[
-                    { value: 'Godown Delivery', label: 'Godown Delivery' },
-                    { value: 'Door Delivery', label: 'Door Delivery' }
-                  ]}
-                  className="flex h-10 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Pvt. Marka</Label>
-                <Input name="pvtMarka" value={formData.pvtMarka} onChange={handleChange} placeholder="e.g. 50" className="h-10 text-sm rounded-lg border-gray-200" />
-                {renderError('pvtMarka')}
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Invoice No</Label>
-                <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-10 text-sm rounded-lg border-gray-200" />
-                {renderError('invoiceNo')}
-              </div>
-              {isManual && (
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">E Way Bill No</Label>
-                  <div className="flex gap-2">
-                    <Input name="ewayBillNo" value={formData.ewayBillNo} onChange={handleChange} placeholder="e.g. 123456789012" className={`h-10 rounded-lg text-sm flex-1 ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-gray-200'}`} />
-                    {user?.ewbApiAccess && (
-                      <Button
-                        type="button"
-                        onClick={handleFetchEwayBill}
-                        disabled={isFetchingEway}
-                        className="h-10 px-3 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white font-bold text-xs"
-                      >
-                        {isFetchingEway ? 'Fetching...' : 'Fetch'}
-                      </Button>
-                    )}
-                  </div>
-                  {renderError('ewayBillNo')}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 5: Financial Charges */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              5. Charges & Financials
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Freight</Label>
-                <Input name="freightAmount" value={formData.freightAmount} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">PF</Label>
-                <Input name="pf" value={formData.pf} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Labour</Label>
-                <Input name="labour" value={formData.labour} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">
-                  {isManual ? 'Tempo Chg.' : 'DD Chg.'}
-                </Label>
-                <Input name="ddCharge" value={formData.ddCharge} onChange={handleChange} placeholder="0.00" className="h-10 text-sm rounded-lg border-gray-200" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Bilty Chg.</Label>
-                <Input name="biltyCharge" value={formData.biltyCharge} onChange={handleChange} placeholder="10.00" className="h-10 text-sm rounded-lg border-gray-200" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">GST Rate (%)</Label>
-                <div className="flex gap-2">
-                  <ThemeSelect
-                    name="gstRate"
-                    value={formData.gstRate}
-                    onChange={handleChange as any}
-                    options={[
-                      { value: '0', label: '0% GST' },
-                      { value: '5', label: '5% GST' },
-                      { value: '12', label: '12% GST' },
-                      { value: '18', label: '18% GST' }
-                    ]}
-                    className="flex h-10 w-28 rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
-                  />
-                  <Input name="gstRate" value={formData.gstRate} onChange={handleChange} placeholder="Custom %" className="h-10 text-sm rounded-lg border-gray-200 w-full" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
-                <div className="h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center px-3 font-bold text-gray-700 text-sm">
-                  {'\u20B9'} {totals.total.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-2.5 pt-2">
-          <Button
-            variant="outline"
-            type="button"
-            onClick={() => router.back()}
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            onClick={() => setSubmitAction('save')}
-            disabled={isLoading}
-            className="h-10 px-5 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-bold transition-all shadow-sm"
-          >
-            {isLoading && submitAction === 'save' ? 'Submitting...' : 'Submit & Exit'}
-          </Button>
-          <Button
-            type="submit"
-            onClick={() => setSubmitAction('print')}
-            disabled={isLoading}
-            className="h-10 px-5 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-sm font-bold transition-all shadow-md flex items-center gap-1.5"
-          >
-            {isLoading && submitAction === 'print' ? 'Printing...' : (
-              <>
-                <Printer className="w-4 h-4" /> Save, Print & Share
-              </>
-            )}
-          </Button>
+          </div>
         </div>
 
+        {/* Sections 4 & 5: Side-by-Side Grid */}
+        <div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 items-stretch">
+            {/* Section 4: Additional Details */}
+            <div className="pr-0 lg:pr-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
+                  <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+                  <span className="text-[11px] font-bold text-slate-700 tracking-wider">
+                    4. Additional Details
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Value</Label>
+                    <Input name="value" value={formData.value} onChange={handleChange} placeholder="Goods Value" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    {renderError('value')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Del. Type</Label>
+                    <ThemeSelect
+                      name="deliveryType"
+                      value={formData.deliveryType}
+                      onChange={handleChange as any}
+                      options={[
+                        { value: 'Godown Delivery', label: 'Godown Delivery' },
+                        { value: 'Door Delivery', label: 'Door Delivery' }
+                      ]}
+                      className="flex h-9 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Pvt. Marka</Label>
+                    <Input name="pvtMarka" value={formData.pvtMarka} onChange={handleChange} placeholder="e.g. 50" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    {renderError('pvtMarka')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Invoice No</Label>
+                    <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    {renderError('invoiceNo')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">GST Rate (%)</Label>
+                    <ThemeSelect
+                      name="gstRate"
+                      value={formData.gstRate}
+                      onChange={handleChange as any}
+                      options={[
+                        { value: '0', label: '0% GST' },
+                        { value: '5', label: '5% GST' },
+                        { value: '12', label: '12% GST' },
+                        { value: '18', label: '18% GST' }
+                      ]}
+                      className="flex h-9 w-full rounded-lg border border-gray-200 px-3 text-sm focus-visible:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Custom GST (%)</Label>
+                    <Input
+                      name="gstRate"
+                      value={formData.gstRate}
+                      onChange={handleChange}
+                      placeholder="e.g. 5 or 12"
+                      className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] w-full"
+                    />
+                  </div>
+                  {isManual && (
+                    <div className="space-y-1 sm:col-span-2 sm:max-w-[97.5%]">
+                      <Label className="text-xs font-bold text-slate-800">E Way Bill No</Label>
+                      <div className="relative flex items-center">
+                        <Input 
+                        name="ewayBillNo" 
+                        value={formData.ewayBillNo} 
+                        onChange={handleChange} 
+                        maxLength={12}
+                        readOnly={isEwbLocked}
+                        placeholder="e.g. 123456789012" 
+                        className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 ${isEwbLocked ? 'bg-emerald-50/70 border-emerald-400 font-bold text-emerald-950 pr-24 cursor-not-allowed select-none' : user?.ewbApiAccess ? 'pr-16 border-[#64748b59]' : 'border-[#64748b59]'} ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                      />
+                      {user?.ewbApiAccess && (
+                        isEwbLocked ? (
+                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            <span className="hidden sm:inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded border border-emerald-300">
+                              <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" /> Verified
+                            </span>
+                            <Button
+                              type="button"
+                              onClick={handleOpenChangeModal}
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 rounded-md border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-none transition-colors"
+                              title="Change E-Way Bill"
+                            >
+                              <RotateCcw className="w-3 h-3 mr-0.5 text-amber-700" /> Change
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={handleFetchEwayBill}
+                            disabled={isFetchingEway}
+                            size="sm"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
+                          >
+                            {isFetchingEway ? 'Fetching...' : 'Fetch'}
+                          </Button>
+                        )
+                      )}
+                      </div>
+                      {renderError('ewayBillNo')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2 (Right): Section 5 + Action Buttons Stacked */}
+            <div className="pt-3 lg:pt-0 pl-0 lg:pl-4 flex flex-col justify-between gap-3">
+              {/* Section 5: Financial Charges (Compact) */}
+              <div>
+                <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
+                  <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+                  <span className="text-[11px] font-bold text-slate-700 tracking-wider">
+                    5. Charges & Financials
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">Freight</Label>
+                      <Input name="freightAmount" value={formData.freightAmount} onChange={handleChange} placeholder="0.00" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    </div>
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">PF</Label>
+                      <Input name="pf" value={formData.pf} onChange={handleChange} placeholder="0.00" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    </div>
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">Labour</Label>
+                      <Input name="labour" value={formData.labour} onChange={handleChange} placeholder="0.00" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    </div>
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">
+                        {isManual ? 'Tempo Chg.' : 'DD Chg.'}
+                      </Label>
+                      <Input name="ddCharge" value={formData.ddCharge} onChange={handleChange} placeholder="0.00" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">Bilty Chg.</Label>
+                      <Input name="biltyCharge" value={formData.biltyCharge} onChange={handleChange} placeholder="10.00" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    </div>
+                    <div className="space-y-1 sm:max-w-[95%]">
+                      <Label className="text-xs font-bold text-slate-800">Total Amount</Label>
+                      <div className="h-9 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-center px-3 font-bold text-sm">
+                        {'\u20B9'} {totals.total.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons - Sits strictly under Section 5 on the right */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => router.back()}
+                  className="h-9 px-4 rounded-[8px] border border-gray-300 hover:bg-gray-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  onClick={() => setSubmitAction('save')}
+                  disabled={isLoading}
+                  className="h-9 px-4 rounded-[8px] bg-white border border-gray-300 hover:bg-gray-50 text-slate-700 text-xs font-semibold shadow-xs transition-colors"
+                >
+                  {isLoading && submitAction === 'save' ? 'Submitting...' : 'Submit & Exit'}
+                </Button>
+                <Button
+                  type="submit"
+                  onClick={() => setSubmitAction('print')}
+                  disabled={isLoading}
+                  className="h-9 px-4.5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all"
+                >
+                  {isLoading && submitAction === 'print' ? 'Printing...' : (
+                    <>
+                      <Printer className="w-3.5 h-3.5" /> Save, Print & Share
+                      <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Closing Unified Single Sheet Card Container */}
+        </div>
+
+      
+        {/* Custom Theme Warning Modal for Changing E-Way Bill */}
+        {showChangeEwbModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-full bg-amber-100/80 border border-amber-200 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Change E-Way Bill?</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Changing the E-Way Bill will <strong className="text-amber-800">clear all fetched customer and item details</strong> so you can enter and verify a new E-Way Bill.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>This ensures your LR data matches the government GST portal.</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowChangeEwbModal(false)}
+                  className="h-9 px-4 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmChangeEwb}
+                  className="h-9 px-4 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-sm"
+                >
+                  Yes, Change EWB
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      
+        {/* Quick-Add Destination Branch Modal (Matching Branch Module Rules & Layout) */}
+        {isQuickBranchModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-2xl w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-brand-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Add New Branch</h3>
+                    <p className="text-[11px] text-slate-500">Quickly create and auto-select this branch</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeQuickBranchModal}
+                  className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center text-sm font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Row 1: Branch Name | Branch Code | Area / Location */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">Branch Name <span className="text-red-500">*</span></Label>
+                    <Input
+                      name="quickName"
+                      value={quickBranchData.name}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const generatedCode = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+                        setQuickBranchData(prev => ({
+                          ...prev,
+                          name: val,
+                          code: generatedCode
+                        }));
+                        if (quickBranchErrors.name || quickBranchErrors.code) {
+                          setQuickBranchErrors(prev => {
+                            const copy = { ...prev };
+                            delete copy.name;
+                            delete copy.code;
+                            return copy;
+                          });
+                        }
+                      }}
+                      placeholder="ex. Ahmedabad"
+                      className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${quickBranchErrors.name ? 'border-red-500' : 'border-[#64748b59]'}`}
+                    />
+                    {quickBranchErrors.name && <p className="text-red-500 text-xs font-semibold mt-1">{quickBranchErrors.name}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">Branch Code <span className="text-red-500">*</span></Label>
+                    <Input
+                      name="quickCode"
+                      value={quickBranchData.code}
+                      readOnly
+                      disabled
+                      placeholder="Auto-Generated"
+                      className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] uppercase bg-gray-50 text-gray-500 cursor-not-allowed border-gray-200"
+                    />
+                    {quickBranchErrors.code && <p className="text-red-500 text-xs font-semibold mt-1">{quickBranchErrors.code}</p>}
+                  </div>
+
+                  <div className="space-y-1 relative">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">Area / Search Location</Label>
+                    <div className="relative">
+                      <Input
+                        name="quickAreaSearch"
+                        value={areaSearchQuery}
+                        onChange={(e) => setAreaSearchQuery(e.target.value)}
+                        onFocus={() => {
+                          if (areaSuggestions.length > 0) setShowAreaDropdown(true);
+                        }}
+                        onClick={() => {
+                          if (areaSuggestions.length > 0) setShowAreaDropdown(prev => !prev);
+                        }}
+                        onBlur={() => setTimeout(() => setShowAreaDropdown(false), 200)}
+                        placeholder="Type area (e.g. Varachha)..."
+                        autoComplete="off"
+                        className="h-10 pr-8 text-sm font-semibold text-slate-900 rounded-[8px] border-[#64748b59]"
+                      />
+                      {isSearchingArea && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                          <div className="w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                      )}
+                      {showAreaDropdown && areaSuggestions.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white rounded-xl border border-slate-200 p-1.5 shadow-2xl max-h-56 overflow-y-auto">
+                          <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Location:</div>
+                          {areaSuggestions.map((item, idx) => (
+                            <div
+                              key={idx}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectArea(item);
+                              }}
+                              className="px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:bg-brand-primary/10 hover:text-brand-primary text-slate-800 flex flex-col gap-0.5"
+                            >
+                              <div className="font-bold flex items-center justify-between">
+                                <span>{item.areaName}</span>
+                                {item.pincode && (
+                                  <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-bold">
+                                    {item.pincode}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[11px] text-slate-500 truncate">{item.displayName}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: PinCode | State | City / District */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">PinCode</Label>
+                    <div className="relative">
+                      <Input
+                        name="quickPincode"
+                        value={quickBranchData.pincode}
+                        onChange={(e) => handleQuickPincodeChange(e.target.value)}
+                        placeholder="ex. 380015"
+                        maxLength={6}
+                        className={`h-10 pr-8 text-sm font-semibold text-slate-900 rounded-[8px] border-[#64748b59] ${quickBranchErrors.pincode ? 'border-red-500' : ''}`}
+                      />
+                      {isFetchingQuickPincode && (
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
+                      )}
+                      {pincodePostOffices.length > 0 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-xl max-h-56 overflow-y-auto">
+                          <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Select Location</div>
+                          {pincodePostOffices.map((po: any, index: number) => (
+                            <div
+                              key={index}
+                              onMouseDown={() => {
+                                setQuickBranchData(prev => ({
+                                  ...prev,
+                                  city: po.District,
+                                  state: po.State
+                                }));
+                                setPincodePostOffices([]);
+                                toast.success(`Selected: ${po.Name} (${po.District}, ${po.State})`);
+                              }}
+                              className="flex flex-col px-3 py-2 text-xs rounded-lg cursor-pointer transition-colors hover:bg-brand-primary/10 hover:text-brand-primary text-gray-800"
+                            >
+                              <span className="font-bold">{po.Name}</span>
+                              <span className="text-[10px] text-gray-500">{po.District}, {po.State}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {quickBranchErrors.pincode && <p className="text-red-500 text-xs font-semibold mt-1">{quickBranchErrors.pincode}</p>}
+                  </div>
+
+                  <div className="space-y-1 relative">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">State <span className="text-red-500">*</span></Label>
+                    <div className="relative">
+                      <Input
+                        name="quickState"
+                        value={quickBranchData.state}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setQuickBranchData(prev => ({ ...prev, state: val }));
+                          if (quickBranchErrors.state) {
+                            setQuickBranchErrors(prev => {
+                              const copy = { ...prev };
+                              delete copy.state;
+                              return copy;
+                            });
+                          }
+                        }}
+                        placeholder="Search State..."
+                        className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${quickBranchErrors.state ? 'border-red-500' : 'border-[#64748b59]'}`}
+                      />
+                    </div>
+                    {quickBranchErrors.state && <p className="text-red-500 text-xs font-semibold mt-1">{quickBranchErrors.state}</p>}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs font-semibold text-slate-700 capitalize">City / District</Label>
+                    <Input
+                      name="quickCity"
+                      value={quickBranchData.city}
+                      onChange={(e) => setQuickBranchData(prev => ({ ...prev, city: e.target.value }))}
+                      placeholder="e.g. Ahmedabad"
+                      className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeQuickBranchModal}
+                  disabled={isSavingQuickBranch}
+                  className="h-10 px-4 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSaveQuickBranch}
+                  disabled={isSavingQuickBranch}
+                  className="h-10 px-6 rounded-lg bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isSavingQuickBranch ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    'Save & Select'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );
@@ -1535,4 +2285,9 @@ export default function NewBookingPage() {
     </Suspense>
   );
 }
+
+
+
+
+
 

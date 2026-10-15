@@ -105,7 +105,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
             <div className="p-12 text-center text-gray-500">
               <div className="flex flex-col items-center justify-center">
                 <Contact className="w-16 h-16 text-gray-200 mb-4" />
-                <p className="text-lg font-medium text-gray-600">No drivers found.</p>
+                <p className="text-lg font-semibold text-slate-700">No drivers found.</p>
                 <p className="text-sm mt-1">Click 'Add New Driver' to register your first driver.</p>
               </div>
             </div>
@@ -116,7 +116,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                 <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-gray-50/80 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                      <th className="font-bold px-4 py-3 w-20 text-center">Sr. No.</th>
+                      <th className="font-bold px-4 py-3 w-20 text-center">Sr.</th>
                       <th className="font-bold px-4 py-3 w-[30%]">Driver Details</th>
                       <th className="font-bold px-4 py-3 w-[25%]">License & KYC</th>
                       {(session?.user as any)?.role === 'logistic' && (
@@ -132,7 +132,7 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
                       const isLicenseExpiring = d.licenseExpiry && new Date(d.licenseExpiry) < new Date(Date.now() + 30*24*60*60*1000);
                       return (
                         <tr key={d._id.toString()} className="hover:bg-brand-secondary/5 transition-colors">
-                          <td className="px-4 py-3.5 text-center font-bold text-gray-500">{index + 1}</td>
+                          <td className="px-4 py-3.5 text-center font-semibold text-slate-700">{index + 1}</td>
                           <td className="px-4 py-3.5 align-middle">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary font-bold shrink-0">
@@ -290,3 +290,6 @@ export default async function DriversPage({ searchParams }: { searchParams: Prom
     </div>
   );
 }
+
+
+

@@ -186,7 +186,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl h-full">
           <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-            <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-2">
               <User className="w-4 h-4 text-brand-primary" />
               Personal Information
             </CardTitle>
@@ -197,59 +197,59 @@ export default function ProfilePage() {
               {(formData.role === 'branch_user' || formData.role === 'branch') && (
                 <>
                   <div className="space-y-1.5 md:col-span-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Name</Label>
+                    <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Name</Label>
                     <Input 
                       name="branchName" 
                       value={formData.branchName} 
                       disabled
-                      className="h-10 text-sm rounded-lg bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium" 
+                      className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium" 
                     />
                   </div>
                   <div className="space-y-1.5 md:col-span-1">
-                    <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                    <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Code</Label>
                     <Input 
                       name="branchCode" 
                       value={formData.branchCode} 
                       disabled
-                      className="h-10 text-sm rounded-lg bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium uppercase tracking-wider" 
+                      className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed font-medium uppercase tracking-wider" 
                     />
                   </div>
                 </>
               )}
               
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Full Name <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Full Name <span className="text-red-500">*</span></Label>
                 <Input 
                   name="name" 
                   value={formData.name} 
                   onChange={handleChange} 
                   placeholder="Enter Full Name"
-                  className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.name && <p className="text-red-500 text-xs font-medium">{errors.name}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Email (Login ID) <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Email (Login ID) <span className="text-red-500">*</span></Label>
                 <Input 
                   name="email" 
                   type="email"
                   value={formData.email} 
                   onChange={handleChange} 
                   placeholder="Enter Email (Login ID)"
-                  className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.email && <p className="text-red-500 text-xs font-medium">{errors.email}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Phone Number</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Phone Number</Label>
                 <Input 
                   name="phone" 
                   value={formData.phone} 
                   onChange={handleChange} 
                   placeholder="Enter Phone Number"
-                  className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.phone && <p className="text-red-500 text-xs font-medium">{errors.phone}</p>}
               </div>
@@ -260,7 +260,7 @@ export default function ProfilePage() {
 
         <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl h-full">
           <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-            <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+            <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-2">
               <Lock className="w-4 h-4 text-brand-primary" />
               Security
             </CardTitle>
@@ -268,27 +268,27 @@ export default function ProfilePage() {
           <CardContent className="p-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">New Password</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">New Password</Label>
                 <Input 
                   name="password" 
                   type="password"
                   value={formData.password} 
                   onChange={handleChange} 
                   placeholder="Enter New Password (Leave blank to keep current)"
-                  className={`h-10 text-sm rounded-lg ${errors.password ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.password ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.password && <p className="text-red-500 text-xs font-medium">{errors.password}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Confirm Password</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Confirm Password</Label>
                 <Input 
                   name="confirmPassword" 
                   type="password"
                   value={formData.confirmPassword} 
                   onChange={handleChange} 
                   placeholder="Re-enter New Password"
-                  className={`h-10 text-sm rounded-lg ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.confirmPassword ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.confirmPassword && <p className="text-red-500 text-xs font-medium">{errors.confirmPassword}</p>}
               </div>
@@ -304,7 +304,7 @@ export default function ProfilePage() {
         {formData.role === 'logistic' && (
           <Card className="border-none shadow-md bg-white overflow-hidden rounded-2xl w-full mb-6">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-4">
-              <CardTitle className="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+              <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-brand-primary" />
                 Statutory & Branding
               </CardTitle>
@@ -313,43 +313,43 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Transporter ID (TRANSIN)</Label>
+                  <Label className="text-xs font-semibold text-slate-700 uppercase">Transporter ID (TRANSIN)</Label>
                   <Input 
                     name="transporterId" 
                     value={formData.transporterId} 
                     onChange={handleChange} 
                     placeholder="Enter Transporter ID"
-                    className="h-10 text-sm rounded-lg border-gray-200" 
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">GST Number</Label>
+                  <Label className="text-xs font-semibold text-slate-700 uppercase">GST Number</Label>
                   <Input 
                     name="gstNumber" 
                     value={formData.gstNumber} 
                     onChange={handleChange} 
                     placeholder="Enter GST Number"
-                    className="h-10 text-sm rounded-lg border-gray-200" 
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" 
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">PAN Number</Label>
+                  <Label className="text-xs font-semibold text-slate-700 uppercase">PAN Number</Label>
                   <Input 
                     name="panNumber" 
                     value={formData.panNumber} 
                     onChange={handleChange} 
                     placeholder="Enter PAN Number"
-                    className="h-10 text-sm rounded-lg border-gray-200" 
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" 
                   />
                 </div>
                 <div className="space-y-1.5 md:col-span-3">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">Company Logo (Image URL)</Label>
+                  <Label className="text-xs font-semibold text-slate-700 uppercase">Company Logo (Image URL)</Label>
                   <Input 
                     name="companyLogo" 
                     value={formData.companyLogo} 
                     onChange={handleChange} 
                     placeholder="Enter Company Logo URL"
-                    className="h-10 text-sm rounded-lg border-gray-200" 
+                    className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59]" 
                   />
                 </div>
               </div>
@@ -362,7 +362,7 @@ export default function ProfilePage() {
             variant="outline" 
             type="button" 
             onClick={() => router.back()} 
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Go Back
           </Button>
@@ -379,3 +379,8 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+
+
+
+

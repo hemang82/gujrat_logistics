@@ -148,7 +148,7 @@ function AdminLogin() {
                   id="email" 
                   type="email" 
                   placeholder="Please enter your email" 
-                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-4 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.email ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`}
+                  className={`bg-gray-50/50 border border-[#64748b59] h-14 rounded-[8px] pl-4 pr-4 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.email ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`}
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -173,7 +173,7 @@ function AdminLogin() {
                   id="password" 
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••" 
-                  className={`bg-gray-50/50 border-gray-200 h-14 rounded-xl pl-4 pr-12 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.password ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`}
+                  className={`bg-gray-50/50 border border-[#64748b59] h-14 rounded-[8px] pl-4 pr-12 text-base focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary focus:bg-white transition-all shadow-sm ${errors.password ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);

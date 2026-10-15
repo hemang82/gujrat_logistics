@@ -259,7 +259,7 @@ export default function BranchLedgerPage() {
                   <Wallet className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Opening Balance</p>
+                  <p className="text-sm font-semibold text-slate-700">Opening Balance</p>
                   <h3 className="text-xl font-bold text-gray-800">{formatCurrency(ledgerData.openingBalance)}</h3>
                 </div>
               </CardContent>
@@ -271,7 +271,7 @@ export default function BranchLedgerPage() {
                   <ArrowDownCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Cash In</p>
+                  <p className="text-sm font-semibold text-slate-700">Total Cash In</p>
                   <h3 className="text-xl font-bold text-emerald-600">+{formatCurrency(ledgerData.totalIn)}</h3>
                 </div>
               </CardContent>
@@ -283,7 +283,7 @@ export default function BranchLedgerPage() {
                   <ArrowUpCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Total Cash Out</p>
+                  <p className="text-sm font-semibold text-slate-700">Total Cash Out</p>
                   <h3 className="text-xl font-bold text-rose-600">-{formatCurrency(ledgerData.totalOut)}</h3>
                 </div>
               </CardContent>
@@ -295,7 +295,7 @@ export default function BranchLedgerPage() {
                   <Wallet className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Closing Balance</p>
+                  <p className="text-sm font-semibold text-slate-700">Closing Balance</p>
                   <h3 className="text-xl font-bold text-indigo-700">{formatCurrency(ledgerData.closingBalance)}</h3>
                 </div>
               </CardContent>
@@ -375,11 +375,11 @@ export default function BranchLedgerPage() {
           </DialogHeader>
           <form onSubmit={handleVoucherSubmit} className="space-y-5 mt-4">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">Type</Label>
+              <Label className="text-sm font-semibold text-slate-700">Type</Label>
               <select 
                 value={voucherForm.type}
                 onChange={(e) => setVoucherForm(prev => ({ ...prev, type: e.target.value }))}
-                className="w-full h-11 border border-gray-200 rounded-lg px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
+                className="w-full h-11 border border border-[#64748b59] rounded-[8px] px-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all"
               >
                 <option value="debit">Cash Out (-) Expense</option>
                 <option value="credit">Cash In (+) Deposit</option>
@@ -387,7 +387,7 @@ export default function BranchLedgerPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">Amount (₹)</Label>
+              <Label className="text-sm font-semibold text-slate-700">Amount (₹)</Label>
               <div className="relative">
                 <IndianRupee className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <Input 
@@ -397,19 +397,19 @@ export default function BranchLedgerPage() {
                   required
                   value={voucherForm.amount}
                   onChange={(e) => setVoucherForm(prev => ({ ...prev, amount: e.target.value }))}
-                  className="pl-10 h-11 border-gray-200 rounded-lg focus:ring-brand-primary"
+                  className="pl-10 h-11 border border-[#64748b59] rounded-[8px] focus:ring-brand-primary"
                   placeholder="e.g. 500"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">Description (Vigat)</Label>
+              <Label className="text-sm font-semibold text-slate-700">Description (Vigat)</Label>
               <Textarea 
                 required
                 value={voucherForm.description}
                 onChange={(e) => setVoucherForm(prev => ({ ...prev, description: e.target.value }))}
-                className="min-h-[80px] border-gray-200 rounded-lg focus:ring-brand-primary resize-none"
+                className="min-h-[80px] border border-[#64748b59] rounded-[8px] focus:ring-brand-primary resize-none"
                 placeholder="e.g. Tea & Snacks, Hamali, Owner deposit..."
               />
             </div>
@@ -428,3 +428,7 @@ export default function BranchLedgerPage() {
     </div>
   );
 }
+
+
+
+

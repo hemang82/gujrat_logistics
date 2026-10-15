@@ -551,20 +551,42 @@ export default function LorryHireForm() {
       }
       
       let newDriver = formData.driver, newDriverSearch = driverSearch;
+
+      // Priority 1: Use driver directly assigned to the Challan
+      const challanDriver = challan.driverName?._id || challan.driverName;
+      if (challanDriver) {
+        if (typeof challan.driverName === 'object' && challan.driverName?.name) {
+          newDriver = challan.driverName._id;
+          newDriverSearch = challan.driverName.name;
+        } else {
+          const did = challanDriver.toString();
+          const driverObj = drivers.find(d => d._id === did);
+          if (driverObj) {
+            newDriver = driverObj._id;
+            newDriverSearch = driverObj.name;
+          }
+        }
+      }
+
+      // Priority 2: If challan had no driver, fallback to vehicle's assigned driver
       if (truck) {
         const truckObj = vehicles.find(v => v._id === truck);
         if (truckObj) {
           setTruckSearch(truckObj.vehicleNumber || '');
-          const truckDriver = truckObj.driver;
-          if (truckDriver) {
-            const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
-            const driverObj = drivers.find(d => d._id === did);
-            if (driverObj) {
-              newDriver = driverObj._id;
-              newDriverSearch = driverObj.name;
+          if (!newDriver) {
+            const truckDriver = truckObj.assignedDriver || truckObj.driver;
+            if (truckDriver) {
+              const did = typeof truckDriver === 'object' ? truckDriver._id : truckDriver;
+              const driverObj = drivers.find(d => d._id === did);
+              if (driverObj) {
+                newDriver = driverObj._id;
+                newDriverSearch = driverObj.name;
+              }
             }
           }
         }
+      } else if (challan.truckNo?.vehicleNumber) {
+        setTruckSearch(challan.truckNo.vehicleNumber);
       }
       
       setDriverSearch(newDriverSearch);
@@ -601,9 +623,8 @@ export default function LorryHireForm() {
     const total = Number(formData.totalAmount) || 0;
     const advance = Number(formData.advanceAmount) || 0;
     const comm = Number(formData.commission) || 0;
-    const tdsAmt = Number(formData.tds) || 0;
     const hamaliAmt = Number(formData.hamali) || 0;
-    return total - advance - comm - tdsAmt + hamaliAmt;
+    return total - advance - comm + hamaliAmt;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -672,62 +693,80 @@ export default function LorryHireForm() {
 
   const renderError = (field: string) => {
     if (errors[field]) {
-      return <p className="text-red-500 text-xs font-semibold absolute bottom-0">{errors[field]}</p>;
+      return <p className="text-rose-500 text-[11px] font-semibold mt-1 leading-tight flex items-center gap-1">{errors[field]}</p>;
     }
     return null;
   };
 
   return (
-    <div className="w-full pb-8 space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-gray-800">Add New Lorry Hire</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Create a new voucher and assign challans</p>
-        </div>
-        <Link href="/admin/lorry-hire">
-          <Button variant="outline" className="h-9 px-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium flex items-center gap-1.5 transition-colors">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back
+    <div className="w-full pb-4">
+      {/* Compact Header Bar - Synced with LR & Challan */}
+      <div className="mb-2.5 flex items-center justify-between bg-white py-2 px-3.5 rounded-xl shadow-xs border border-slate-200/90">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={() => router.back()}
+            variant="outline"
+            className="h-8 w-8 p-0 rounded-lg shrink-0 text-gray-600 hover:text-brand-primary hover:bg-brand-primary/10 transition-colors border border-gray-200"
+            title="Go Back"
+          >
+            <ArrowLeft className="w-4 h-4" />
           </Button>
-        </Link>
+          <div>
+            <h1 className="text-sm sm:text-base font-bold text-gray-800 leading-tight">Add New Lorry Hire</h1>
+            <p className="text-[11px] text-gray-500 leading-tight mt-0.5">Create a new voucher and assign challans</p>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Section 1 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-20 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              1. Lorry Hire Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Voucher No</Label>
-                <Input value={voucherNo} disabled className="h-10 rounded-lg border-gray-200 bg-gray-50 text-gray-500 font-bold text-sm" />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Date <span className="text-red-500">*</span></Label>
-                <DatePicker
-                  value={formData.date}
-                  onChange={(date) => setFormData(prev => ({ ...prev, date }))}
-                  className="h-10 rounded-lg border-gray-200 text-sm"
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Unified Single Sheet Card Container */}
+        <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
+          
+          {/* Section 1: Hire & Route Information */}
+          <div className="relative z-20 !overflow-visible">
+            <div className="flex items-center gap-2 pb-2 mb-3.5 border-b border-slate-100">
+              <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+              <span className="text-xs font-bold text-slate-700 tracking-wide">
+                1. Hire & Route Information
+              </span>
+            </div>
+
+            {/* Row 1: Primary Document Details (3 Balanced Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Voucher No</Label>
+                <Input
+                  value={voucherNo}
+                  disabled
+                  className="h-9 text-xs font-bold bg-slate-50 border-slate-200 text-slate-600 rounded-[8px]"
                 />
               </div>
 
-              {/* Challan Search at the Top */}
-              <div className="space-y-1 relative pb-4 md:col-span-1 lg:col-span-1">
-                <Label className="text-[10px] font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/10 px-2 py-0.5 rounded text-brand-primary">
-                  🔍 Super Auto-Fill (Search Challan) <span className="text-red-500">*</span>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Date <span className="text-red-500">*</span></Label>
+                <DatePicker
+                  value={formData.date}
+                  onChange={(date) => setFormData(prev => ({ ...prev, date }))}
+                  className="h-9 rounded-[8px] border-[#64748b59] text-xs font-semibold"
+                />
+              </div>
+
+              {/* Challan Super Auto-Fill */}
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-brand-primary flex items-center gap-1.5">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-brand-primary animate-pulse"></span>
+                  Super Auto-Fill (Search Challan) <span className="text-red-500">*</span>
                 </Label>
-                <div className="flex gap-2 mt-1 relative">
+                <div className="flex gap-1.5 relative">
                   <div className="relative flex-1">
                     {scanChallanNo && challanSuggestions.length > 0 && challanSuggestions[0].label.toLowerCase().startsWith(scanChallanNo.toLowerCase()) && (
-                      <div className="absolute left-9 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <div className="absolute left-8 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                         <span className="opacity-0">{challanSuggestions[0].label.slice(0, scanChallanNo.length)}</span>
                         <span>{challanSuggestions[0].label.slice(scanChallanNo.length)}</span>
                       </div>
                     )}
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-primary" />
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brand-primary" />
                     <Input
                       placeholder="e.g. 1001..."
                       value={scanChallanNo}
@@ -737,7 +776,7 @@ export default function LorryHireForm() {
                       onFocus={() => setShowChallanDropdown(true)}
                       onBlur={() => setTimeout(() => setShowChallanDropdown(false), 250)}
                       onKeyDown={handleChallanKeyDown}
-                      className="h-10 pl-9 rounded-lg text-sm bg-white border-brand-primary/50 ring-2 ring-brand-primary/20 focus-visible:ring-brand-primary"
+                      className="h-9 pl-8 text-xs font-bold text-slate-800 rounded-[8px] bg-brand-primary/5 border-brand-primary/40 focus-visible:ring-1 focus-visible:ring-brand-primary"
                       autoFocus
                     />
                   </div>
@@ -745,14 +784,14 @@ export default function LorryHireForm() {
                     id="add-challan-btn"
                     type="button" 
                     onClick={handleScanChallan} 
-                    className="bg-brand-primary hover:bg-brand-primary-dark shrink-0 px-3"
+                    className="h-9 bg-brand-primary hover:bg-brand-primary-dark shrink-0 px-3.5 text-xs font-bold rounded-[8px] shadow-xs"
                   >
                     Add
                   </Button>
                   
                   {/* Dropdown for Challan */}
                   {showChallanDropdown && challanSuggestions.length > 0 && (
-                    <div className="absolute z-50 top-full left-0 mt-1 w-[300px] bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    <div className="absolute z-50 top-full left-0 mt-1 w-[320px] bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
                       {challanSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.value}
@@ -765,25 +804,91 @@ export default function LorryHireForm() {
                             }, 50);
                           }}
                           onMouseEnter={() => setChallanHighlightIndex(index)}
-                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors flex justify-between ${challanHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                          className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors flex justify-between items-center ${challanHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                         >
                           <span className="font-bold">{suggestion.label}</span>
-                          <span className="text-xs text-gray-500">{suggestion.original?.memoDestinationBranch?.code || 'N/A'}</span>
+                          <span className="text-[11px] text-gray-500 font-medium">{suggestion.original?.memoDestinationBranch?.code || 'N/A'}</span>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="col-span-full border-t border-gray-100 my-2"></div>
+            {/* Row 2: From Branch (Disabled), To Branch, Truck No, Driver Name (4 Balanced Columns) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 items-start">
+              {/* From Branch (Disabled) */}
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">From Branch <span className="text-red-500">*</span></Label>
+                <Input
+                  value={fromBranchSearch}
+                  disabled
+                  readOnly
+                  className="h-9 text-xs font-bold text-slate-600 rounded-[8px] bg-slate-100/80 border-[#64748b59] cursor-not-allowed select-none"
+                />
+                {renderError('fromBranch')}
+              </div>
+
+              {/* To Branch Dropdown */}
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">To Branch <span className="text-red-500">*</span></Label>
+                <div className="relative">
+                  {toBranchSearch && toBranchSuggestions.length > 0 && toBranchSuggestions[0].label.toLowerCase().startsWith(toBranchSearch.toLowerCase()) && (
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
+                      <span className="opacity-0">{toBranchSuggestions[0].label.slice(0, toBranchSearch.length)}</span>
+                      <span>{toBranchSuggestions[0].label.slice(toBranchSearch.length)}</span>
+                    </div>
+                  )}
+                  <Input
+                    value={toBranchSearch}
+                    onChange={(e) => {
+                      setToBranchSearch(e.target.value);
+                      setFormData(prev => ({ ...prev, toBranch: '' }));
+                    }}
+                    onFocus={() => setShowToBranchDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowToBranchDropdown(false), 250)}
+                    onKeyDown={handleToBranchKeyDown}
+                    placeholder="Search or type Branch..."
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-[#64748b59]'}`}
+                  />
+                </div>
+                {renderError('toBranch')}
+
+                {showToBranchDropdown && toBranchSuggestions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    {toBranchSuggestions.map((suggestion, index) => (
+                      <div
+                        key={suggestion.value}
+                        onClick={() => {
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            toBranch: suggestion.value,
+                            toCity: suggestion.original.city || '',
+                            toState: suggestion.original.state || '',
+                            toPincode: suggestion.original.pincode || ''
+                          }));
+                          setToBranchSearch(suggestion.label);
+                          setShowToBranchDropdown(false);
+                          setToBranchHighlightIndex(-1);
+                          setErrors(prev => ({ ...prev, toBranch: '' }));
+                        }}
+                        onMouseEnter={() => setToBranchHighlightIndex(index)}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        {suggestion.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Truck Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Truck No <span className="text-red-500">*</span></Label>
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">Truck No <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {truckSearch && truckSuggestions.length > 0 && truckSuggestions[0].label.toLowerCase().startsWith(truckSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{truckSuggestions[0].label.slice(0, truckSearch.length)}</span>
                       <span>{truckSuggestions[0].label.slice(truckSearch.length)}</span>
                     </div>
@@ -798,7 +903,7 @@ export default function LorryHireForm() {
                     onBlur={() => setTimeout(() => setShowTruckDropdown(false), 250)}
                     onKeyDown={handleTruckKeyDown}
                     placeholder="Search or type Truck..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-gray-200'}`}
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.truckNo ? 'border-red-500' : 'border-[#64748b59]'}`}
                   />
                 </div>
                 {renderError('truckNo')}
@@ -829,7 +934,7 @@ export default function LorryHireForm() {
                           setErrors(prev => ({ ...prev, truckNo: '' }));
                         }}
                         onMouseEnter={() => setTruckHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${truckHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${truckHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -839,11 +944,11 @@ export default function LorryHireForm() {
               </div>
 
               {/* Driver Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Driver Name</Label>
+              <div className="space-y-1 relative">
+                <Label className="text-xs font-bold text-slate-800">Driver Name</Label>
                 <div className="relative">
                   {driverSearch && driverSuggestions.length > 0 && driverSuggestions[0].label.toLowerCase().startsWith(driverSearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{driverSuggestions[0].label.slice(0, driverSearch.length)}</span>
                       <span>{driverSuggestions[0].label.slice(driverSearch.length)}</span>
                     </div>
@@ -858,7 +963,7 @@ export default function LorryHireForm() {
                     onBlur={() => setTimeout(() => setShowDriverDropdown(false), 250)}
                     onKeyDown={handleDriverKeyDown}
                     placeholder="Search or type Driver..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.driver ? 'border-red-500' : 'border-gray-200'}`}
+                    className={`h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent ${errors.driver ? 'border-red-500' : 'border-[#64748b59]'}`}
                   />
                 </div>
                 {renderError('driver')}
@@ -876,7 +981,7 @@ export default function LorryHireForm() {
                           setErrors(prev => ({ ...prev, driver: '' }));
                         }}
                         onMouseEnter={() => setDriverHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${driverHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${driverHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -884,451 +989,165 @@ export default function LorryHireForm() {
                   </div>
                 )}
               </div>
-              
-              {/* Mode of Transport */}
-              <div className="space-y-1 relative pb-4 flex flex-col justify-end">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Mode of Transport <span className="text-red-500">*</span></Label>
-                <select
-                  value={formData.modeOfTransport}
-                  onChange={(e) => setFormData(prev => ({ ...prev, modeOfTransport: e.target.value }))}
-                  className="flex h-10 w-full rounded-lg border border-gray-200 bg-transparent px-3 text-sm focus-visible:outline-none focus:border-brand-primary"
-                >
-                  <option value="1">1 - Road</option>
-                  <option value="2">2 - Rail</option>
-                  <option value="3">3 - Air</option>
-                  <option value="4">4 - Ship</option>
-                </select>
-              </div>
-
-              {/* From Branch Dropdown */}
-
-              {/* From Branch Row */}
-              <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-3.5 items-start">
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">From Branch <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    {fromBranchSearch && fromBranchSuggestions.length > 0 && fromBranchSuggestions[0].label.toLowerCase().startsWith(fromBranchSearch.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{fromBranchSuggestions[0].label.slice(0, fromBranchSearch.length)}</span>
-                        <span>{fromBranchSuggestions[0].label.slice(fromBranchSearch.length)}</span>
-                      </div>
-                    )}
-                    <Input
-                      value={fromBranchSearch}
-                      onChange={(e) => {
-                        setFromBranchSearch(e.target.value);
-                        setFormData(prev => ({ ...prev, fromBranch: '' }));
-                      }}
-                      onFocus={() => setShowFromBranchDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowFromBranchDropdown(false), 250)}
-                      onKeyDown={handleFromBranchKeyDown}
-                      placeholder="Search or type Branch..."
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.fromBranch ? 'border-red-500' : 'border-gray-200'}`}
-                    />
-                  </div>
-                  {renderError('fromBranch')}
-
-                  {showFromBranchDropdown && fromBranchSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {fromBranchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.value}
-                          onClick={() => {
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              fromBranch: suggestion.value,
-                              fromCity: suggestion.original.city || '',
-                              fromState: suggestion.original.state || '',
-                              fromPincode: suggestion.original.pincode || ''
-                            }));
-                            setFromBranchSearch(suggestion.label);
-                            setShowFromBranchDropdown(false);
-                            setFromBranchHighlightIndex(-1);
-                            setErrors(prev => ({ ...prev, fromBranch: '' }));
-                          }}
-                          onMouseEnter={() => setFromBranchHighlightIndex(index)}
-                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${fromBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                        >
-                          {suggestion.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1 relative">
-                  <Label className="text-xs text-gray-500">Pincode</Label>
-                  <div className="relative">
-                    <Input 
-                      value={formData.fromPincode} 
-                      onChange={async e => {
-                        const pin = e.target.value;
-                        setFormData(p => ({...p, fromPincode: pin}));
-                        if(pin.length === 6) {
-                          try {
-                            setFromPincodeLoading(true);
-                            const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-                            const data = await res.json();
-                            if(data && data[0] && data[0].Status === 'Success') {
-                               const postOffices = data[0].PostOffice;
-                               const uniqueCityStates = Array.from(new Set(postOffices.map((po: any) => JSON.stringify({ city: po.District, state: po.State }))))
-                                 .map((str: any) => JSON.parse(str));
-                               
-                               // If all post offices in this pincode belong to the EXACT same City and State (no confusion)
-                               if (uniqueCityStates.length === 1) {
-                                 setFormData(p => ({...p, fromCity: uniqueCityStates[0].city, fromState: uniqueCityStates[0].state}));
-                                 setShowFromPincodeDropdown(false);
-                               } else {
-                                 // If they span across multiple cities/districts, show the list so user can choose the exact area
-                                 const places = postOffices.map((po: any) => ({ name: po.Name, city: po.District, state: po.State }));
-                                 setFromPincodeOptions(places);
-                                 setShowFromPincodeDropdown(true);
-                               }
-                            }
-                          } catch(e) {
-                          } finally {
-                            setFromPincodeLoading(false);
-                          }
-                        } else {
-                          setShowFromPincodeDropdown(false);
-                        }
-                      }} 
-                      className="h-10 text-sm rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/30" 
-                      placeholder="Enter Pincode"
-                      maxLength={6}
-                    />
-                    {fromPincodeLoading && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-4 h-4 text-brand-primary animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  {showFromPincodeDropdown && fromPincodeOptions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-[280px] bg-white rounded-xl border border-gray-100 p-2 shadow-xl max-h-[300px] overflow-y-auto">
-                      <div className="text-[10px] font-bold text-gray-400 px-2 pb-1.5 pt-1 uppercase tracking-wider">Select Location</div>
-                      <div className="space-y-0.5">
-                        {fromPincodeOptions.map((opt, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, fromCity: opt.city, fromState: opt.state }));
-                              setShowFromPincodeDropdown(false);
-                            }}
-                            className="px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-primary/5 transition-colors border border-transparent hover:border-brand-primary/10"
-                          >
-                            <div className="text-sm font-semibold text-gray-700">{opt.name}</div>
-                            <div className="text-xs text-gray-500">{opt.city}, {opt.state}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">City</Label>
-                  <Input disabled value={formData.fromCity} placeholder="Enter city" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">State</Label>
-                  <Input disabled value={formData.fromState} placeholder="Enter state" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
-                </div>
-              </div>
-
-              {/* To Branch Dropdown */}
-              {/* To Branch Row */}
-              <div className="md:col-span-2 lg:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-3.5 items-start">
-                <div className="space-y-1 relative">
-                  <Label className="text-xs font-semibold text-gray-600 uppercase">To Branch <span className="text-red-500">*</span></Label>
-                  <div className="relative">
-                    {toBranchSearch && toBranchSuggestions.length > 0 && toBranchSuggestions[0].label.toLowerCase().startsWith(toBranchSearch.toLowerCase()) && (
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{toBranchSuggestions[0].label.slice(0, toBranchSearch.length)}</span>
-                        <span>{toBranchSuggestions[0].label.slice(toBranchSearch.length)}</span>
-                      </div>
-                    )}
-                    <Input
-                      value={toBranchSearch}
-                      onChange={(e) => {
-                        setToBranchSearch(e.target.value);
-                        setFormData(prev => ({ ...prev, toBranch: '' }));
-                      }}
-                      onFocus={() => setShowToBranchDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowToBranchDropdown(false), 250)}
-                      onKeyDown={handleToBranchKeyDown}
-                      placeholder="Search or type Branch..."
-                      className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.toBranch ? 'border-red-500' : 'border-gray-200'}`}
-                    />
-                  </div>
-                  {renderError('toBranch')}
-
-                  {showToBranchDropdown && toBranchSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
-                      {toBranchSuggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.value}
-                          onClick={() => {
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              toBranch: suggestion.value,
-                              toCity: suggestion.original.city || '',
-                              toState: suggestion.original.state || '',
-                              toPincode: suggestion.original.pincode || ''
-                            }));
-                            setToBranchSearch(suggestion.label);
-                            setShowToBranchDropdown(false);
-                            setToBranchHighlightIndex(-1);
-                            setErrors(prev => ({ ...prev, toBranch: '' }));
-                          }}
-                          onMouseEnter={() => setToBranchHighlightIndex(index)}
-                          className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${toBranchHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                        >
-                          {suggestion.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1 relative">
-                  <Label className="text-xs text-gray-500">Pincode</Label>
-                  <div className="relative">
-                    <Input 
-                      value={formData.toPincode} 
-                      onChange={async e => {
-                        const pin = e.target.value;
-                        setFormData(p => ({...p, toPincode: pin}));
-                        if(pin.length === 6) {
-                          try {
-                            setToPincodeLoading(true);
-                            const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-                            const data = await res.json();
-                            if(data && data[0] && data[0].Status === 'Success') {
-                               const postOffices = data[0].PostOffice;
-                               const uniqueCityStates = Array.from(new Set(postOffices.map((po: any) => JSON.stringify({ city: po.District, state: po.State }))))
-                                 .map((str: any) => JSON.parse(str));
-                               
-                               // If all post offices in this pincode belong to the EXACT same City and State (no confusion)
-                               if (uniqueCityStates.length === 1) {
-                                 setFormData(p => ({...p, toCity: uniqueCityStates[0].city, toState: uniqueCityStates[0].state}));
-                                 setShowToPincodeDropdown(false);
-                               } else {
-                                 // If they span across multiple cities/districts, show the list so user can choose the exact area
-                                 const places = postOffices.map((po: any) => ({ name: po.Name, city: po.District, state: po.State }));
-                                 setToPincodeOptions(places);
-                                 setShowToPincodeDropdown(true);
-                               }
-                            }
-                          } catch(e) {
-                          } finally {
-                            setToPincodeLoading(false);
-                          }
-                        } else {
-                          setShowToPincodeDropdown(false);
-                        }
-                      }} 
-                      className="h-10 text-sm rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/30" 
-                      placeholder="Enter Pincode"
-                      maxLength={6}
-                    />
-                    {toPincodeLoading && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 className="w-4 h-4 text-brand-primary animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  {showToPincodeDropdown && toPincodeOptions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-[280px] bg-white rounded-xl border border-gray-100 p-2 shadow-xl max-h-[300px] overflow-y-auto">
-                      <div className="text-[10px] font-bold text-gray-400 px-2 pb-1.5 pt-1 uppercase tracking-wider">Select Location</div>
-                      <div className="space-y-0.5">
-                        {toPincodeOptions.map((opt, idx) => (
-                          <div
-                            key={idx}
-                            onClick={() => {
-                              setFormData(prev => ({ ...prev, toCity: opt.city, toState: opt.state }));
-                              setShowToPincodeDropdown(false);
-                            }}
-                            className="px-3 py-2 rounded-lg cursor-pointer hover:bg-brand-primary/5 transition-colors border border-transparent hover:border-brand-primary/10"
-                          >
-                            <div className="text-sm font-semibold text-gray-700">{opt.name}</div>
-                            <div className="text-xs text-gray-500">{opt.city}, {opt.state}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">City</Label>
-                  <Input disabled value={formData.toCity} placeholder="Enter city" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">State</Label>
-                  <Input disabled value={formData.toState} placeholder="Enter state" className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 cursor-not-allowed" />
-                </div>
-              </div>
-
-              {/* Challan Search removed from here and moved to top */}
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Section 2 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl flex justify-between items-center flex-row">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              2. Challans Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
+          {/* Section 2: Attached Challans Information */}
+          <div className="relative z-10 !overflow-visible">
+            <div className="flex items-center justify-between pb-2 mb-3.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+                <span className="text-xs font-bold text-slate-700 tracking-wide">
+                  2. Attached Challans Information
+                </span>
+              </div>
+              <span className="text-xs font-bold text-slate-500">
+                {selectedChallans.length} {selectedChallans.length === 1 ? 'Challan' : 'Challans'} Attached
+              </span>
+            </div>
+
             {selectedChallans.length > 0 ? (
-              <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 text-gray-600 font-semibold text-xs uppercase tracking-wide">
+              <div className="border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200/90">
                     <tr>
-                      <th className="px-4 py-3 border-r border-gray-200">Challan No</th>
-                      <th className="px-4 py-3 border-r border-gray-200">Station</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">LRs</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Articles</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-center">Weight</th>
-                      <th className="px-4 py-3 border-r border-gray-200 text-right">Freight</th>
-                      <th className="px-4 py-3 text-right">Action</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 font-bold">Challan No</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 font-bold">Station</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">LRs</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">Articles</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">Weight</th>
+                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-right font-bold">Freight</th>
+                      <th className="px-3.5 py-2.5 text-right w-16 font-bold">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-100">
                     {selectedChallans.map(c => {
                       const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
                       const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
                       return (
-                        <tr key={c._id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-3 font-bold text-brand-primary border-r border-gray-100">CH-{c.challanNumber}</td>
-                          <td className="px-4 py-3 font-semibold text-gray-700 uppercase border-r border-gray-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
-                          <td className="px-4 py-3 font-semibold text-gray-800 text-center border-r border-gray-100">{c.bookings?.length || 0}</td>
-                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalPackages}</td>
-                          <td className="px-4 py-3 text-center border-r border-gray-100 text-gray-700">{totalWeight}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-800 border-r border-gray-100">₹{totalLRFreight.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right">
+                        <tr key={c._id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="px-3.5 py-2 font-bold text-brand-primary border-r border-slate-100">CH-{c.challanNumber}</td>
+                          <td className="px-3.5 py-2 font-bold text-slate-700 capitalize border-r border-slate-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
+                          <td className="px-3.5 py-2 font-bold text-slate-800 text-center border-r border-slate-100">{c.bookings?.length || 0}</td>
+                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalPackages}</td>
+                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalWeight}</td>
+                          <td className="px-3.5 py-2 text-right font-bold text-slate-800 border-r border-slate-100">₹{totalLRFreight.toFixed(2)}</td>
+                          <td className="px-3.5 py-2 text-right">
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                              className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 rounded-md"
                               onClick={() => removeChallan(c._id)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </td>
                         </tr>
                       );
                     })}
-                    {/* Summary Row */}
-                    <tr className="bg-gray-50/80 font-black text-gray-900 border-t border-gray-200">
-                      <td colSpan={2} className="px-4 py-3 text-right border-r border-gray-200">TOTAL:</td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                  </tbody>
+                  <tfoot className="bg-slate-50/90 font-bold text-slate-800 border-t border-slate-200">
+                    <tr>
+                      <td colSpan={2} className="px-3.5 py-2 text-right border-r border-slate-200/90 font-bold text-xs text-slate-600">Total:</td>
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.length || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200">
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-center border-r border-gray-200 text-brand-primary">
+                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 text-brand-primary font-black">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
                       </td>
-                      <td className="px-4 py-3 text-right border-r border-gray-200 text-brand-primary">
+                      <td className="px-3.5 py-2 text-right border-r border-slate-200/90 text-brand-primary font-black">
                         ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0).toFixed(2)}
                       </td>
-                      <td className="px-4 py-3"></td>
+                      <td className="px-3.5 py-2"></td>
                     </tr>
-                  </tbody>
+                  </tfoot>
                 </table>
               </div>
             ) : (
-              <div className="text-center py-6 text-gray-400 text-sm">
+              <div className="text-center py-8 text-gray-400 text-xs font-medium border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
                 {(!formData.fromBranch || !formData.toBranch) 
-                  ? "Select From Branch and To Branch to search for challans." 
-                  : "No Challans added yet. Search and add challans."}
+                  ? "Select From Branch and To Branch or use Super Auto-Fill to search Challan." 
+                  : "No Challans added yet. Search and add Challan using the box above."}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Section 3 */}
-        <Card className="border border-gray-100 shadow-sm rounded-xl relative z-10 !overflow-visible">
-          <CardHeader className="bg-gray-50 border-b border-gray-100 py-2.5 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
-              3. Amount Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Total Amount</Label>
+          {/* Section 3: Amount & Financial Details */}
+          <div className="relative z-10 !overflow-visible">
+            <div className="flex items-center gap-2 pb-2 mb-3.5 border-b border-slate-100">
+              <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
+              <span className="text-xs font-bold text-slate-700 tracking-wide">
+                3. Amount & Financial Details
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-start">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Total Amount</Label>
                 <Input
                   type="number"
                   name="totalAmount"
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold bg-gray-50 px-3"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] bg-slate-50 px-3"
                 />
               </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Advance Amount</Label>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Advance Amount</Label>
                 <Input
                   type="number"
                   name="advanceAmount"
                   value={formData.advanceAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
                 />
               </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Commission</Label>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Commission</Label>
                 <Input
                   type="number"
                   name="commission"
                   value={formData.commission}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
                 />
               </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Hamali</Label>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Hamali</Label>
                 <Input
                   type="number"
                   name="hamali"
                   value={formData.hamali}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">TDS</Label>
-                <Input
-                  type="number"
-                  name="tds"
-                  value={formData.tds}
-                  onChange={handleChange}
-                  placeholder="0.00"
-                  className="h-10 rounded-lg border-gray-200 text-sm font-semibold px-3"
-                />
-              </div>
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-800 uppercase">Balance Amount</Label>
-                <Input
-                  type="text"
-                  value={calculateBalance()}
-                  disabled
-                  className="h-10 rounded-lg border-gray-200 bg-gray-100 font-bold text-sm px-3 text-gray-900"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
                 />
               </div>
 
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-slate-800">Balance Amount</Label>
+                <div className="h-9 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-center px-3 font-bold text-sm tracking-wide">
+                  {'\u20B9'}{Number(calculateBalance() || 0).toFixed(2)}
+                </div>
+              </div>
+
               {/* Balance Paid By Dropdown */}
-              <div className="space-y-1 relative pb-4">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Balance Paid By</Label>
+              <div className="space-y-1 relative sm:col-span-1 lg:col-span-1">
+                <Label className="text-xs font-bold text-slate-800">Balance Paid By</Label>
                 <div className="relative">
                   {balancePaidBySearch && balancePaidBySuggestions.length > 0 && balancePaidBySuggestions[0].label.toLowerCase().startsWith(balancePaidBySearch.toLowerCase()) && (
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-xs text-gray-400 select-none font-medium z-0 pl-[1px]">
                       <span className="opacity-0">{balancePaidBySuggestions[0].label.slice(0, balancePaidBySearch.length)}</span>
                       <span>{balancePaidBySuggestions[0].label.slice(balancePaidBySearch.length)}</span>
                     </div>
@@ -1343,7 +1162,7 @@ export default function LorryHireForm() {
                     onBlur={() => setTimeout(() => setShowBalancePaidByDropdown(false), 250)}
                     onKeyDown={handleBalancePaidByKeyDown}
                     placeholder="Search or type Branch..."
-                    className="h-10 text-sm rounded-lg relative z-10 bg-transparent border-gray-200"
+                    className="h-9 text-xs font-bold text-slate-800 rounded-[8px] relative z-10 bg-transparent border-[#64748b59]"
                   />
                 </div>
 
@@ -1359,7 +1178,7 @@ export default function LorryHireForm() {
                           setBalancePaidByHighlightIndex(-1);
                         }}
                         onMouseEnter={() => setBalancePaidByHighlightIndex(index)}
-                        className={`px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${balancePaidByHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`px-3 py-2 text-xs rounded-md cursor-pointer transition-colors ${balancePaidByHighlightIndex === index ? 'bg-brand-primary/10 text-brand-primary font-bold' : 'text-gray-700 hover:bg-gray-50'}`}
                       >
                         {suggestion.label}
                       </div>
@@ -1368,27 +1187,39 @@ export default function LorryHireForm() {
                 )}
               </div>
 
-              {/* Remark */}
-              <div className="space-y-1 relative pb-4 md:col-span-1 lg:col-span-2">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Remark (Optional)</Label>
-                <Textarea
+              {/* Remark / Notes right next to Balance Paid By */}
+              <div className="space-y-1 sm:col-span-2 lg:col-span-2">
+                <Label className="text-xs font-bold text-slate-800">Remark / Notes (Optional)</Label>
+                <Input
                   name="remark"
                   value={formData.remark}
                   onChange={handleChange as any}
-                  placeholder="Any additional notes..."
-                  className="min-h-[100px] text-sm rounded-xl border-gray-200 focus-visible:ring-brand-primary/50 w-full resize-y"
+                  placeholder="Enter remarks or notes..."
+                  className="h-9 text-xs font-medium text-slate-800 rounded-[8px] border-[#64748b59] placeholder:text-slate-300 w-full"
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        </div>
+
+        {/* Action Buttons - Synced with LR Style */}
+        <div className="flex items-center justify-end gap-2 pt-1">
           <Link href="/admin/lorry-hire">
-            <Button variant="outline" type="button" className="h-10 px-6 rounded-lg font-semibold">Cancel</Button>
+            <Button 
+              type="button" 
+              variant="outline"
+              className="h-9 px-4 rounded-[8px] border border-gray-300 hover:bg-gray-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors"
+            >
+              Cancel
+            </Button>
           </Link>
-          <Button type="submit" disabled={isLoading} className="h-10 px-6 rounded-lg bg-brand-primary hover:bg-brand-primary-dark font-semibold gap-2 shadow-sm">
-            {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-4 h-4" />}
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Lorry Hire
           </Button>
         </div>
@@ -1396,3 +1227,8 @@ export default function LorryHireForm() {
     </div>
   );
 }
+
+
+
+
+

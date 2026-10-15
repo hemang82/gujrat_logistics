@@ -78,14 +78,14 @@
   --accent-foreground: var(--color-brand-primary-dark);
   --destructive: var(--color-brand-secondary);
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  --input: #64748b59;
   --ring: var(--color-brand-primary);
   --chart-1: var(--color-brand-primary);
   --chart-2: var(--color-brand-info);
   --chart-3: var(--color-brand-success);
   --chart-4: var(--color-brand-warning);
   --chart-5: var(--color-brand-secondary);
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --sidebar: #ffffff;
   --sidebar-foreground: var(--color-brand-text-primary);
   --sidebar-primary: var(--color-brand-primary);
@@ -185,3 +185,14 @@ aside ::-webkit-scrollbar-thumb {
 aside:hover ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
 }
+
+/* Ensure minimum readable font size across the application (Minimum 14px) */
+.text-xs,
+[class*="text-[10px]"],
+[class*="text-[11px]"],
+[class*="text-[12px]"],
+[class*="text-[13px]"] {
+  font-size: 0.875rem !important; /* 14px */
+  line-height: 1.25rem !important; /* 20px */
+}
+

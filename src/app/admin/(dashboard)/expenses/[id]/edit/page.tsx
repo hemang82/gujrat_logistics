@@ -308,12 +308,12 @@ export default function EditExpensePage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-600 font-medium">Amount (₹) <span className="text-red-500">*</span></Label>
-                <Input name="amount" type="number" placeholder="e.g. 5000" value={formData.amount} onChange={handleChange} className={`h-12 bg-white rounded-xl ${errors.amount ? 'border-red-500' : 'border-gray-200'}`} />
+                <Input name="amount" type="number" placeholder="e.g. 5000" value={formData.amount} onChange={handleChange} className={`h-12 bg-white rounded-xl ${errors.amount ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 <ErrorText field="amount" />
               </div>
               <div className="space-y-2">
                 <Label className="text-gray-600 font-medium">Date <span className="text-red-500">*</span></Label>
-                <Input name="date" type="date" value={formData.date} onChange={handleChange} className={`h-12 bg-white rounded-xl ${errors.date ? 'border-red-500' : 'border-gray-200'}`} />
+                <Input name="date" type="date" value={formData.date} onChange={handleChange} className={`h-12 bg-white rounded-xl ${errors.date ? 'border-red-500' : 'border-[#64748b59]'}`} />
                 <ErrorText field="date" />
               </div>
               <div className="space-y-2">
@@ -342,7 +342,7 @@ export default function EditExpensePage() {
                   onChange={handleChange as any} 
                   options={vehicles.map(v => ({ value: v._id, label: v.vehicleNumber }))} 
                   placeholder="-- Select Vehicle --"
-                  className={`flex w-full h-12 rounded-xl bg-white border px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary ${errors.vehicle ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/50' : 'border-gray-200'}`}
+                  className={`flex w-full h-12 rounded-xl bg-white border px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:border-brand-primary focus-visible:ring-1 focus-visible:ring-brand-primary ${errors.vehicle ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-500/50' : 'border-[#64748b59]'}`}
                 />
               </div>
               <div className="space-y-2">
@@ -387,3 +387,5 @@ export default function EditExpensePage() {
     </div>
   );
 }
+
+

@@ -74,31 +74,31 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
 
         {/* Voucher Meta details */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="p-3 border border-gray-200 rounded-lg">
+          <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Voucher No</p>
             <p className="font-bold text-base text-gray-800">{lorryHire.voucherNo}</p>
           </div>
-          <div className="p-3 border border-gray-200 rounded-lg">
+          <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Date</p>
             <p className="font-bold text-base text-gray-800">{formatDate(lorryHire.date)}</p>
           </div>
-          <div className="p-3 border border-gray-200 rounded-lg">
+          <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Truck No</p>
             <p className="font-bold text-base text-gray-800">{lorryHire.truckNo?.vehicleNumber || 'N/A'}</p>
           </div>
-          <div className="p-3 border border-gray-200 rounded-lg">
+          <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Status</p>
             <p className="font-bold text-base text-gray-800 capitalize">{lorryHire.status || 'Pending'}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 bg-gray-50/50 border border-gray-200 rounded-lg">
+          <div className="p-4 bg-gray-50/50 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-2 tracking-wider">From Branch</p>
             <p className="font-bold text-lg text-gray-900">{lorryHire.fromBranch?.name || 'N/A'}</p>
             <p className="text-sm text-gray-500">{lorryHire.fromBranch?.code || 'N/A'}</p>
           </div>
-          <div className="p-4 bg-gray-50/50 border border-gray-200 rounded-lg">
+          <div className="p-4 bg-gray-50/50 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-2 tracking-wider">To Branch</p>
             <p className="font-bold text-lg text-gray-900">{lorryHire.toBranch?.name || 'N/A'}</p>
             <p className="text-sm text-gray-500">{lorryHire.toBranch?.code || 'N/A'}</p>
@@ -169,8 +169,8 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
         {/* Financials & Remarks */}
         <div className="grid grid-cols-2 gap-8 mb-8">
           <div>
-            <div className="border border-gray-200 rounded-lg p-4 h-full">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide border-b border-gray-200 pb-2 mb-3">Remarks / Terms</h3>
+            <div className="border border border-[#64748b59] rounded-[8px] p-4 h-full">
+              <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide border-b border-gray-200 pb-2 mb-3">Remarks / Terms</h3>
               <p className="text-sm text-gray-600 italic whitespace-pre-line">
                 {lorryHire.remark || '- Ensure safe and timely delivery.\n- Any damages will be recovered from balance payment.\n- Drive safely and follow all traffic rules.'}
               </p>
@@ -180,28 +180,28 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
             <table className="w-full text-sm border-collapse border border-gray-300">
               <tbody>
                 <tr>
-                  <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Total Freight Amount</td>
+                  <td className="p-2 border border-gray-300 font-semibold text-slate-700 bg-gray-50 uppercase text-xs">Total Freight Amount</td>
                   <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.totalAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>
                 <tr>
-                  <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Advance Paid</td>
+                  <td className="p-2 border border-gray-300 font-semibold text-slate-700 bg-gray-50 uppercase text-xs">Advance Paid</td>
                   <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.advanceAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>
                 {Number(lorryHire.commission || 0) > 0 && (
                   <tr>
-                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Commission</td>
+                    <td className="p-2 border border-gray-300 font-semibold text-slate-700 bg-gray-50 uppercase text-xs">Commission</td>
                     <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.commission || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 )}
                 {Number(lorryHire.hamali || 0) > 0 && (
                   <tr>
-                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">Hamali</td>
+                    <td className="p-2 border border-gray-300 font-semibold text-slate-700 bg-gray-50 uppercase text-xs">Hamali</td>
                     <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.hamali || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 )}
                 {Number(lorryHire.tds || 0) > 0 && (
                   <tr>
-                    <td className="p-2 border border-gray-300 font-semibold text-gray-600 bg-gray-50 uppercase text-xs">TDS</td>
+                    <td className="p-2 border border-gray-300 font-semibold text-slate-700 bg-gray-50 uppercase text-xs">TDS</td>
                     <td className="p-2 border border-gray-300 text-right font-bold text-gray-900 text-base">₹ {Number(lorryHire.tds || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                   </tr>
                 )}
@@ -223,11 +223,11 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
         <div className="flex justify-between items-end pt-24 pb-8">
           <div className="text-center w-48">
             <div className="border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Lorry Owner / Driver Sign</p>
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Lorry Owner / Driver Sign</p>
           </div>
           <div className="text-center w-48">
             <div className="border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">Authorized Signatory</p>
+            <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Authorized Signatory</p>
             <p className="text-[10px] text-gray-400 mt-1">For {logisticName}</p>
           </div>
         </div>
@@ -236,3 +236,8 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
     </div>
   );
 }
+
+
+
+
+

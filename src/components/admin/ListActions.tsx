@@ -19,6 +19,7 @@ interface ListActionsProps {
   id: string;
   moduleName: string; // e.g., 'bookings', 'vehicles', 'drivers'
   viewUrl?: string;
+  viewInNewTab?: boolean;
   editUrl?: string;
   printUrl?: string;
   deleteApiUrl?: string; // optional override for delete endpoint
@@ -29,7 +30,7 @@ interface ListActionsProps {
   whatsappMessage?: string;
 }
 
-export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl, deleteApiUrl, onDeleted, hideEdit, hideDelete, whatsappPhone, whatsappMessage }: ListActionsProps) {
+export default function ListActions({ id, moduleName, viewUrl, viewInNewTab, editUrl, printUrl, deleteApiUrl, onDeleted, hideEdit, hideDelete, whatsappPhone, whatsappMessage }: ListActionsProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -64,7 +65,12 @@ export default function ListActions({ id, moduleName, viewUrl, editUrl, printUrl
     <>
       <div className="flex items-center justify-center gap-1.5">
         {viewUrl && (
-          <Link href={viewUrl} onClick={(e) => e.stopPropagation()}>
+          <Link 
+            href={viewUrl} 
+            target={viewInNewTab ? "_blank" : undefined}
+            rel={viewInNewTab ? "noopener noreferrer" : undefined}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               className="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
               title="View"

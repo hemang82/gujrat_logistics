@@ -146,7 +146,7 @@ export default function EwayBillTesterPage() {
           <CardContent className="p-4 pt-0">
             <form onSubmit={handleTest} className="space-y-4">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">1. Select Logistic Company (Autofill)</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">1. Select Logistic Company (Autofill)</Label>
                 {isLoadingLogistics ? (
                   <div className="h-10 flex items-center justify-center border rounded-lg bg-gray-50"><Loader2 className="w-4 h-4 animate-spin text-brand-primary" /></div>
                 ) : (
@@ -166,25 +166,25 @@ export default function EwayBillTesterPage() {
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">2. GSTIN / Transporter ID <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">2. GSTIN / Transporter ID <span className="text-red-500">*</span></Label>
                 <Input
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value.toUpperCase())}
                   placeholder="e.g. 24AAXFG0652R1ZO"
                   maxLength={15}
-                  className="h-10 text-sm rounded-lg border-gray-200 uppercase font-mono"
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] uppercase font-mono"
                   required
                 />
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">3. E-Way Bill Number <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">3. E-Way Bill Number <span className="text-red-500">*</span></Label>
                 <Input
                   value={ewayBillNumber}
                   onChange={(e) => setEwayBillNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
                   placeholder="Enter 12-digit EWB No."
                   maxLength={12}
-                  className="h-10 text-sm rounded-lg border-gray-200 font-mono"
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] font-mono"
                   required
                 />
               </div>
@@ -208,7 +208,7 @@ export default function EwayBillTesterPage() {
             <Card className="border-dashed border-2 border-gray-200 shadow-none bg-gray-50/50 py-16 text-center">
               <CardContent className="flex flex-col items-center justify-center">
                 <Building2 className="w-12 h-12 text-gray-300 mb-3" />
-                <p className="font-bold text-gray-600 text-sm">No Test Run Yet</p>
+                <p className="font-semibold text-slate-700 text-sm">No Test Run Yet</p>
                 <p className="text-xs text-gray-400 max-w-sm mt-1">
                   Fill in the configuration details on the left and click "Run Connectivity Test" to fetch live government E-Way Bill data.
                 </p>
@@ -284,38 +284,38 @@ export default function EwayBillTesterPage() {
               {/* Details Display */}
               <Card className="border-gray-200 shadow-sm">
                 <CardHeader className="py-3.5 border-b border-gray-100">
-                  <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">E-Way Bill Details</CardTitle>
+                  <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">E-Way Bill Details</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-gray-100">
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">E-Way Bill Number:</span>
+                      <span className="font-semibold text-slate-700">E-Way Bill Number:</span>
                       <span className="font-bold text-gray-900 font-mono">{testResult.ewbNo}</span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">Generation Date & Status:</span>
+                      <span className="font-semibold text-slate-700">Generation Date & Status:</span>
                       <span className="font-medium text-gray-900">
                         {testResult.ewayBillDate} | <span className={`font-bold uppercase ${testResult.status === 'ACT' ? 'text-green-600' : 'text-red-500'}`}>{testResult.status === 'ACT' ? 'Active' : testResult.status || 'N/A'}</span>
                       </span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">Valid Upto / Distance:</span>
+                      <span className="font-semibold text-slate-700">Valid Upto / Distance:</span>
                       <span className="font-medium text-gray-900">{testResult.validUpto} ({testResult.actualDist || 0} km)</span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">From / Consignor:</span>
+                      <span className="font-semibold text-slate-700">From / Consignor:</span>
                       <span className="font-medium text-gray-900">{testResult.fromTrdName} (GST: {testResult.fromGstin})</span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">To / Consignee:</span>
+                      <span className="font-semibold text-slate-700">To / Consignee:</span>
                       <span className="font-medium text-gray-900">{testResult.toTrdName} (GST: {testResult.toGstin})</span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">Item Name / Value:</span>
+                      <span className="font-semibold text-slate-700">Item Name / Value:</span>
                       <span className="font-medium text-gray-900">{testResult.mainHsnDesc || 'N/A'} (₹{testResult.totInvValue || 0})</span>
                     </div>
                     <div className="grid grid-cols-2 p-3.5 text-xs">
-                      <span className="font-bold text-gray-500">Vehicle / Transporter:</span>
+                      <span className="font-semibold text-slate-700">Vehicle / Transporter:</span>
                       <span className="font-medium text-gray-900 font-mono">
                         {testResult.vehicleListDetails?.[0]?.vehicleNo || 'NO VEHICLE'} | Trans ID: {testResult.transporterId || 'N/A'}
                       </span>
@@ -328,7 +328,7 @@ export default function EwayBillTesterPage() {
               <Card className="border-gray-200 shadow-sm">
                 <button
                   onClick={() => setShowRawJson(!showRawJson)}
-                  className="w-full flex items-center justify-between p-4 text-left font-bold text-gray-700 text-xs uppercase"
+                  className="w-full flex items-center justify-between p-4 text-left font-semibold text-slate-700 text-xs uppercase"
                 >
                   <span>Raw API Response Data</span>
                   {showRawJson ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
@@ -348,3 +348,8 @@ export default function EwayBillTesterPage() {
     </div>
   );
 }
+
+
+
+
+

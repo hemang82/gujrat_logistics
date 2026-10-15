@@ -101,38 +101,38 @@ export default function ViewChallanPage() {
       {/* Fillup Information - Screen Only */}
       <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden bg-white print:hidden">
         <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-2.5 px-4">
-          <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+          <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
             Fillup Information
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Branch</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Branch</Label>
               <Input value={challan.branch?.name || challan.branch || 'ASL'} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Ch No</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Ch No</Label>
               <Input value={challan.challanNumber} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1 sm:col-span-2 md:col-span-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Challan Date</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Challan Date</Label>
               <Input value={formatDate(challan.challanDate).replace(/\//g, '-')} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Booking / Crossing</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Booking / Crossing</Label>
               <Input value={challan.bookingCrossing} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Destination Branch</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Destination Branch</Label>
               <Input value={challan.memoDestinationBranch?.name || challan.memoDestinationBranch || 'Select Branch'} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Truck No.</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Truck No.</Label>
               <Input value={challan.truckNo?.vehicleNumber || challan.truckNo || 'N/A'} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-gray-600 uppercase">Driver Name</Label>
+              <Label className="text-xs font-semibold text-slate-700 uppercase">Driver Name</Label>
               <Input value={challan.driverName?.name || challan.driverName || 'N/A'} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function ViewChallanPage() {
         {/* Loaded Lorry Receipts Table (Screen & Print) */}
         <Card className="border border-gray-100 shadow-sm rounded-xl overflow-hidden bg-white mb-6 p-0 gap-0 print:border-none print:shadow-none print:rounded-none">
           <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-2.5 px-4 print:bg-transparent print:border-none print:p-0 print:mb-2">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Loaded Lorry Receipts (Bilty Details)
             </CardTitle>
           </CardHeader>
@@ -276,7 +276,7 @@ export default function ViewChallanPage() {
           {/* Remarks Card */}
           <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden bg-white print:border-none print:shadow-none">
             <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-2 px-3 print:hidden">
-              <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">Remarks / Special Instructions</CardTitle>
+              <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Remarks / Special Instructions</CardTitle>
             </CardHeader>
             <CardContent className="p-3">
               <p className="text-xs text-gray-700 font-medium italic">{challan.remark || 'No special remarks recorded.'}</p>
@@ -311,7 +311,7 @@ export default function ViewChallanPage() {
         </div>
 
         {/* Signatures block */}
-        <div className="grid grid-cols-3 gap-6 pt-16 mt-10 border-t border-gray-100 text-center text-xs font-bold text-gray-500">
+        <div className="grid grid-cols-3 gap-6 pt-16 mt-10 border-t border-gray-100 text-center text-xs font-semibold text-slate-700">
           <div className="space-y-8">
             <div className="w-40 mx-auto border-b border-gray-300"></div>
             <span className="uppercase tracking-wider">Driver's Signature</span>
@@ -330,3 +330,6 @@ export default function ViewChallanPage() {
     </div>
   );
 }
+
+
+

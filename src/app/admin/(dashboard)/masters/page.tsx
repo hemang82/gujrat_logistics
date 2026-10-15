@@ -156,7 +156,7 @@ export default function MastersPage() {
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                 placeholder={activeTab === 'packaging' ? 'New packaging type...' : 'New item description...'}
-                className="h-9 rounded-lg border-gray-200 text-sm flex-1 min-w-0"
+                className="h-9 rounded-[8px] border border-[#64748b59] text-sm flex-1 min-w-0"
               />
               <Button
                 onClick={handleAdd}
@@ -173,7 +173,7 @@ export default function MastersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search..."
-                className="pl-8 h-9 rounded-lg border-gray-200 text-sm w-full"
+                className="pl-8 h-9 rounded-[8px] border border-[#64748b59] text-sm w-full"
               />
             </div>
           </div>
@@ -186,13 +186,13 @@ export default function MastersPage() {
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 {activeTab === 'packaging' ? <Package className="w-6 h-6 text-gray-400" /> : <FileText className="w-6 h-6 text-gray-400" />}
               </div>
-              <p className="text-sm font-semibold text-gray-500">No {activeTab === 'packaging' ? 'packaging types' : 'item descriptions'} found</p>
+              <p className="text-sm font-semibold text-slate-700">No {activeTab === 'packaging' ? 'packaging types' : 'item descriptions'} found</p>
               <p className="text-xs text-gray-400 mt-1">Add one above to get started</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
               {/* Table Header */}
-              <div className="grid grid-cols-12 px-4 py-2 bg-gray-50/80 text-xs font-bold text-gray-500 uppercase tracking-wide">
+              <div className="grid grid-cols-12 px-4 py-2 bg-gray-50/80 text-xs font-semibold text-slate-700 uppercase tracking-wide">
                 <div className="col-span-1">#</div>
                 <div className="col-span-7">Name</div>
                 <div className="col-span-2 text-center">Used</div>
@@ -210,7 +210,7 @@ export default function MastersPage() {
                           if (e.key === 'Enter') handleEdit(item._id);
                           if (e.key === 'Escape') setEditId(null);
                         }}
-                        className="h-8 text-sm rounded-lg border-brand-primary/50 focus-visible:ring-brand-primary"
+                        className="h-8 text-sm font-semibold text-slate-900 rounded-[8px] border-brand-primary/50 focus-visible:ring-brand-primary"
                         autoFocus
                       />
                     ) : (
@@ -288,3 +288,9 @@ export default function MastersPage() {
     </div>
   );
 }
+
+
+
+
+
+

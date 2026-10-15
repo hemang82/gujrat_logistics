@@ -171,7 +171,7 @@ export default function ApiLogsPage() {
         <Card className="overflow-hidden border-gray-200 shadow-sm flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
-              <thead className="bg-gray-50/50 border-b border-gray-100 text-gray-500 uppercase font-semibold">
+              <thead className="bg-gray-50/50 border-b border-gray-100 text-slate-700 font-semibold uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">Date & Time</th>
                   <th className="px-6 py-4">User / System</th>
@@ -274,3 +274,5 @@ export default function ApiLogsPage() {
     </div>
   );
 }
+
+

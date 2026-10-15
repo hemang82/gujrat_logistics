@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils";
 
 interface Option {
   value: string
@@ -23,6 +24,7 @@ interface ThemeSelectProps {
   options: Option[]
   placeholder?: string
   className?: string
+  contentClassName?: string
   disabled?: boolean
 }
 
@@ -33,6 +35,7 @@ export function ThemeSelect({
   options,
   placeholder = "Select an option",
   className,
+  contentClassName,
   disabled = false,
 }: ThemeSelectProps) {
   const selectedLabel = options.find((opt) => opt.value === value)?.label;
@@ -43,12 +46,12 @@ export function ThemeSelect({
       onValueChange={(val) => onChange({ target: { name, value: val || "" } })}
       disabled={disabled}
     >
-      <SelectTrigger size="none" className={className}>
+      <SelectTrigger size="none" className={cn("w-full", className)}>
         <SelectValue placeholder={placeholder}>
           {selectedLabel || placeholder}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={contentClassName}>
         <SelectGroup>
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>

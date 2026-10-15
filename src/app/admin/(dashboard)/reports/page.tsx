@@ -1,426 +1,168 @@
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import connectToDatabase from '@/lib/db';
-import Booking from '@/models/Booking';
-import Expense from '@/models/Expense';
-import Vehicle from '@/models/Vehicle';
-import Driver from '@/models/Driver';
-import Invoice from '@/models/Invoice';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IndianRupee, TrendingUp, TrendingDown, Truck, Package, Users, FileText, BarChart3 } from 'lucide-react';
-import { ReportCharts } from '@/components/admin/ReportCharts';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import React from 'react';
+import Link from 'next/link';
+import { 
+  FileText, 
+  PackageSearch, 
+  Layers, 
+  Receipt, 
+  FileSpreadsheet, 
+  Truck, 
+  Wallet, 
+  CheckCircle2, 
+  Clock, 
+  ArrowRight,
+  TrendingUp,
+  Scale,
+  Percent,
+  Download
+} from 'lucide-react';
+import { useUserStore } from '@/store/useUserStore';
 
-export default async function ReportsPage() {
-  await getServerSession(authOptions);
-  await connectToDatabase();
+export default function ReportsHubPage() {
+  const { user } = useUserStore();
+  const isBranch = user?.role === 'branch_user' || user?.role === 'branch';
 
-  // Prevent tree-shaking
-  Vehicle.init();
-  Driver.init();
-
-  const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-  const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-  const financialYearStart = now.getMonth() >= 3 
-    ? new Date(now.getFullYear(), 3, 1) 
-    : new Date(now.getFullYear() - 1, 3, 1);
-
-  const session = await getServerSession(authOptions);
-  const baseQuery: any = { isDeleted: { $ne: true } };
-  
-  if (session && (session.user as any).role === 'logistic') {
-    baseQuery.logisticId = (session.user as any).id;
-  } else if (session && (session.user as any).logisticId) {
-    baseQuery.logisticId = (session.user as any).logisticId;
-  }
-
-  // ---- Summary Stats ----
-  const totalBookings = await Booking.countDocuments(baseQuery);
-  const totalVehicles = await Vehicle.countDocuments(baseQuery);
-  const totalDrivers = await Driver.countDocuments(baseQuery);
-
-  const branchAgg = await Booking.aggregate([
-    { $match: { ...baseQuery, bookingDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
-    { 
-      $group: { 
-        _id: "$branch", 
-        revenue: { $sum: "$charges.totalAmount" },
-        count: { $sum: 1 }
-      } 
+  const reportModules = [
+    {
+      title: 'Daily Booking Register',
+      description: 'Day-to-day LR records with consignor, consignee, package count, weight, and freight amounts.',
+      href: '/admin/reports/daily-booking',
+      icon: <FileText className="w-6 h-6 text-brand-primary" />,
+      colorBg: 'bg-teal-50',
+      colorBorder: 'border-teal-100',
+      badge: 'Core Daily',
+      badgeColor: 'bg-teal-100/70 text-teal-800'
     },
     {
-      $lookup: {
-        from: "branches",
-        localField: "_id",
-        foreignField: "_id",
-        as: "branchDetails"
-      }
+      title: 'Left Booking (Warehouse)',
+      description: 'Monitor untransited parcels sitting in warehouse awaiting Challan dispatch & truck loading.',
+      href: '/admin/reports/left-booking',
+      icon: <Clock className="w-6 h-6 text-amber-600" />,
+      colorBg: 'bg-amber-50',
+      colorBorder: 'border-amber-200',
+      badge: 'Stock Alert',
+      badgeColor: 'bg-amber-100 text-amber-800'
     },
-    { $unwind: { path: "$branchDetails", preserveNullAndEmptyArrays: true } },
-    { $sort: { revenue: -1 } },
-    { $limit: 5 }
-  ]);
-
-  // Current month revenue
-  const currentRevenueAgg = await Booking.aggregate([
-    { $match: { ...baseQuery, bookingDate: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
-    { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
-  ]);
-  const currentRevenue = currentRevenueAgg[0]?.total || 0;
-
-  // Previous month revenue
-  const prevRevenueAgg = await Booking.aggregate([
-    { $match: { ...baseQuery, bookingDate: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-    { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
-  ]);
-  const prevRevenue = prevRevenueAgg[0]?.total || 0;
-
-  // Current month expenses
-  const currentExpenseAgg = await Expense.aggregate([
-    { $match: { ...baseQuery, date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
-    { $group: { _id: null, total: { $sum: "$amount" } } }
-  ]);
-  const currentExpense = currentExpenseAgg[0]?.total || 0;
-
-  // Previous month expenses
-  const prevExpenseAgg = await Expense.aggregate([
-    { $match: { ...baseQuery, date: { $gte: previousMonthStart, $lte: previousMonthEnd } } },
-    { $group: { _id: null, total: { $sum: "$amount" } } }
-  ]);
-  const prevExpense = prevExpenseAgg[0]?.total || 0;
-
-  const currentProfit = currentRevenue - currentExpense;
-  const prevProfit = prevRevenue - prevExpense;
-
-  // Financial Year totals
-  const fyRevenueAgg = await Booking.aggregate([
-    { $match: { ...baseQuery, bookingDate: { $gte: financialYearStart } } },
-    { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
-  ]);
-  const fyRevenue = fyRevenueAgg[0]?.total || 0;
-
-  const fyExpenseAgg = await Expense.aggregate([
-    { $match: { ...baseQuery, date: { $gte: financialYearStart } } },
-    { $group: { _id: null, total: { $sum: "$amount" } } }
-  ]);
-  const fyExpense = fyExpenseAgg[0]?.total || 0;
-
-  // Total outstanding (invoices)
-  const outstandingAgg = await Invoice.aggregate([
-    { $match: baseQuery },
-    { $group: { _id: null, totalBilled: { $sum: "$grandTotal" }, totalPaid: { $sum: "$amountPaid" } } }
-  ]);
-  const totalOutstanding = (outstandingAgg[0]?.totalBilled || 0) - (outstandingAgg[0]?.totalPaid || 0);
-
-  // ---- Monthly Chart Data (Last 12 Months) ----
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyData = [];
-  
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
-    const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-    
-    const revAgg = await Booking.aggregate([
-      { $match: { ...baseQuery, bookingDate: { $gte: mStart, $lte: mEnd } } },
-      { $group: { _id: null, total: { $sum: "$charges.totalAmount" } } }
-    ]);
-    const rev = revAgg[0]?.total || 0;
-
-    const expAgg = await Expense.aggregate([
-      { $match: { ...baseQuery, date: { $gte: mStart, $lte: mEnd } } },
-      { $group: { _id: null, total: { $sum: "$amount" } } }
-    ]);
-    const exp = expAgg[0]?.total || 0;
-
-    monthlyData.push({
-      name: `${monthNames[mStart.getMonth()]} ${mStart.getFullYear().toString().slice(2)}`,
-      Revenue: rev,
-      Expenses: exp,
-      Profit: rev - exp
-    });
-  }
-
-  // ---- Booking Status Distribution ----
-  const statusAgg = await Booking.aggregate([
-    { $match: { ...baseQuery } },
-    { $group: { _id: "$status", count: { $sum: 1 } } }
-  ]);
-  const statusData = statusAgg.map(s => ({ name: s._id, value: s.count }));
-
-  // ---- Top Routes ----
-  const routesAgg = await Booking.aggregate([
-    { $match: { ...baseQuery } },
-    { $group: { 
-      _id: { from: "$pickupLocation", to: "$deliveryLocation" }, 
-      count: { $sum: 1 }, 
-      revenue: { $sum: "$charges.totalAmount" } 
-    }},
-    { $sort: { revenue: -1 } },
-    { $limit: 10 }
-  ]);
-  const topRoutes = routesAgg.map(r => ({ 
-    route: `${r._id.from} → ${r._id.to}`, 
-    count: r.count, 
-    revenue: r.revenue 
-  }));
-
-  // ---- Expense Breakdown by Category ----
-  const expBreakdownAgg = await Expense.aggregate([
-    { $match: { ...baseQuery } },
-    { $group: { _id: "$expenseType", total: { $sum: "$amount" } } },
-    { $sort: { total: -1 } }
-  ]);
-  const expenseLabels: Record<string, string> = {
-    fuel: 'Fuel / Diesel',
-    toll: 'Toll Tax',
-    maintenance: 'Maintenance',
-    driver_bhatta: 'Driver Bhatta',
-    rto_challan: 'RTO / Challan',
-    other: 'Other'
-  };
-  const expenseBreakdown = expBreakdownAgg.map(e => ({ 
-    name: expenseLabels[e._id] || e._id, 
-    value: e.total 
-  }));
-
-  // ---- Vehicle Utilization ----
-  const vehicleStatusAgg = await Vehicle.aggregate([
-    { $match: { ...baseQuery } },
-    { $group: { _id: "$status", count: { $sum: 1 } } }
-  ]);
-  const vehicleStatusMap: Record<string, number> = {};
-  vehicleStatusAgg.forEach(v => { vehicleStatusMap[v._id] = v.count; });
-
-  // ---- Helper ----
-  function trendPct(current: number, previous: number): string {
-    if (previous === 0) return current > 0 ? '+100%' : '0%';
-    const pct = ((current - previous) / previous) * 100;
-    return `${pct > 0 ? '+' : ''}${pct.toFixed(1)}%`;
-  }
+    {
+      title: 'Booking Summary',
+      description: 'Consolidated volume, weight, and revenue totals grouped by branch, destination, or date.',
+      href: '/admin/reports/booking-summary',
+      icon: <Layers className="w-6 h-6 text-blue-600" />,
+      colorBg: 'bg-blue-50',
+      colorBorder: 'border-blue-100',
+      badge: 'Analytics',
+      badgeColor: 'bg-blue-100 text-blue-800'
+    },
+    {
+      title: 'GST Tax Register',
+      description: 'Audit-ready GST ledger showing Taxable Value, CGST, SGST, and GSTINs for tax filing.',
+      href: '/admin/reports/gst-tax',
+      icon: <Percent className="w-6 h-6 text-indigo-600" />,
+      colorBg: 'bg-indigo-50',
+      colorBorder: 'border-indigo-100',
+      badge: 'Compliance',
+      badgeColor: 'bg-indigo-100 text-indigo-800'
+    },
+    {
+      title: 'Charges Register',
+      description: 'Itemized revenue split: Basic Freight, Hamali (Labour), Door Delivery, and Surcharges.',
+      href: '/admin/reports/charges',
+      icon: <FileSpreadsheet className="w-6 h-6 text-emerald-600" />,
+      colorBg: 'bg-emerald-50',
+      colorBorder: 'border-emerald-100',
+      badge: 'Revenue Split',
+      badgeColor: 'bg-emerald-100 text-emerald-800'
+    },
+    {
+      title: 'Memo Report (Challans)',
+      description: 'Truck loading dispatch sheets, loaded LRs, cargo weight, and trip consolidation memos.',
+      href: '/admin/reports/memo',
+      icon: <Truck className="w-6 h-6 text-cyan-600" />,
+      colorBg: 'bg-cyan-50',
+      colorBorder: 'border-cyan-100',
+      badge: 'Dispatch',
+      badgeColor: 'bg-cyan-100 text-cyan-800'
+    },
+    {
+      title: 'Lorry Hire Report',
+      description: 'Truck hire agreements, advance payments, commission deductions, and pending balance ledger.',
+      href: '/admin/reports/lorry-hire',
+      icon: <Wallet className="w-6 h-6 text-rose-600" />,
+      colorBg: 'bg-rose-50',
+      colorBorder: 'border-rose-100',
+      badge: 'Vehicle Ledger',
+      badgeColor: 'bg-rose-100 text-rose-800'
+    },
+    {
+      title: 'Invoice & Billing (TBB)',
+      description: 'Customer credit billing ledger, TBB party invoices, and outstanding payment collection dues.',
+      href: '/admin/reports/invoice',
+      icon: <Receipt className="w-6 h-6 text-violet-600" />,
+      colorBg: 'bg-violet-50',
+      colorBorder: 'border-violet-100',
+      badge: 'TBB Billing',
+      badgeColor: 'bg-violet-100 text-violet-800'
+    }
+  ];
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="w-full pb-8 space-y-5">
+      {/* Top Header Card */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white px-5 py-4 rounded-xl shadow-xs border border-gray-100 gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-brand-text-primary flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-brand-primary" />
-            Reports & Analytics
-          </h1>
-          <p className="text-brand-text-secondary mt-1">
-            Business performance overview — FY {financialYearStart.getFullYear()}-{financialYearStart.getFullYear() + 1}
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-5 bg-brand-primary rounded-full inline-block"></span>
+            <h1 className="text-lg sm:text-xl font-extrabold text-gray-800 tracking-tight">
+              Reports & Business Intelligence Hub
+            </h1>
+          </div>
+          <p className="text-xs text-gray-500 pl-3.5 mt-0.5">
+            Centralized analytics, financial audit registers, and operational dispatch ledgers
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
+          <span>Active Role:</span>
+          <span className="font-bold text-brand-primary uppercase">{user?.role || 'User'}</span>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <Card className="border-none shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">This Month Revenue</span>
-              <div className="p-2 bg-blue-50 rounded-xl"><IndianRupee className="w-5 h-5 text-brand-primary" /></div>
-            </div>
-            <div className="text-2xl font-bold text-brand-text-primary">₹{currentRevenue.toLocaleString('en-IN')}</div>
-            <p className={`text-xs font-semibold mt-1 ${currentRevenue >= prevRevenue ? 'text-green-600' : 'text-red-500'}`}>
-              {trendPct(currentRevenue, prevRevenue)} vs last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">This Month Expenses</span>
-              <div className="p-2 bg-red-50 rounded-xl"><TrendingDown className="w-5 h-5 text-red-500" /></div>
-            </div>
-            <div className="text-2xl font-bold text-brand-text-primary">₹{currentExpense.toLocaleString('en-IN')}</div>
-            <p className={`text-xs font-semibold mt-1 ${currentExpense <= prevExpense ? 'text-green-600' : 'text-red-500'}`}>
-              {trendPct(currentExpense, prevExpense)} vs last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Net Profit</span>
-              <div className="p-2 bg-green-50 rounded-xl"><TrendingUp className="w-5 h-5 text-green-600" /></div>
-            </div>
-            <div className={`text-2xl font-bold ${currentProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              ₹{currentProfit.toLocaleString('en-IN')}
-            </div>
-            <p className={`text-xs font-semibold mt-1 ${currentProfit >= prevProfit ? 'text-green-600' : 'text-red-500'}`}>
-              {trendPct(currentProfit, prevProfit)} vs last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none shadow-sm rounded-2xl bg-white hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Outstanding Dues</span>
-              <div className="p-2 bg-orange-50 rounded-xl"><FileText className="w-5 h-5 text-orange-500" /></div>
-            </div>
-            <div className="text-2xl font-bold text-orange-600">₹{totalOutstanding.toLocaleString('en-IN')}</div>
-            <p className="text-xs font-semibold mt-1 text-gray-500">
-              Total unpaid invoices
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Financial Year Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-none shadow-sm rounded-2xl bg-gradient-to-br from-brand-primary to-brand-primary-dark text-white">
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-blue-200 uppercase tracking-wide">FY Total Revenue</p>
-            <p className="text-3xl font-bold mt-2">₹{fyRevenue.toLocaleString('en-IN')}</p>
-            <p className="text-sm text-blue-200 mt-1">{totalBookings} total bookings</p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm rounded-2xl bg-gradient-to-br from-red-500 to-red-700 text-white">
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-red-200 uppercase tracking-wide">FY Total Expenses</p>
-            <p className="text-3xl font-bold mt-2">₹{fyExpense.toLocaleString('en-IN')}</p>
-            <p className="text-sm text-red-200 mt-1">{totalVehicles} vehicles, {totalDrivers} drivers</p>
-          </CardContent>
-        </Card>
-        <Card className="border-none shadow-sm rounded-2xl bg-gradient-to-br from-green-500 to-green-700 text-white">
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-green-200 uppercase tracking-wide">FY Net Profit</p>
-            <p className="text-3xl font-bold mt-2">₹{(fyRevenue - fyExpense).toLocaleString('en-IN')}</p>
-            <p className="text-sm text-green-200 mt-1">
-              Margin: {fyRevenue > 0 ? (((fyRevenue - fyExpense) / fyRevenue) * 100).toFixed(1) : 0}%
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts */}
-      <ReportCharts 
-        monthlyData={monthlyData} 
-        statusData={statusData} 
-        topRoutes={topRoutes}
-        expenseBreakdown={expenseBreakdown}
-      />
-
-      {/* Vehicle Utilization + Business Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-none shadow-sm rounded-2xl bg-white">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <Truck className="w-5 h-5 text-brand-primary" /> Vehicle Utilization
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
-                <span className="font-semibold text-green-700">Available</span>
-                <span className="text-2xl font-bold text-green-700">{vehicleStatusMap['available'] || 0}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-                <span className="font-semibold text-blue-700">On Trip</span>
-                <span className="text-2xl font-bold text-blue-700">{vehicleStatusMap['on-trip'] || 0}</span>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-orange-50 rounded-xl">
-                <span className="font-semibold text-orange-700">Maintenance</span>
-                <span className="text-2xl font-bold text-orange-700">{vehicleStatusMap['maintenance'] || 0}</span>
-              </div>
-              <div className="mt-4 p-4 bg-gray-50 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">Utilization Rate</span>
-                  <span className="text-lg font-bold text-brand-primary">
-                    {totalVehicles > 0 ? (((vehicleStatusMap['on-trip'] || 0) / totalVehicles) * 100).toFixed(0) : 0}%
-                  </span>
+      {/* Reports Directory Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {reportModules.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            prefetch={true}
+            className="group bg-white rounded-xl p-4 border border-gray-100 shadow-xs hover:shadow-md hover:border-brand-primary/40 transition-all flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className={`w-11 h-11 rounded-lg ${item.colorBg} ${item.colorBorder} border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
+                  {item.icon}
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                  <div 
-                    className="bg-brand-primary h-2.5 rounded-full transition-all" 
-                    style={{ width: `${totalVehicles > 0 ? ((vehicleStatusMap['on-trip'] || 0) / totalVehicles) * 100 : 0}%` }}
-                  />
-                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${item.badgeColor}`}>
+                  {item.badge}
+                </span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card className="border-none shadow-sm rounded-2xl bg-white">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <Package className="w-5 h-5 text-brand-primary" /> Key Business Metrics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">Avg Revenue per Booking</span>
-                <span className="text-lg font-bold text-brand-text-primary">
-                  ₹{totalBookings > 0 ? Math.round(fyRevenue / totalBookings).toLocaleString('en-IN') : 0}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">Avg Expense per Vehicle</span>
-                <span className="text-lg font-bold text-brand-text-primary">
-                  ₹{totalVehicles > 0 ? Math.round(fyExpense / totalVehicles).toLocaleString('en-IN') : 0}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">Revenue per Vehicle</span>
-                <span className="text-lg font-bold text-brand-text-primary">
-                  ₹{totalVehicles > 0 ? Math.round(fyRevenue / totalVehicles).toLocaleString('en-IN') : 0}
-                </span>
-              </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-sm font-medium text-gray-600">Delivery Success Rate</span>
-                <span className="text-lg font-bold text-green-600">
-                  {totalBookings > 0 ? ((statusData.find(s => s.name === 'delivered')?.value || 0) / totalBookings * 100).toFixed(1) : 0}%
-                </span>
-              </div>
+              <h3 className="font-bold text-gray-800 text-sm group-hover:text-brand-primary transition-colors mb-1.5">
+                {item.title}
+              </h3>
+              <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                {item.description}
+              </p>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs font-bold text-brand-primary">
+              <span>View Report</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Link>
+        ))}
       </div>
-
-      {/* Top Routes Table */}
-      <Card className="border-none shadow-sm rounded-2xl bg-white">
-        <CardHeader>
-          <CardTitle className="text-lg font-bold">Top Routes — Detailed View</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
-                  <th className="font-semibold p-4">#</th>
-                  <th className="font-semibold p-4">Route</th>
-                  <th className="font-semibold p-4 text-center">Total Trips</th>
-                  <th className="font-semibold p-4 text-right">Total Revenue</th>
-                  <th className="font-semibold p-4 text-right">Avg per Trip</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {topRoutes.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-gray-500">No route data available.</td></tr>
-                ) : topRoutes.map((route, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4 font-bold text-gray-400">{idx + 1}</td>
-                    <td className="p-4 font-semibold text-brand-text-primary">{route.route}</td>
-                    <td className="p-4 text-center">{route.count}</td>
-                    <td className="p-4 text-right font-bold text-brand-primary">₹{route.revenue.toLocaleString('en-IN')}</td>
-                    <td className="p-4 text-right text-sm text-gray-600">₹{Math.round(route.revenue / route.count).toLocaleString('en-IN')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

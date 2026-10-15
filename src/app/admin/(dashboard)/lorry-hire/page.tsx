@@ -18,141 +18,6 @@ import ExportLorryHire from '@/components/admin/ExportLorryHire';
 import { formatDate } from '@/lib/dateUtils';
 import { Loader2, Zap, X } from 'lucide-react';
 
-function CewbModal({ isOpen, onClose, voucher }: any) {
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
-
-  if (!isOpen || !voucher) return null;
-
-  const generateCewb = async (challanId: string) => {
-    try {
-      if (challanId === 'ALL') {
-        setGeneratingId('ALL');
-      } else {
-        setGeneratingId(challanId);
-      }
-      
-      const res = await fetch('/api/admin/lorry-hire/cewb', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ challanId, lorryHireId: voucher._id })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate CEWB');
-      
-      toast.success(data.message || 'CEWB Generated successfully');
-      
-      // Refresh the voucher's challan list locally to update the UI
-      if (challanId === 'ALL' && data.results) {
-        data.results.forEach((resItem: any) => {
-          const cIndex = voucher.challans.findIndex((c: any) => c._id === resItem.challanId);
-          if (cIndex !== -1) {
-            voucher.challans[cIndex].cewbNo = resItem.cewbNo;
-            voucher.challans[cIndex].cewbUrl = resItem.cewbUrl;
-          }
-        });
-      } else {
-        const challanIndex = voucher.challans.findIndex((c: any) => c._id === challanId);
-        if (challanIndex !== -1) {
-          voucher.challans[challanIndex].cewbNo = data.cewbNo;
-          voucher.challans[challanIndex].cewbUrl = data.cewbUrl;
-        }
-      }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to generate CEWB');
-    } finally {
-      setGeneratingId(null);
-    }
-  };
-
-  const pendingChallansCount = voucher?.challans?.filter((c: any) => !c.cewbNo).length || 0;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col">
-        <div className="p-5 border-b border-gray-100 flex items-start justify-between bg-gray-50/50">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-500" />
-              Generate Consolidated E-Way Bill
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">Lorry Hire Memo: <span className="font-semibold text-gray-700">{voucher.voucherNo}</span></p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        
-        <div className="p-6 overflow-y-auto max-h-[60vh]">
-          {(!voucher.challans || voucher.challans.length === 0) ? (
-            <div className="text-center p-4 text-sm text-gray-500 bg-gray-50 rounded-lg">No Challans attached to this Lorry Hire.</div>
-          ) : (
-            <div className="space-y-3">
-              {pendingChallansCount > 1 && voucher.hasEwbAccess !== false && (
-                <div className="flex justify-end mb-2">
-                  <Button 
-                    onClick={() => generateCewb('ALL')} 
-                    disabled={generatingId !== null}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-bold h-9 shadow-sm px-4"
-                  >
-                    {generatingId === 'ALL' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
-                    {generatingId === 'ALL' ? 'Generating All...' : `Generate ALL (${pendingChallansCount})`}
-                  </Button>
-                </div>
-              )}
-              {voucher.challans.map((challan: any) => (
-                <div key={challan._id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 border border-gray-100 rounded-lg gap-3">
-                  <div>
-                    <div className="font-bold text-gray-800">{challan.challanNumber}</div>
-                    <div className="text-xs text-gray-500">{challan.memoDestinationBranch?.name || 'Unknown Dest'}</div>
-                  </div>
-                  <div>
-                    {challan.cewbNo ? (
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 mb-1">CEWB GENERATED</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-gray-700">{challan.cewbNo}</span>
-                          {(challan.cewbUrl || challan.cewbNo) && (
-                             <a 
-                               href={challan.cewbUrl || `https://ewaybillgst.gov.in/`} 
-                               target="_blank" 
-                               rel="noreferrer"
-                               className="text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded hover:bg-blue-100 transition-colors font-semibold"
-                             >
-                               View
-                             </a>
-                          )}
-                        </div>
-                      </div>
-                    ) : voucher.hasEwbAccess === false ? (
-                      <a 
-                        href="https://ewaybillgst.gov.in/" 
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white h-8 text-xs font-bold px-3 shadow-sm rounded-md"
-                      >
-                        Govt Portal
-                      </a>
-                    ) : (
-                      <Button 
-                        onClick={() => generateCewb(challan._id)}
-                        disabled={generatingId !== null}
-                        className="bg-amber-500 hover:bg-amber-600 text-white h-8 text-xs font-bold px-3 shadow-sm"
-                      >
-                        {generatingId === challan._id ? <Loader2 className="w-3 h-3 animate-spin mr-1.5" /> : null}
-                        Generate CEWB
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Basic Dialog components to avoid adding huge dependencies if not present. We can just build a simple modal.
 function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
   const defaultAmount = voucher ? Math.max(0, (Number(voucher.totalAmount) || 0) - (Number(voucher.advanceAmount) || 0)) : '';
@@ -169,7 +34,7 @@ function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-5">
         <div>
           <h2 className="text-xl font-bold text-gray-800">Settle Balance Payment</h2>
-          <p className="text-xs text-gray-500 mt-1">Lorry Hire Memo: <span className="font-bold text-gray-700">{voucher.voucherNo}</span></p>
+          <p className="text-xs text-gray-500 mt-1">Lorry Hire Memo: <span className="font-semibold text-slate-700">{voucher.voucherNo}</span></p>
         </div>
 
         <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-2 text-sm">
@@ -188,7 +53,7 @@ function PaymentModal({ isOpen, onClose, onSubmit, voucher }: any) {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-semibold text-gray-700">Amount Paying Now (₹)</Label>
+          <Label className="text-sm font-semibold text-slate-700">Amount Paying Now (₹)</Label>
           <Input 
             type="number" 
             value={amount} 
@@ -231,15 +96,10 @@ export default function LorryHireList() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   
-  const [cewbModalOpen, setCewbModalOpen] = useState(false);
-  const [payModalOpen, setPayModalOpen] = useState(false);
+    const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
 
-  const handleOpenCewb = (voucher: any) => {
-    setSelectedVoucher(voucher);
-    setCewbModalOpen(true);
-  };
-
+  
   const handleOpenPayment = (voucher: any) => {
     setSelectedVoucher(voucher);
     setPayModalOpen(true);
@@ -323,12 +183,7 @@ export default function LorryHireList() {
         onSubmit={handleSettlePayment}
         voucher={selectedVoucher}
       />
-      <CewbModal 
-        isOpen={cewbModalOpen}
-        onClose={() => { setCewbModalOpen(false); setSelectedVoucher(null); }}
-        voucher={selectedVoucher}
-      />
-      
+            
       {/* Top Title Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100 gap-4">
         <div>
@@ -360,7 +215,7 @@ export default function LorryHireList() {
                   value={searchTerm} 
                   onChange={(e) => setSearchTerm(e.target.value)} 
                   placeholder="Search Voucher No..." 
-                  className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
+                  className="pl-9 pr-9 h-10 bg-white rounded-[8px] border border-[#64748b59] focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm w-full"
                 />
               </div>
               {isLogisticAdmin && (
@@ -407,7 +262,7 @@ export default function LorryHireList() {
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead>
               <tr className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                <th className="py-3 px-4 font-semibold w-20 text-center">Sr. No.</th>
+                <th className="py-3 px-4 font-semibold w-20 text-center">Sr.</th>
                 <th className="py-3 px-4 font-semibold">Voucher No</th>
                 <th className="py-3 px-4 font-semibold">Date</th>
                 <th className="py-3 px-4 font-semibold">Truck No</th>
@@ -440,7 +295,7 @@ export default function LorryHireList() {
               ) : (
                 vouchers.map((v: any, index: number) => (
                   <tr key={v._id} className="hover:bg-brand-primary/5 transition-colors group">
-                    <td className="p-4 text-center font-bold text-gray-500">{(page - 1) * limit + index + 1}</td>
+                    <td className="p-4 text-center font-semibold text-slate-700">{(page - 1) * limit + index + 1}</td>
                     <td className="py-3 px-4">
                       <span className="font-semibold text-brand-primary bg-brand-primary/5 px-2.5 py-1 rounded-md border border-brand-primary/10">
                         {v.voucherNo}
@@ -484,29 +339,7 @@ export default function LorryHireList() {
                     </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-end gap-1.5">
-                          {user?.ewbApiAccess ? (
-                            <Button 
-                              onClick={() => handleOpenCewb(v)} 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-8 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 text-xs font-bold flex items-center gap-1"
-                              title="Generate Consolidated E-Way Bill"
-                            >
-                              <Zap className="w-3.5 h-3.5" /> CEWB
-                            </Button>
-                          ) : (
-                            <a href="https://ewaybillgst.gov.in/" target="_blank" rel="noopener noreferrer">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 px-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200 text-xs font-bold flex items-center gap-1"
-                                title="Go to E-Way Bill Portal"
-                              >
-                                <Zap className="w-3.5 h-3.5" /> CEWB
-                              </Button>
-                            </a>
-                          )}
-                          {v.status !== 'completed' && (
+                                                    {v.status !== 'completed' && (
                             <Button 
                               onClick={() => handleOpenPayment(v)} 
                               variant="ghost" 
@@ -563,7 +396,7 @@ export default function LorryHireList() {
                 onClick={() => setPage(p => Math.max(1, p - 1))} 
                 disabled={page === 1}
                 variant="outline" 
-                className="h-9 px-3 rounded-lg border-gray-200"
+                className="h-9 px-3 rounded-[8px] border border-[#64748b59]"
               >
                 <ChevronLeft className="w-4 h-4 mr-0.5" /> Previous
               </Button>
@@ -571,7 +404,7 @@ export default function LorryHireList() {
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
                 disabled={page === totalPages || totalPages === 0}
                 variant="outline" 
-                className="h-9 px-3 rounded-lg border-gray-200"
+                className="h-9 px-3 rounded-[8px] border border-[#64748b59]"
               >
                 Next <ChevronRight className="w-4 h-4 ml-0.5" />
               </Button>
@@ -583,3 +416,8 @@ export default function LorryHireList() {
     </div>
   );
 }
+
+
+
+
+

@@ -64,58 +64,58 @@ export default function ContactForm() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
               First Name <span className="text-red-500">*</span>
             </label>
             <Input 
               {...register('firstName')}
               placeholder="Enter First Name" 
-              className={`h-12 bg-gray-50/50 border-gray-200 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.firstName ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+              className={`h-12 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.firstName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
             />
             {errors.firstName && <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> {errors.firstName.message}</p>}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+            <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
               Last Name <span className="text-red-500">*</span>
             </label>
             <Input 
               {...register('lastName')}
               placeholder="Enter Last Name" 
-              className={`h-12 bg-gray-50/50 border-gray-200 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.lastName ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+              className={`h-12 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.lastName ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
             />
             {errors.lastName && <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> {errors.lastName.message}</p>}
           </div>
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
             Work Email <span className="text-red-500">*</span>
           </label>
           <Input 
             {...register('workEmail')}
             type="email" 
             placeholder="Enter Work Email" 
-            className={`h-12 bg-gray-50/50 border-gray-200 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.workEmail ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+            className={`h-12 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all ${errors.workEmail ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
           />
           {errors.workEmail && <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> {errors.workEmail.message}</p>}
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700">Company Name</label>
+          <label className="text-sm font-semibold text-slate-700">Company Name</label>
           <Input 
             {...register('companyName')}
             placeholder="Enter Company Name" 
-            className="h-12 bg-gray-50/50 border-gray-200 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all" 
+            className="h-12 bg-gray-50/50 border border-[#64748b59] rounded-[8px] focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all" 
           />
         </div>
         
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+          <label className="text-sm font-semibold text-slate-700 flex items-center gap-1">
             Message <span className="text-red-500">*</span>
           </label>
           <textarea 
             {...register('message')}
-            className={`w-full min-h-[140px] rounded-full border border-gray-200 bg-gray-50/50 p-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all resize-none ${errors.message ? 'border-red-300 focus-visible:border-red-400 focus-visible:ring-red-100' : ''}`} 
+            className={`w-full min-h-[140px] rounded-[6px] border-[1.5px] border-[#64748B] bg-gray-50/50 p-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/20 focus-visible:border-brand-primary transition-all resize-none ${errors.message ? 'border-red-500 focus-visible:border-red-500 focus-visible:ring-red-100' : ''}`} 
             placeholder="Enter Message"
           ></textarea>
           {errors.message && <p className="text-red-500 text-[13px] font-medium flex items-center gap-1 mt-1.5"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> {errors.message.message}</p>}
@@ -132,3 +132,5 @@ export default function ContactForm() {
     </div>
   );
 }
+
+

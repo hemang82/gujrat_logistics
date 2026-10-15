@@ -153,7 +153,7 @@ export default function SupportPage() {
                     </div>
                     <p className="text-sm text-gray-500 truncate">{ticket.ticketId} • Created on {new Date(ticket.createdAt).toLocaleDateString()}</p>
                   </div>
-                  <div className="shrink-0 text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <div className="shrink-0 text-sm font-semibold text-slate-700 flex items-center gap-2">
                     <MessageSquarePlus className="w-4 h-4" />
                     {ticket.replies?.length || 0} Replies
                   </div>
@@ -173,11 +173,11 @@ export default function SupportPage() {
           </DialogHeader>
           <form onSubmit={handleCreateTicket} className="flex flex-col gap-5 pt-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Subject</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Subject</label>
               <Input required value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} placeholder="e.g., Unable to generate E-Way Bill" className="h-11 rounded-xl" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Priority</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Priority</label>
               <select 
                 value={formData.priority}
                 onChange={e => setFormData({...formData, priority: e.target.value})}
@@ -189,7 +189,7 @@ export default function SupportPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1.5">Description</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
               <Textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} placeholder="Please describe the issue..." className="h-32 rounded-xl resize-none" />
             </div>
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">
@@ -231,7 +231,7 @@ export default function SupportPage() {
                         {isMine ? (
                           <>
                             <span className="text-[10px] text-gray-400 font-medium">{new Date(reply.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                            <span className="text-xs font-bold text-gray-600">You</span>
+                            <span className="text-xs font-semibold text-slate-700">You</span>
                             <User className="w-3.5 h-3.5 text-gray-400" />
                           </>
                         ) : (
@@ -265,7 +265,7 @@ export default function SupportPage() {
                 </div>
               ) : (
                 <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
-                  <p className="text-sm font-medium text-gray-500">This ticket has been resolved and closed.</p>
+                  <p className="text-sm font-semibold text-slate-700">This ticket has been resolved and closed.</p>
                 </div>
               )}
             </>
@@ -275,3 +275,6 @@ export default function SupportPage() {
     </div>
   );
 }
+
+
+

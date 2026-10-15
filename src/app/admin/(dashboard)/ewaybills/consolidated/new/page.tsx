@@ -309,7 +309,7 @@ export default function ConsolidatedEwayBillPage() {
                         <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                           <span>{suggestion.challanDate ? new Date(suggestion.challanDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
                           <span className="text-gray-300">•</span>
-                          <span className="font-medium text-gray-600">{suggestion.truckNo?.vehicleNumber || 'No Truck'}</span>
+                          <span className="font-semibold text-slate-700">{suggestion.truckNo?.vehicleNumber || 'No Truck'}</span>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
@@ -482,7 +482,7 @@ export default function ConsolidatedEwayBillPage() {
             </div>
             {/* Table Footer with Submit Button */}
             <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <span className="text-sm font-medium text-gray-600">
+              <span className="text-sm font-semibold text-slate-700">
                 {selectedBookingIds.size} of {bookings.length} LRs selected
               </span>
               <Button 
@@ -527,3 +527,5 @@ export default function ConsolidatedEwayBillPage() {
     </div>
   );
 }
+
+

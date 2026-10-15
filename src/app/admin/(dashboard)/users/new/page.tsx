@@ -147,6 +147,7 @@ export default function NewUserPage() {
       if (name === 'email' && !isPasswordManuallyChanged) {
         let prefix = value.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
         if (prefix) {
+          prefix = prefix.slice(0, 4);
           prefix = prefix.charAt(0).toUpperCase() + prefix.slice(1);
           updated.password = `${prefix}@${autoPassNumber}`;
         } else {
@@ -389,14 +390,14 @@ export default function NewUserPage() {
       <form onSubmit={handleSubmit} noValidate>
         <Card className="border border-gray-100 shadow-sm rounded-xl">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-3 px-4 rounded-t-xl">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Login Information
             </CardTitle>
           </CardHeader>
           <CardContent className="p-5 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div className="space-y-1.5 relative">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Assigned Branch <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Assigned Branch <span className="text-red-500">*</span></Label>
                 <div className="relative">
                   {branchSearch && branchSuggestions.length > 0 && branchSuggestions[0].name.toLowerCase().startsWith(branchSearch.toLowerCase()) && (
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-gray-400 select-none font-medium z-0 pl-[1px]">
@@ -413,7 +414,7 @@ export default function NewUserPage() {
                     onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
                     onKeyDown={handleBranchKeyDown}
                     placeholder="Enter Assigned Branch..."
-                    className={`h-10 text-sm rounded-lg relative z-10 bg-transparent ${errors.branchId ? 'border-red-500' : 'border-gray-200'}`}
+                    className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] relative z-10 bg-transparent ${errors.branchId ? 'border-red-500' : 'border-[#64748b59]'}`}
                   />
                 </div>
                 {errors.branchId && !formData.branchId && <p className="text-xs text-red-500">{errors.branchId}</p>}
@@ -446,12 +447,12 @@ export default function NewUserPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Branch Code</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Branch Code</Label>
                 <Input 
                   value={derivedBranchCode} 
                   disabled
                   placeholder="Auto-generated"
-                  className="h-10 text-sm rounded-lg border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed font-medium text-gray-700" 
+                  className="h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] bg-gray-50 opacity-70 cursor-not-allowed font-medium text-gray-700" 
                 />
               </div>
 
@@ -460,7 +461,7 @@ export default function NewUserPage() {
             {/* Seamless Branch Fields */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Pincode</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Pincode</Label>
                 <div className="relative">
                   <Input 
                     value={newBranchData.pincode}
@@ -470,7 +471,7 @@ export default function NewUserPage() {
                     }}
                     disabled={!!formData.branchId}
                     placeholder="e.g. 395002"
-                    className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                    className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
                   />
                   {isFetchingPincode && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>}
                   {showPostOfficeDropdown && postOfficeOptions.length > 0 && !formData.branchId && (
@@ -498,30 +499,30 @@ export default function NewUserPage() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">State {!formData.branchId && <span className="text-red-500">*</span>}</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">State {!formData.branchId && <span className="text-red-500">*</span>}</Label>
                 <Input 
                   value={newBranchData.state}
                   onChange={e => setNewBranchData(prev => ({ ...prev, state: e.target.value }))}
                   disabled={!!formData.branchId}
                   placeholder="e.g. GUJARAT"
-                  className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">City</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">City</Label>
                 <Input 
                   value={newBranchData.city}
                   onChange={e => setNewBranchData(prev => ({ ...prev, city: e.target.value }))}
                   disabled={!!formData.branchId}
                   placeholder="e.g. Surat"
-                  className={`h-10 text-sm rounded-lg border-gray-200 ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] border border-[#64748b59] ${!!formData.branchId ? 'bg-gray-50 opacity-70 cursor-not-allowed text-gray-700' : ''}`}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Role <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Role <span className="text-red-500">*</span></Label>
                 <select 
                   name="role" 
                   value={formData.role} 
@@ -536,51 +537,51 @@ export default function NewUserPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Email (Login ID) <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Email (Login ID) <span className="text-red-500">*</span></Label>
                 <Input 
                   name="email" 
                   type="email"
                   value={formData.email} 
                   onChange={handleChange} 
                   placeholder="Enter Email (Login ID)"
-                  className={`h-10 text-sm rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.email ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.email && <p className="text-red-500 text-xs font-medium">{errors.email}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Password (Auto-Generated) <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Password (Auto-Generated) <span className="text-red-500">*</span></Label>
                 <Input 
                   name="password" 
                   type="text"
                   value={formData.password} 
                   onChange={handleChange} 
                   placeholder="Enter Password"
-                  className={`h-10 text-sm rounded-lg ${errors.password ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.password ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.password && <p className="text-red-500 text-xs font-medium">{errors.password}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Full Name <span className="text-red-500">*</span></Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Full Name <span className="text-red-500">*</span></Label>
                 <Input 
                   name="name" 
                   value={formData.name} 
                   onChange={handleChange} 
                   placeholder="Enter Full Name"
-                  className={`h-10 text-sm rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.name ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.name && <p className="text-red-500 text-xs font-medium">{errors.name}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-gray-600 uppercase">Phone Number</Label>
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Phone Number</Label>
                 <Input 
                   name="phone" 
                   value={formData.phone} 
                   onChange={handleChange} 
                   placeholder="Enter Phone Number"
-                  className={`h-10 text-sm rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} 
+                  className={`h-10 text-sm font-semibold text-slate-900 rounded-[8px] ${errors.phone ? 'border-red-500' : 'border-[#64748b59]'}`} 
                 />
                 {errors.phone && <p className="text-red-500 text-xs font-medium">{errors.phone}</p>}
               </div>
@@ -592,7 +593,7 @@ export default function NewUserPage() {
         {/* Section: Module Permissions */}
         <Card className="border border-gray-100 shadow-sm rounded-xl mt-6 overflow-hidden">
           <CardHeader className="bg-gray-50 border-b border-gray-100 py-3 px-4">
-            <CardTitle className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
               Module Permissions
             </CardTitle>
           </CardHeader>
@@ -654,7 +655,7 @@ export default function NewUserPage() {
             variant="outline" 
             type="button" 
             onClick={() => router.back()} 
-            className="h-10 px-5 rounded-lg border-gray-200 hover:bg-gray-50 text-sm font-medium"
+            className="h-10 px-5 rounded-[8px] border border-[#64748b59] hover:bg-gray-50 text-sm font-medium"
           >
             Cancel
           </Button>
@@ -670,3 +671,8 @@ export default function NewUserPage() {
     </div>
   );
 }
+
+
+
+
+

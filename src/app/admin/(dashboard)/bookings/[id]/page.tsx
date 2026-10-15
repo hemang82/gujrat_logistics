@@ -209,7 +209,7 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
           {/* Material Details Table */}
           <div className="col-span-1 lg:col-span-2 border border-gray-100 rounded-xl overflow-hidden h-fit">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <thead className="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 <tr>
                   <th className="p-3 text-center">Pkgs</th>
                   <th className="p-3">Packaging</th>
@@ -242,27 +242,27 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
               <tbody className="divide-y divide-gray-100">
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">Freight Amount:</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.freightAmount || 0).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.freightAmount || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">PF Charges:</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.pf || 0).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.pf || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">Labour (Hamali):</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.hamali || 0).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.hamali || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">DD Charge (Door Del.):</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.ddCharge || 0).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.ddCharge || 0).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">Bilty Charge:</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.biltyCharge || 10).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.biltyCharge || 10).toFixed(2)}</td>
                 </tr>
                 <tr>
                   <td className="p-2 px-3 text-gray-500 font-medium">GST ({booking.charges?.gstRate || 0}%):</td>
-                  <td className="p-2 px-3 text-right font-semibold text-gray-700">₹ {parseFloat(booking.charges?.gstAmount || 0).toFixed(2)}</td>
+                  <td className="p-2 px-3 text-right font-semibold text-slate-700">₹ {parseFloat(booking.charges?.gstAmount || 0).toFixed(2)}</td>
                 </tr>
                 <tr className="bg-gray-50 font-bold">
                   <td className="p-3 px-3 text-gray-700">TOTAL:</td>
@@ -301,17 +301,17 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
         <div className="flex flex-col sm:flex-row justify-between items-center sm:items-end gap-10 sm:gap-4 pt-12 border-t border-gray-100 mt-10">
           <div className="text-center w-full sm:w-auto">
             <div className="w-40 mx-auto border-b border-gray-300 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Consignor Signature</p>
+            <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide font-medium">Consignor Signature</p>
           </div>
           
           <div className="text-center w-full sm:w-auto">
             <div className="w-40 mx-auto border-b border-gray-300 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Driver Signature</p>
+            <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide font-medium">Driver Signature</p>
           </div>
 
           <div className="text-center w-full sm:w-auto">
             <div className="w-40 mx-auto border-b border-gray-300 mb-2"></div>
-            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">For {logisticName}</p>
+            <p className="text-xs text-slate-700 font-semibold uppercase tracking-wide font-medium">For {logisticName}</p>
           </div>
         </div>
 
@@ -320,3 +320,6 @@ export default async function BookingDetailsPage({ params }: { params: Promise<{
     </div>
   );
 }
+
+
+

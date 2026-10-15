@@ -201,7 +201,7 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
                       <p className="text-xl font-black text-brand-primary tracking-wide">
                         {(driver.assignedVehicle as any).vehicleNumber}
                       </p>
-                      <p className="text-sm font-medium text-gray-600 mt-0.5">
+                      <p className="text-sm font-semibold text-slate-700 mt-0.5">
                         {(driver.assignedVehicle as any).type} • {(driver.assignedVehicle as any).capacity}
                       </p>
                     </div>
@@ -227,3 +227,5 @@ export default async function ViewDriverPage({ params }: { params: Promise<{ id:
     </div>
   );
 }
+
+

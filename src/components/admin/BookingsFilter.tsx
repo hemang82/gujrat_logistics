@@ -65,16 +65,16 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
   };
 
   return (
-      <div className="flex flex-col md:flex-row gap-4 items-center bg-gray-50/50 p-3 rounded-2xl border border-gray-100 w-full md:w-auto">
+    <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
       
       {/* Search Filter */}
-      <div className="relative w-full md:w-[280px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="relative w-full sm:w-[220px]">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
         <Input 
           value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          placeholder="Search LR Number or Name..." 
-          className="pl-9 pr-9 h-10 bg-white rounded-lg border-gray-200 focus-visible:ring-1 focus-visible:ring-brand-primary/50 text-sm"
+          placeholder="Search LR No or Name..." 
+          className="pl-8 pr-7 h-8 bg-white rounded-[6px] border border-[#64748b59] focus-visible:ring-2 focus-visible:ring-brand-primary/20 text-xs w-full"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               handleUpdate('search', searchValue);
@@ -89,27 +89,27 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
         {searchValue && (
           <button 
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
       {/* Booking Branch Filter */}
-      <div className="w-full md:w-44 relative z-[60]">
+      <div className="w-full sm:w-36 relative z-[60]">
         <BranchAutocomplete
           name="branch"
           value={selectedBranch}
           onChange={handleBranchChange}
           options={branchOptions.map(b => b.value === '' ? { ...b, label: 'All Branches' } : b)}
-          placeholder="Booking Branch"
-          className="!rounded-lg"
+          placeholder="All Branches"
+          className="!rounded-[6px] !h-8 text-xs"
         />
       </div>
       
       {/* Date Filter (Global DatePicker) */}
-      <div className="relative w-full md:w-44 z-50">
+      <div className="w-full sm:w-36 relative z-10">
         <DatePicker 
           value={currentDate}
           onChange={(val) => {
@@ -120,7 +120,7 @@ export default function BookingsFilter({ branches = [] }: { branches?: Branch[] 
             }
           }}
           placeholder="Filter Date"
-          className="!rounded-lg !h-10 bg-white !border-gray-200"
+          className="!rounded-[6px] !h-8 bg-white !border-[#64748b59] text-xs px-2.5"
         />
       </div>
 

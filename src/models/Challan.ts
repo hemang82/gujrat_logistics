@@ -53,6 +53,15 @@ const ChallanSchema = new Schema<IChallan>(
   { timestamps: true }
 );
 
+// High-Performance Production Indexing (Multi-Tenant & High Traffic Optimized)
+ChallanSchema.index({ logisticId: 1, branch: 1, challanNumber: 1 });
+ChallanSchema.index({ logisticId: 1, isDeleted: 1, createdAt: -1 });
+ChallanSchema.index({ challanNumber: 1, isDeleted: 1 });
+ChallanSchema.index({ bookings: 1 });
+ChallanSchema.index({ truckNo: 1 });
+ChallanSchema.index({ driverName: 1 });
+ChallanSchema.index({ challanDate: -1 });
+
 if (mongoose.models.Challan) {
   delete mongoose.models.Challan;
 }

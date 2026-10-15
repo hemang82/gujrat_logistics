@@ -107,7 +107,7 @@ export default function SaaSMarketingHome() {
                 <div className="text-4xl md:text-5xl font-extrabold text-brand-primary mb-2">
                   <CountUp end={stat.num} duration={2.5} enableScrollSpy scrollSpyOnce />{stat.suffix}
                 </div>
-                <div className="text-sm md:text-base font-semibold text-gray-500">{stat.label}</div>
+                <div className="text-sm md:text-base font-semibold text-slate-700">{stat.label}</div>
               </motion.div>
             ))}
           </div>
@@ -356,3 +356,5 @@ export default function SaaSMarketingHome() {
     </div>
   );
 }
+
+
