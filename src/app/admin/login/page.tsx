@@ -72,14 +72,14 @@ function AdminLogin() {
       if (result?.error) {
         const errorMsg = result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error;
         toast.error(errorMsg);
+        setIsLoading(false);
       } else {
         toast.success('Login successful!');
-        router.push('/admin/dashboard');
-        router.refresh();
+        const targetUrl = searchParams.get('from') || searchParams.get('callbackUrl') || '/admin/dashboard';
+        window.location.href = targetUrl;
       }
     } catch (error) {
       toast.error('Something went wrong. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
