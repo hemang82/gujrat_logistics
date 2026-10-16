@@ -16,6 +16,7 @@ import BookingStatusDropdown from '@/components/admin/BookingStatusDropdown';
 import ExportBookings from '@/components/admin/ExportBookings';
 import Branch from '@/models/Branch';
 import User from '@/models/User';
+import Challan from '@/models/Challan';
 import { formatDate } from '@/lib/dateUtils';
 
 export const dynamic = 'force-dynamic';
@@ -119,6 +120,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   let canAddBooking = true;
   let canEditBooking = true;
   let canDeleteBooking = true;
+  const assignedBookingIds = new Set<string>();
 
   if (isLogisticAdmin && !filterBranch) {
     // Return empty list if no branch is selected by admin
@@ -137,6 +139,19 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
     totalBookings = await Booking.countDocuments(query);
     totalPages = Math.ceil(totalBookings / limit);
+
+    // Find which of these bookings are loaded on active Challans
+    const bookingIds = bookings.map((b: any) => b._id);
+    const activeChallans = await Challan.find({
+      bookings: { $in: bookingIds },
+      isDeleted: false
+    }).select('bookings challanNumber').lean();
+
+    activeChallans.forEach((c: any) => {
+      (c.bookings || []).forEach((bId: any) => {
+        assignedBookingIds.add(bId.toString());
+      });
+    });
 
     // Fetch permissions for branch users
     if (session && (role === 'branch_user' || role === 'branch')) {
@@ -276,8 +291,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                             viewUrl={`/admin/bookings/${booking._id}`}
                             editUrl={`/admin/bookings/${booking._id}/edit`}
                             printUrl={`/admin/bookings/${booking._id}/print?print=true`}
-                            hideEdit={!canEditBooking}
-                            hideDelete={!canDeleteBooking}
+                            hideEdit={!canEditBooking || assignedBookingIds.has(booking._id.toString())}
+                            hideDelete={!canDeleteBooking || assignedBookingIds.has(booking._id.toString())}
                           />
                         </div>
                       </td>
@@ -360,8 +375,8 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
                         viewUrl={`/admin/bookings/${booking._id}`}
                         editUrl={`/admin/bookings/${booking._id}/edit`}
                         printUrl={`/admin/bookings/${booking._id}/print?print=true`}
-                        hideEdit={!canEditBooking}
-                        hideDelete={!canDeleteBooking}
+                        hideEdit={!canEditBooking || assignedBookingIds.has(booking._id.toString())}
+                        hideDelete={!canDeleteBooking || assignedBookingIds.has(booking._id.toString())}
                         whatsappPhone={booking.consignor?.phone}
                         whatsappMessage={`Hello ${booking.consignor?.name || 'Customer'},\nYour Booking (LR No: ${booking.lrNumber}) via ${logisticName} is confirmed. Track it here: ${appUrl}/track?lr=${booking.lrNumber}`}
                       />

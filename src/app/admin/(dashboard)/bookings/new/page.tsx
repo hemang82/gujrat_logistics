@@ -376,7 +376,8 @@ function NewBookingForm() {
         consigneeGst: data.consignee.gst,
         consigneePhone: data.consignee.phone,
         destinationBranch: data.destinationBranch,
-        value: data.totalValue.toString(),
+        invoiceNo: data.invoiceNumber || prev.invoiceNo || '',
+        value: '', // Explicitly clear Value as requested
         freightAmount: data.items.reduce((sum: number, item: any) => sum + (Number(item.amount) || 0), 0).toString()
       }));
 
@@ -946,13 +947,21 @@ function NewBookingForm() {
   };
 
   // Keyboard Shortcut: Ctrl + Enter to instantly Save, Print & Share
+  const submitActionRef = useRef<'save' | 'print'>('save');
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
+        submitActionRef.current = 'print';
         setSubmitAction('print');
-        const form = document.getElementById('booking-form') as HTMLFormElement;
-        if (form) form.requestSubmit();
+        const printBtn = document.getElementById('save-print-share-btn') as HTMLButtonElement;
+        if (printBtn) {
+          printBtn.click();
+        } else {
+          const form = document.getElementById('booking-form') as HTMLFormElement;
+          if (form) form.requestSubmit();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1086,7 +1095,8 @@ function NewBookingForm() {
         await autoSaveMasters(items);
 
         router.refresh();
-        if (submitAction === 'print') {
+        const actionToPerform = submitActionRef.current || submitAction;
+        if (actionToPerform === 'print') {
           if (formData.consignorPhone && formData.consignorPhone !== '0000000000' && formData.consignorPhone.length >= 10) {
             const logisticNameStr = user?.logisticName || 'Trust Logistic';
             const appUrl = window.location.origin;
@@ -1170,7 +1180,34 @@ function NewBookingForm() {
         </div>
       </div>
 
-      <form id="booking-form" onSubmit={handleSubmit} noValidate className="space-y-3">
+      <form
+        id="booking-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            // If user pressed Ctrl+Enter, it will be handled by the window listener or allow submit
+            if (e.ctrlKey || e.metaKey) {
+              return;
+            }
+            // If Enter on E-Way bill input or fetch button, trigger fetch
+            if (target && (target.getAttribute('name') === 'ewayBillNo' || target.id === 'fetch-ewb-btn' || target.closest('#fetch-ewb-btn'))) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleFetchEwayBill();
+              return;
+            }
+            // Allow Enter inside textarea (e.g. multi-line notes or remarks)
+            if (target && target.tagName === 'TEXTAREA') {
+              return;
+            }
+            // Block accidental submit on plain Enter key
+            e.preventDefault();
+          }
+        }}
+        noValidate
+        className="space-y-3"
+      >
       
         {/* Superadmin Logistic Selection */}
         {user?.role === 'superadmin' && (
@@ -1393,6 +1430,13 @@ function NewBookingForm() {
                         name="ewayBillNo" 
                         value={formData.ewayBillNo} 
                         onChange={handleChange} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleFetchEwayBill();
+                          }
+                        }}
                         maxLength={12}
                         readOnly={isEwbLocked}
                         placeholder="e.g. 123456789012" 
@@ -1417,8 +1461,16 @@ function NewBookingForm() {
                           </div>
                         ) : (
                           <Button
+                            id="fetch-ewb-btn"
                             type="button"
                             onClick={handleFetchEwayBill}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleFetchEwayBill();
+                              }
+                            }}
                             disabled={isFetchingEway}
                             size="sm"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
@@ -1815,6 +1867,11 @@ function NewBookingForm() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div className="space-y-1 sm:max-w-[95%]">
+                    <Label className="text-xs font-bold text-slate-800">Invoice No</Label>
+                    <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
+                    {renderError('invoiceNo')}
+                  </div>
+                  <div className="space-y-1 sm:max-w-[95%]">
                     <Label className="text-xs font-bold text-slate-800">Value</Label>
                     <Input name="value" value={formData.value} onChange={handleChange} placeholder="Goods Value" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
                     {renderError('value')}
@@ -1836,11 +1893,6 @@ function NewBookingForm() {
                     <Label className="text-xs font-bold text-slate-800">Pvt. Marka</Label>
                     <Input name="pvtMarka" value={formData.pvtMarka} onChange={handleChange} placeholder="e.g. 50" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
                     {renderError('pvtMarka')}
-                  </div>
-                  <div className="space-y-1 sm:max-w-[95%]">
-                    <Label className="text-xs font-bold text-slate-800">Invoice No</Label>
-                    <Input name="invoiceNo" value={formData.invoiceNo} onChange={handleChange} placeholder="e.g. INV-101" className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]" />
-                    {renderError('invoiceNo')}
                   </div>
                   <div className="space-y-1 sm:max-w-[95%]">
                     <Label className="text-xs font-bold text-slate-800">GST Rate (%)</Label>
@@ -1983,8 +2035,12 @@ function NewBookingForm() {
                   {isLoading && submitAction === 'save' ? 'Submitting...' : 'Submit & Exit'}
                 </Button>
                 <Button
+                  id="save-print-share-btn"
                   type="submit"
-                  onClick={() => setSubmitAction('print')}
+                  onClick={() => {
+                    submitActionRef.current = 'print';
+                    setSubmitAction('print');
+                  }}
                   disabled={isLoading}
                   className="h-9 px-4.5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all"
                 >

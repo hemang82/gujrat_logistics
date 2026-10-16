@@ -126,6 +126,7 @@ export default function UsersPage() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
+              
               <thead className="text-xs text-gray-500 bg-gray-50 uppercase tracking-wider border-b border-gray-100">
                 <tr>
                   <th className="px-4 py-3 font-semibold w-20 text-center">Sr.</th>
@@ -136,6 +137,7 @@ export default function UsersPage() {
                   <th className="px-4 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-gray-50">
                 {isLoading ? (
                   <tr>
@@ -211,6 +213,7 @@ export default function UsersPage() {
                   ))
                 )}
               </tbody>
+
             </table>
           </div>
         </CardContent>

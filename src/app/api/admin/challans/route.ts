@@ -251,108 +251,16 @@ export async function POST(request: Request) {
 
     await newChallan.save();
 
-    // ---------------------------------------------------------
-    // E-WAY BILL: Auto Update Vehicle (Part B) & Auto Generate CEWB
-    // ---------------------------------------------------------
-    let generatedCewbNo: string | undefined = undefined;
-    let generatedCewbUrl: string | undefined = undefined;
-
-    try {
-      const hasEwbAccess = (session.user as any).ewbApiAccess === true;
-      if (hasEwbAccess && data.bookings && data.bookings.length > 0 && data.truckNo) {
-        const vehicleDoc = await Vehicle.findById(data.truckNo);
-        const truckString = vehicleDoc ? vehicleDoc.vehicleNumber.replace(/\s+/g, '').toUpperCase() : '';
-
-        const logisticUser = await User.findById(logisticId);
-        const userGstin = (logisticUser as any)?.gstNo || process.env.MASTERS_INDIA_GSTIN;
-
-        if (truckString && userGstin) {
-          // Find all bookings loaded in this Challan that have an EWB Number
-          const ewbBookings = await Booking.find({
-            _id: { $in: data.bookings },
-            ewayBillNo: { $exists: true, $type: 'string', $ne: '' }
-          });
-
-          if (ewbBookings.length > 0) {
-            // Fetch origin branch details for city/state
-            const branchDoc = await Branch.findById(data.branch);
-            const fromCity = (branchDoc as any)?.city || 'AHMEDABAD';
-            const fromState = (branchDoc as any)?.state || 'GUJARAT';
-
-            const cDate = new Date(data.challanDate || new Date());
-            const formattedChallanDate = `${cDate.getDate().toString().padStart(2, '0')}/${(cDate.getMonth() + 1).toString().padStart(2, '0')}/${cDate.getFullYear()}`;
-
-            // Step A: Update Part-B Vehicle Number for each individual EWB
-            const updatePromises = ewbBookings.map(b => {
-              const bDate = new Date(b.bookingDate || new Date());
-              const formattedDate = `${bDate.getDate().toString().padStart(2, '0')}/${(bDate.getMonth() + 1).toString().padStart(2, '0')}/${bDate.getFullYear()}`;
-
-              const payload = {
-                userGstin: userGstin,
-                eway_bill_number: Number(b.ewayBillNo),
-                vehicle_number: truckString,
-                vehicle_type: 'r',
-                place_of_consignor: fromCity,
-                state_of_consignor: fromState,
-                reason_code_for_vehicle_updation: 'First time',
-                reason_for_vehicle_updation: '',
-                transporter_document_number: b.lrNumber || '',
-                transporter_document_date: formattedDate,
-                mode_of_transport: 1,
-                data_source: ''
-              };
-
-              return EwayBillService.updateVehicleNumber(payload);
-            });
-
-            await Promise.allSettled(updatePromises);
-
-            // Step B: Automatically generate Consolidated E-Way Bill (CEWB)
-            const listOfEwayBills = ewbBookings.map(b => ({
-              eway_bill_number: Number(b.ewayBillNo)
-            }));
-
-            const cewbPayload = {
-              userGstin: userGstin,
-              place_of_consignor: fromCity,
-              state_of_consignor: fromState,
-              vehicle_number: truckString,
-              mode_of_transport: 1,
-              transporter_document_number: challanNumber,
-              transporter_document_date: formattedChallanDate,
-              data_source: 'erp',
-              list_of_eway_bills: listOfEwayBills
-            };
-
-            const cewbResponse = await EwayBillService.generateConsolidatedEwayBill(cewbPayload);
-            if (cewbResponse && cewbResponse.cEwbNo) {
-              generatedCewbNo = cewbResponse.cEwbNo.toString();
-              let finalUrl = cewbResponse.url || cewbResponse.printUrl || cewbResponse.print_url || 'https://ewaybillgst.gov.in/';
-              if (finalUrl && !finalUrl.startsWith('http')) {
-                finalUrl = `https://${finalUrl}`;
-              }
-              generatedCewbUrl = finalUrl;
-
-              // Save CEWB details onto the newly created Challan
-              newChallan.cewbNo = generatedCewbNo;
-              newChallan.cewbUrl = generatedCewbUrl;
-              await newChallan.save();
-            }
-          }
-        }
-      }
-    } catch (ewbErr: any) {
-      console.error('Error during auto EWB Vehicle Update / CEWB on Challan create:', ewbErr);
-      // We NEVER fail challan creation if government API is slow or temporarily throws an error
-    }
-    // ---------------------------------------------------------
-
-    // Update loaded bookings status to 'in_transit'
+    // Update loaded bookings status to 'in_transit' and assign vehicle & driver from this Challan
     if (data.bookings && data.bookings.length > 0) {
+      const bookingUpdates: any = { status: 'in_transit' };
+      if (data.truckNo) bookingUpdates.vehicle = data.truckNo;
+      if (data.driverName) bookingUpdates.driver = data.driverName;
+
       await Booking.updateMany(
         { _id: { $in: data.bookings } },
         { 
-          $set: { status: 'in_transit' },
+          $set: bookingUpdates,
           $push: { 
             trackingHistory: { 
                status: 'in_transit', 

@@ -574,7 +574,7 @@ export default function EditChallanPage() {
       destinationBranch: booking.destinationBranch || 'N/A'
     };
 
-    // Only fill the preview fields, don't add to list yet
+    // Fill the LR input and the preview details (Consignor, Consignee, Pkg, Weight)
     setScanGrNo(booking.lrNumber);
     setScannedLr(newScanned);
     setShowLrDropdown(false);
@@ -615,6 +615,19 @@ export default function EditChallanPage() {
 
     return true;
   };
+
+  // Keyboard Shortcut: Ctrl + Enter to update Challan
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const form = document.getElementById('edit-challan-form') as HTMLFormElement;
+        if (form) form.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -972,7 +985,23 @@ export default function EditChallanPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form
+        id="edit-challan-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            if (e.ctrlKey || e.metaKey) {
+              return;
+            }
+            if (target && target.tagName === 'TEXTAREA') {
+              return;
+            }
+            e.preventDefault();
+          }
+        }}
+        className="space-y-3"
+      >
         
         {/* Unified Single Sheet Card Container */}
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
@@ -1093,7 +1122,7 @@ export default function EditChallanPage() {
           </div>
 
           {/* Section 2: LR Scanning / Manual Entry */}
-          <div className="relative z-10 !overflow-visible pt-1">
+          <div className="relative z-30 !overflow-visible pt-1">
             <div className="flex items-center justify-between pb-2 mb-3.5 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
@@ -1130,7 +1159,8 @@ export default function EditChallanPage() {
                         if (val.trim().length > 0) {
                           const filtered = allPendingBookings.filter((b: any) =>
                             String(b.lrNumber || '').toLowerCase().includes(val.trim().toLowerCase()) &&
-                            b.status === 'pending'
+                            b.status === 'pending' &&
+                            !pendingLrs.some(p => p._id === b._id)
                           ).slice(0, 10);
                           setLrSuggestions(filtered);
                           setShowLrDropdown(filtered.length > 0);
@@ -1158,11 +1188,14 @@ export default function EditChallanPage() {
                               handleScanLr();
                             }
                           } else if (e.key === 'Tab') {
-                            if (lrSuggestions.length > 0) {
-                              e.preventDefault();
-                              const idx = lrHighlightIndex >= 0 ? lrHighlightIndex : 0;
-                              handleSelectLrSuggestion(lrSuggestions[idx]);
+                            // On Tab, if a suggestion is active, fill it and let Tab focus + Add button
+                            if (lrHighlightIndex >= 0 && lrHighlightIndex < lrSuggestions.length) {
+                              handleSelectLrSuggestion(lrSuggestions[lrHighlightIndex]);
+                            } else if (lrSuggestions.length > 0 && scanGrNo.trim().length > 0) {
+                              handleSelectLrSuggestion(lrSuggestions[0]);
                             }
+                            setShowLrDropdown(false);
+                            // Do NOT preventDefault() so Tab naturally focuses the "+ Add" button!
                           } else if (e.key === 'Escape') {
                             setShowLrDropdown(false);
                           }
@@ -1173,9 +1206,24 @@ export default function EditChallanPage() {
                       }}
                       onBlur={() => setTimeout(() => setShowLrDropdown(false), 200)}
                       onFocus={() => {
-                        if (scanGrNo.trim().length > 0 && lrSuggestions.length > 0) {
-                          setShowLrDropdown(true);
-                        }
+                        const query = scanGrNo.trim().toLowerCase();
+                        const filtered = allPendingBookings.filter((b: any) =>
+                          b.status === 'pending' &&
+                          !pendingLrs.some(p => p._id === b._id) &&
+                          (!query || String(b.lrNumber || '').toLowerCase().includes(query))
+                        ).slice(0, 15);
+                        setLrSuggestions(filtered);
+                        setShowLrDropdown(filtered.length > 0);
+                      }}
+                      onClick={() => {
+                        const query = scanGrNo.trim().toLowerCase();
+                        const filtered = allPendingBookings.filter((b: any) =>
+                          b.status === 'pending' &&
+                          !pendingLrs.some(p => p._id === b._id) &&
+                          (!query || String(b.lrNumber || '').toLowerCase().includes(query))
+                        ).slice(0, 15);
+                        setLrSuggestions(filtered);
+                        setShowLrDropdown(filtered.length > 0);
                       }}
                       placeholder="Type or Scan LR Number..." 
                       className="h-9 text-sm border-[#64748b59] focus-visible:ring-brand-primary/50 rounded-[8px] font-medium"
@@ -1183,28 +1231,39 @@ export default function EditChallanPage() {
                     />
                     <Button 
                       type="button"
+                      id="edit-scan-lr-add-btn"
                       onClick={handleScanLr}
-                      className="h-9 px-4 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-[8px] font-bold text-xs shadow-xs shrink-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleScanLr();
+                        } else if (e.key === 'Tab' && !e.shiftKey) {
+                          e.preventDefault();
+                          const truckInput = document.getElementById('challan-truck-input') as HTMLInputElement;
+                          if (truckInput) truckInput.focus();
+                        }
+                      }}
+                      className="h-9 px-4 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-[8px] font-bold text-xs shadow-xs shrink-0 cursor-pointer"
                     >
                       + Add
                     </Button>
                   </div>
                   {/* LR Autocomplete Dropdown */}
                   {showLrDropdown && lrSuggestions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-16 mt-1 bg-white border border-[#64748b59] rounded-[8px] shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-[100] left-0 right-16 mt-1 bg-white !bg-white opacity-100 border border-slate-300 rounded-[8px] shadow-2xl max-h-56 overflow-y-auto">
                       {lrSuggestions.map((suggestion: any, index: number) => (
                         <div
                           key={suggestion._id}
                           onMouseDown={() => handleSelectLrSuggestion(suggestion)}
-                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-50 last:border-b-0 ${
-                            index === lrHighlightIndex ? 'bg-brand-primary/10 text-brand-primary' : 'hover:bg-gray-50'
+                          className={`px-3 py-2 cursor-pointer text-sm border-b border-gray-100 last:border-b-0 bg-white ${
+                            index === lrHighlightIndex ? '!bg-brand-primary/10 text-brand-primary' : 'hover:!bg-gray-50 text-slate-800'
                           }`}
                         >
-                          <span className="font-bold">{suggestion.lrNumber}</span>
-                          <span className="text-gray-400 ml-2 text-xs">
+                          <span className="font-bold text-slate-900">{suggestion.lrNumber}</span>
+                          <span className="text-slate-500 ml-2 text-xs">
                             {suggestion.consignor?.name || 'N/A'} → {suggestion.consignee?.name || 'N/A'}
                           </span>
-                          <span className="text-gray-400 ml-2 text-xs">
+                          <span className="text-slate-500 ml-2 text-xs">
                             ({getBranchLabel(suggestion.destinationBranch) || 'N/A'})
                           </span>
                         </div>
@@ -1248,6 +1307,7 @@ export default function EditChallanPage() {
                       <th className="p-3 w-10 text-center">
                         <input 
                           type="checkbox"
+                          tabIndex={-1}
                           checked={pendingLrs.length > 0 && pendingLrs.every(item => selectedLrIds[item._id])}
                           disabled={formData.selectiveDefault === 'Default'}
                           onChange={(e) => {
@@ -1288,6 +1348,7 @@ export default function EditChallanPage() {
                           <td className="p-3 w-10 text-center">
                             <input 
                               type="checkbox"
+                              tabIndex={-1}
                               checked={isChecked}
                               disabled={formData.selectiveDefault === 'Default'}
                               onChange={(e) => {
@@ -1384,6 +1445,7 @@ export default function EditChallanPage() {
                           <td className="p-3 text-center">
                             <Button 
                               type="button"
+                              tabIndex={-1}
                               variant="ghost" 
                               size="icon" 
                               onClick={() => handleRemoveLr(item._id)}
@@ -1439,6 +1501,7 @@ export default function EditChallanPage() {
                         </div>
                       )}
                       <Input
+                        id="challan-truck-input"
                         name="truckNo"
                         value={truckNoSearch}
                         onChange={(e) => {
@@ -1775,9 +1838,14 @@ export default function EditChallanPage() {
           <Button 
             type="submit" 
             disabled={isLoading} 
-            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all"
+            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
           >
-            {isLoading ? 'Updating...' : 'Update Challan'}
+            {isLoading ? 'Updating...' : (
+              <>
+                Update Challan
+                <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+              </>
+            )}
           </Button>
         </div>
 

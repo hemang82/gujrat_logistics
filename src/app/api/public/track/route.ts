@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
+import Challan from '@/models/Challan';
+import Vehicle from '@/models/Vehicle';
+import Driver from '@/models/Driver';
 
 export async function GET(req: Request) {
   try {
@@ -12,6 +15,7 @@ export async function GET(req: Request) {
     }
 
     await connectToDatabase();
+    if (!Vehicle || !Driver) console.log('Init models');
     
     // Find booking by LR number (case-insensitive)
     const booking = await Booking.findOne({ 
@@ -20,13 +24,23 @@ export async function GET(req: Request) {
     })
     .populate('branch', 'name code city state')
     .populate('destinationBranch', 'name code city state')
-    .populate('vehicle', 'vehicleNumber')
+    .populate('vehicle', 'vehicleNumber vehicleType')
+    .populate('driver', 'name phone')
     .populate('logisticId', 'name companyLogo')
     .lean() as any;
     
     if (!booking) {
       return NextResponse.json({ error: 'No shipment found with this LR Number' }, { status: 404 });
     }
+
+    // Check if this booking is assigned to an active Challan
+    const loadedChallan = await Challan.findOne({
+      bookings: booking._id,
+      isDeleted: false
+    })
+    .populate('truckNo', 'vehicleNumber vehicleType')
+    .populate('driverName', 'name phone')
+    .lean() as any;
 
     const patchedHistory = booking.trackingHistory?.map((h: any) => {
       let loc = h.location;
@@ -47,8 +61,16 @@ export async function GET(req: Request) {
     }) || [];
 
     // Return the full booking object with necessary augmentations
+    const activeVehicleNumber = loadedChallan?.truckNo?.vehicleNumber || booking.vehicle?.vehicleNumber || null;
+    const activeDriverName = loadedChallan?.driverName?.name || booking.driver?.name || null;
+    const activeDriverPhone = loadedChallan?.driverName?.phone || booking.driver?.phone || null;
+
     return NextResponse.json({
       ...booking,
+      vehicleNumber: activeVehicleNumber,
+      driverName: activeDriverName,
+      driverPhone: activeDriverPhone,
+      challanNumber: loadedChallan?.challanNumber || null,
       logisticName: booking.logisticId?.name || 'Trust Logistic',
       origin: booking.branch ? booking.branch.name : (booking.pickupLocation || 'Unknown'),
       destination: booking.destinationBranch ? booking.destinationBranch.name : (booking.deliveryLocation || 'Unknown'),

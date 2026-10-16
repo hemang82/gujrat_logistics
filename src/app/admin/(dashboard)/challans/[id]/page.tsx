@@ -135,6 +135,12 @@ export default function ViewChallanPage() {
               <Label className="text-xs font-semibold text-slate-700 uppercase">Driver Name</Label>
               <Input value={challan.driverName?.name || challan.driverName || 'N/A'} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg" />
             </div>
+            {challan.agent && (
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-slate-700 uppercase">Agent / Broker</Label>
+                <Input value={challan.agent} readOnly className="h-10 text-sm bg-gray-100 text-gray-500 cursor-not-allowed rounded-lg font-bold text-slate-700" />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -215,100 +221,98 @@ export default function ViewChallanPage() {
           <CardContent className="p-0 sm:p-0">
             <table className="w-full text-left text-xs border-collapse print:border print:border-gray-300">
               <thead>
-                <tr className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider print:bg-[#eef6fc] print:text-[#0F3B8C] print:border-b print:border-gray-300">
+                <tr className="bg-gray-50 text-slate-700 font-bold uppercase tracking-wider print:bg-[#eef6fc] print:text-[#0F3B8C] print:border-b print:border-gray-300">
                   <th className="p-3 print:p-1.5 w-10 text-center border-r border-gray-200 print:border-gray-300">Sr.</th>
                   <th className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300">LR No</th>
                   <th className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300">Consignor</th>
                   <th className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300">Consignee</th>
                   <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">Pkgs</th>
                   <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">Weight</th>
-                  <th className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300">Destination</th>
-                  <th className="p-3 print:p-1.5 text-right border-r border-gray-200 print:border-gray-300">Freight</th>
-                  <th className="p-3 print:p-1.5 text-right">Total Amt</th>
+                  <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">Freight</th>
+                  <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-orange-600">To Pay</th>
+                  <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-emerald-600">Paid</th>
+                  <th className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-blue-600">T.B.B</th>
+                  <th className="p-3 print:p-1.5">Station</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-700 bg-white print:divide-gray-300 print:text-gray-800">
                 {challan.bookings?.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-gray-400 font-medium">No bookings loaded on this challan.</td>
+                    <td colSpan={11} className="py-8 text-center text-gray-400 font-medium">No bookings loaded on this challan.</td>
                   </tr>
                 ) : (
                   challan.bookings.map((b: any, idx: number) => {
                     const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || 1;
                     const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || 0;
+                    const lrTotal = Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0;
+                    const lrFreight = Number(b.charges?.freightAmount) || 0;
+                    
                     return (
                       <tr key={b._id} className="hover:bg-blue-50/50 transition-colors print:border-b print:border-gray-300">
                         <td className="p-3 print:p-1.5 text-center text-gray-400 print:text-gray-600 border-r border-gray-50 print:border-gray-300">{idx + 1}</td>
-                        <td className="p-3 print:p-1.5 font-bold text-gray-900 print:text-gray-900 border-r border-gray-50 print:border-gray-300">{b.lrNumber}</td>
+                        <td className="p-3 print:p-1.5 font-bold text-brand-primary print:text-[#0F3B8C] border-r border-gray-50 print:border-gray-300">LR- {b.lrNumber}</td>
                         <td className="p-3 print:p-1.5 truncate print:whitespace-normal print:break-words max-w-[140px] print:max-w-none border-r border-gray-50 print:border-gray-300">{b.consignor?.name || 'N/A'}</td>
                         <td className="p-3 print:p-1.5 truncate print:whitespace-normal print:break-words max-w-[140px] print:max-w-none border-r border-gray-50 print:border-gray-300">{b.consignee?.name || 'N/A'}</td>
                         <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300">{packages}</td>
-                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300">{weight}</td>
-                        <td className="p-3 print:p-1.5 uppercase border-r border-gray-50 print:border-gray-300">{b.destinationBranch?.name || (b.deliveryLocation?.length !== 24 ? b.deliveryLocation : null) || b.destinationBranch || 'N/A'}</td>
-                        <td className="p-3 print:p-1.5 text-right border-r border-gray-50 print:border-gray-300">₹{(b.charges?.freightAmount || 0).toFixed(2)}</td>
-                        <td className="p-3 print:p-1.5 text-right font-bold text-gray-900 print:text-gray-900">₹{(b.charges?.totalAmount || b.charges?.freightAmount || 0).toFixed(2)}</td>
+                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300">{weight} KG</td>
+                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300 font-bold">₹{lrFreight}</td>
+                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300 font-bold text-orange-600">
+                          {b.paymentCondition === 'to_pay' ? `₹${lrTotal}` : '-'}
+                        </td>
+                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300 font-bold text-emerald-600">
+                          {b.paymentCondition === 'paid' ? `₹${lrTotal}` : '-'}
+                        </td>
+                        <td className="p-3 print:p-1.5 text-center border-r border-gray-50 print:border-gray-300 font-bold text-blue-600">
+                          {b.paymentCondition === 'tbb' ? `₹${lrTotal}` : '-'}
+                        </td>
+                        <td className="p-3 print:p-1.5 uppercase font-bold text-brand-primary">
+                          {b.destinationBranch?.name || b.destinationBranch?.code || (b.deliveryLocation?.length !== 24 ? b.deliveryLocation : null) || 'N/A'}
+                        </td>
                       </tr>
                     );
                   })
                 )}
 
                 {/* Summary Row */}
-                <tr className="bg-gray-50/80 font-black text-gray-900 border-t border-gray-200 print:bg-[#eef6fc] print:text-[#0F3B8C] print:border-t-2 print:border-[#0F3B8C]">
-                  <td colSpan={4} className="p-3 print:p-1.5 text-right border-r border-gray-200 print:border-gray-300">TOTAL:</td>
-                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">{totalPackages}</td>
-                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300">{totalWeight}</td>
-                  <td className="p-3 print:p-1.5 border-r border-gray-200 print:border-gray-300"></td>
-                  <td className="p-3 print:p-1.5 text-right font-medium text-gray-700 print:text-[#0F3B8C] border-r border-gray-200 print:border-gray-300">
-                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.charges?.freightAmount || 0), 0).toFixed(2)}
+                <tr className="bg-brand-primary/5 font-black text-gray-900 border-t-2 border-brand-primary/20 print:bg-[#eef6fc] print:text-[#0F3B8C] print:border-t-2 print:border-[#0F3B8C]">
+                  <td colSpan={2} className="p-3 print:p-1.5 text-left uppercase text-xs border-r border-gray-200 print:border-gray-300">
+                    Total LRs: <span className="text-brand-primary text-sm font-bold">{totalLrsCount}</span>
                   </td>
-                  <td className="p-3 print:p-1.5 text-right font-extrabold text-brand-primary print:text-[#0F3B8C]">
-                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.charges?.totalAmount || b.charges?.freightAmount || 0), 0).toFixed(2)}
+                  <td colSpan={2} className="p-3 print:p-1.5 text-right border-r border-gray-200 print:border-gray-300">TOTAL:</td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-brand-primary font-bold text-sm">{totalPackages}</td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-brand-primary font-bold text-sm">{totalWeight} KG</td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-brand-primary font-bold text-sm">
+                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.freightAmount) || 0), 0)}
                   </td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-orange-600 font-bold text-sm">
+                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-emerald-600 font-bold text-sm">
+                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="p-3 print:p-1.5 text-center border-r border-gray-200 print:border-gray-300 text-blue-600 font-bold text-sm">
+                    ₹{challan.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="p-3 print:p-1.5"></td>
                 </tr>
               </tbody>
             </table>
           </CardContent>
         </Card>
 
-        {/* Financial manifest and summary block (Screen & Print) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          
-          {/* Remarks Card */}
-          <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden bg-white print:border-none print:shadow-none">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-2 px-3 print:hidden">
-              <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Remarks / Special Instructions</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3">
-              <p className="text-xs text-gray-700 font-medium italic">{challan.remark || 'No special remarks recorded.'}</p>
-            </CardContent>
-          </Card>
-
-          {/* Money Breakdown table */}
-          <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden h-fit print:border-none print:shadow-none">
-            <table className="w-full text-xs font-medium text-gray-700">
-              <tbody className="divide-y divide-gray-100">
-                <tr>
-                  <td className="p-2.5 px-3">Truck Freight:</td>
-                  <td className="p-2.5 px-3 text-right font-bold text-gray-900">₹{(challan.truckFreight || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="p-2.5 px-3">Commission Charges (-):</td>
-                  <td className="p-2.5 px-3 text-right font-bold text-red-600">₹{(challan.commission || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="p-2.5 px-3">Advance Paid To Driver (-):</td>
-                  <td className="p-2.5 px-3 text-right font-bold text-emerald-600">₹{(challan.advanceAmount || 0).toFixed(2)}</td>
-                </tr>
-                <tr className="bg-gray-50 text-gray-900 font-black border-t-2 border-gray-200">
-                  <td className="p-3 uppercase tracking-wide">Balance Payable:</td>
-                  <td className="p-3 text-right text-lg">
-                    ₹{Math.max(0, (challan.truckFreight || 0) - (challan.commission || 0) - (challan.advanceAmount || 0)).toFixed(2)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </Card>
-        </div>
+        {/* Remarks Section */}
+        {challan.remark && (
+          <div className="mt-4">
+            <Card className="border border-gray-200 shadow-sm rounded-lg overflow-hidden bg-white print:border-none print:shadow-none">
+              <CardHeader className="bg-gray-50/50 border-b border-gray-100 py-2 px-3 print:hidden">
+                <CardTitle className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Remarks / Special Instructions</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3">
+                <p className="text-xs text-gray-700 font-medium italic">{challan.remark}</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Signatures block */}
         <div className="grid grid-cols-3 gap-6 pt-16 mt-10 border-t border-gray-100 text-center text-xs font-semibold text-slate-700">

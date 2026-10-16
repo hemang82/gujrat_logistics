@@ -26,6 +26,7 @@ export default function EditBookingPage() {
   const [isFetching, setIsFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isFetchingEway, setIsFetchingEway] = useState(false);
+  const [loadedOnChallan, setLoadedOnChallan] = useState<string | null>(null);
   
   const user = useUserStore((state) => state.user);
   const canEdit = user?.role === 'logistic' || user?.role === 'superadmin' || user?.permissions?.bookings?.canEdit !== false;
@@ -412,6 +413,9 @@ export default function EditBookingPage() {
 
 
         setItems(loadedItems);
+        if (booking.loadedOnChallan) {
+          setLoadedOnChallan(booking.loadedOnChallan);
+        }
       } catch (error) {
         toast.error('Could not load booking details');
       } finally {
@@ -631,13 +635,21 @@ export default function EditBookingPage() {
   };
 
   // Keyboard Shortcut: Ctrl + Enter to instantly Save, Print & Share
+  const submitActionRef = useRef<'save' | 'print'>('save');
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
+        submitActionRef.current = 'print';
         setSubmitAction('print');
-        const form = document.getElementById('edit-booking-form') as HTMLFormElement;
-        if (form) form.requestSubmit();
+        const printBtn = document.getElementById('save-print-share-edit-btn') as HTMLButtonElement;
+        if (printBtn) {
+          printBtn.click();
+        } else {
+          const form = document.getElementById('edit-booking-form') as HTMLFormElement;
+          if (form) form.requestSubmit();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -748,7 +760,8 @@ export default function EditBookingPage() {
         autoSaveMasters(items);
         toast.success('LR Updated Successfully!');
         router.refresh();
-        if (submitAction === 'print') {
+        const actionToPerform = submitActionRef.current || submitAction;
+        if (actionToPerform === 'print') {
           if (formData.consignorPhone && formData.consignorPhone !== '0000000000' && formData.consignorPhone.length >= 10) {
             const logisticNameStr = user?.logisticName || 'Trust Logistic';
             const appUrl = window.location.origin;
@@ -794,6 +807,36 @@ export default function EditBookingPage() {
     return <div className="p-8 text-center text-gray-500">Loading booking details...</div>;
   }
 
+  if (loadedOnChallan) {
+    return (
+      <div className="p-8 mt-10 max-w-lg mx-auto bg-amber-50 border border-amber-200 rounded-xl text-center shadow-sm">
+        <AlertTriangle className="w-12 h-12 text-amber-600 mx-auto mb-3" />
+        <h2 className="text-xl font-bold text-amber-800">LR Edit Locked</h2>
+        <p className="text-sm text-amber-700 mt-2">
+          This LR is currently loaded on <strong className="font-extrabold text-amber-900">Challan No: {loadedOnChallan}</strong>.
+        </p>
+        <p className="text-xs text-amber-600 mt-1">
+          To edit this LR, please remove it from the Challan first.
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          <Button 
+            onClick={() => router.push(`/admin/bookings/${id}`)}
+            variant="outline"
+            className="border-amber-300 text-amber-800 hover:bg-amber-100"
+          >
+            View LR Details
+          </Button>
+          <Button 
+            onClick={() => router.push('/admin/bookings')}
+            className="bg-brand-primary hover:bg-brand-primary-dark text-white font-bold"
+          >
+            Back to Bookings
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (user && !canEdit) {
     return (
       <div className="p-8 mt-10 max-w-md mx-auto bg-red-50 border border-red-200 rounded-xl text-center shadow-sm">
@@ -833,7 +876,31 @@ export default function EditBookingPage() {
         </div>
       </div>
 
-      <form id="edit-booking-form" onSubmit={handleSubmit} noValidate className="space-y-3">
+      <form
+        id="edit-booking-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            if (e.ctrlKey || e.metaKey) {
+              return;
+            }
+            // If Enter on E-Way bill input or fetch button, trigger fetch
+            if (target && (target.getAttribute('name') === 'ewayBillNo' || target.id === 'fetch-ewb-btn' || target.closest('#fetch-ewb-btn'))) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleFetchEwayBill();
+              return;
+            }
+            if (target && target.tagName === 'TEXTAREA') {
+              return;
+            }
+            e.preventDefault();
+          }
+        }}
+        noValidate
+        className="space-y-3"
+      >
 
         {/* Unified Single Sheet Card Container */}
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-4 relative z-10 !overflow-visible space-y-4">
@@ -954,13 +1021,28 @@ export default function EditBookingPage() {
                         name="ewayBillNo" 
                         value={formData.ewayBillNo} 
                         onChange={handleChange} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleFetchEwayBill();
+                          }
+                        }}
                         placeholder="e.g. 123456789012" 
                         className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 ${user?.ewbApiAccess ? 'pr-16' : ''} ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : 'border-[#64748b59]'}`} 
                       />
                       {user?.ewbApiAccess && (
                         <Button
+                          id="fetch-ewb-btn"
                           type="button"
                           onClick={handleFetchEwayBill}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleFetchEwayBill();
+                            }
+                          }}
                           disabled={isFetchingEway}
                           size="sm"
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
@@ -1490,8 +1572,12 @@ export default function EditBookingPage() {
                   {isLoading && submitAction === 'save' ? 'Saving...' : 'Save Changes'}
                 </Button>
                 <Button
+                  id="save-print-share-edit-btn"
                   type="submit"
-                  onClick={() => setSubmitAction('print')}
+                  onClick={() => {
+                    submitActionRef.current = 'print';
+                    setSubmitAction('print');
+                  }}
                   disabled={isLoading}
                   className="h-9 px-4.5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-all"
                 >

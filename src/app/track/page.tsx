@@ -349,8 +349,26 @@ function TrackBookingContent() {
                   
                   {/* Extra Details */}
                   <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Reference Info</p>
-                    <div className="space-y-4 text-sm">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Reference & Transit Info</p>
+                    <div className="space-y-3 text-sm">
+                      {trackingData.vehicleNumber && (
+                        <div>
+                          <span className="text-gray-500 block text-xs mb-0.5">Assigned Vehicle / Truck:</span> 
+                          <span className="font-extrabold text-brand-primary uppercase bg-brand-primary/10 px-2 py-0.5 rounded text-xs">{trackingData.vehicleNumber}</span>
+                        </div>
+                      )}
+                      {trackingData.driverName && (
+                        <div>
+                          <span className="text-gray-500 block text-xs mb-0.5">Driver:</span> 
+                          <span className="font-semibold text-gray-900">{trackingData.driverName}</span>
+                        </div>
+                      )}
+                      {trackingData.challanNumber && (
+                        <div>
+                          <span className="text-gray-500 block text-xs mb-0.5">Dispatch Challan:</span> 
+                          <span className="font-semibold text-gray-900">CH-{trackingData.challanNumber}</span>
+                        </div>
+                      )}
                       <div><span className="text-gray-500 block text-xs mb-0.5">Invoice No:</span> <span className="font-semibold text-gray-900">{trackingData.invoiceNo || '-'}</span></div>
                       <div><span className="text-gray-500 block text-xs mb-0.5">E-Way Bill No:</span> <span className="font-semibold text-gray-900">{trackingData.ewayBillNo || '-'}</span></div>
                       <div><span className="text-gray-500 block text-xs mb-0.5">Private Marka:</span> <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">{trackingData.pvtMarka || '-'}</span></div>

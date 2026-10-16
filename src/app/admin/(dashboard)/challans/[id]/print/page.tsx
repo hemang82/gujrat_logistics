@@ -20,7 +20,7 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
   const challan = await Challan.findById(id)
     .populate({
       path: 'bookings',
-      select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch weight pkg freight totalAmount',
+      select: 'lrNumber bookingDate consignor consignee pickupLocation deliveryLocation charges items rateType destinationBranch weight pkg freight totalAmount paymentCondition',
       populate: { path: 'destinationBranch', select: 'name code' }
     })
     .populate('truckNo', 'vehicleNumber')
@@ -145,76 +145,85 @@ export default async function PrintChallanPage({ params }: { params: Promise<{ i
             <table className="w-full border-collapse border border-gray-400 text-xs">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-400 py-1.5 px-2 text-left w-12 text-center">Sr.</th>
-                  <th className="border border-gray-400 py-1.5 px-2 text-left w-24">LR No</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-left w-10 text-center">Sr.</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-left w-20">LR No</th>
                   <th className="border border-gray-400 py-1.5 px-2 text-left">Consignor</th>
                   <th className="border border-gray-400 py-1.5 px-2 text-left">Consignee</th>
-                  <th className="border border-gray-400 py-1.5 px-2 text-left">Dest.</th>
-                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16">Pkg</th>
-                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16">Wt(kg)</th>
-                  <th className="border border-gray-400 py-1.5 px-2 text-right w-20">Freight</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-12">Pkg</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-14">Weight</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16">Freight</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16 text-orange-600">To Pay</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16 text-emerald-600">Paid</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-center w-16 text-blue-600">T.B.B</th>
+                  <th className="border border-gray-400 py-1.5 px-2 text-left">Station</th>
                 </tr>
               </thead>
               <tbody>
-                {bookings.length > 0 ? bookings.map((b: any, i: number) => (
-                  <tr key={b._id}>
-                    <td className="border border-gray-400 py-1.5 px-2 text-center">{i + 1}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 font-bold">{b.lrNumber}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 truncate max-w-[120px]">{b.consignor?.name || 'N/A'}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 truncate max-w-[120px]">{b.consignee?.name || 'N/A'}</td>
-                    <td className="border border-gray-400 py-1.5 px-2">{b.destinationBranch?.name || 'N/A'}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 text-center">{b.pkg || 0}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 text-center">{b.weight || 0}</td>
-                    <td className="border border-gray-400 py-1.5 px-2 text-right">₹{b.freight || 0}</td>
-                  </tr>
-                )) : (
+                {bookings.length > 0 ? bookings.map((b: any, i: number) => {
+                  const packages = b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.pkg || 1;
+                  const weight = b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.weight || 0;
+                  const lrTotal = Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || Number(b.totalAmount) || 0;
+                  const lrFreight = Number(b.charges?.freightAmount) || Number(b.freight) || 0;
+
+                  return (
+                    <tr key={b._id}>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center">{i + 1}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 font-bold">LR- {b.lrNumber}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 truncate max-w-[110px]">{b.consignor?.name || 'N/A'}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 truncate max-w-[110px]">{b.consignee?.name || 'N/A'}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center">{packages}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center">{weight} KG</td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center font-bold">₹{lrFreight}</td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-orange-600">
+                        {b.paymentCondition === 'to_pay' ? `₹${lrTotal}` : '-'}
+                      </td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-emerald-600">
+                        {b.paymentCondition === 'paid' ? `₹${lrTotal}` : '-'}
+                      </td>
+                      <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-blue-600">
+                        {b.paymentCondition === 'tbb' ? `₹${lrTotal}` : '-'}
+                      </td>
+                      <td className="border border-gray-400 py-1.5 px-2 font-semibold uppercase">{b.destinationBranch?.name || b.destinationBranch?.code || 'N/A'}</td>
+                    </tr>
+                  );
+                }) : (
                   <tr>
-                    <td colSpan={8} className="border border-gray-400 py-4 text-center text-gray-500 italic">No Consignments Loaded</td>
+                    <td colSpan={11} className="border border-gray-400 py-4 text-center text-gray-500 italic">No Consignments Loaded</td>
                   </tr>
                 )}
               </tbody>
               <tfoot className="font-bold bg-gray-50">
                 <tr>
-                  <td colSpan={5} className="border border-gray-400 py-1.5 px-2 text-right">TOTAL:</td>
-                  <td className="border border-gray-400 py-1.5 px-2 text-center">{totalPkg}</td>
-                  <td className="border border-gray-400 py-1.5 px-2 text-center">{totalWeight}</td>
-                  <td className="border border-gray-400 py-1.5 px-2 text-right">₹{totalFreight}</td>
+                  <td colSpan={4} className="border border-gray-400 py-1.5 px-2 text-right">TOTAL:</td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center">{bookings.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.pkg || 1), 0)}</td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center">{bookings.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.weight || 0), 0)} KG</td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center font-bold">
+                    ₹{bookings.reduce((acc: number, b: any) => acc + (Number(b.charges?.freightAmount) || Number(b.freight) || 0), 0)}
+                  </td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-orange-600">
+                    ₹{bookings.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || Number(b.totalAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-emerald-600">
+                    ₹{bookings.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || Number(b.totalAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="border border-gray-400 py-1.5 px-2 text-center font-bold text-blue-600">
+                    ₹{bookings.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || Number(b.totalAmount) || 0) : 0), 0)}
+                  </td>
+                  <td className="border border-gray-400 py-1.5 px-2"></td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          {/* Financials & Remarks */}
-          <div className="grid grid-cols-2 gap-6 mt-6">
-            <div className="border border-gray-300 rounded-lg p-3 h-full">
-              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Remarks</h3>
-              <p className="text-sm font-medium text-gray-800 whitespace-pre-wrap min-h-[60px]">{ch.remark || 'N/A'}</p>
+          {/* Remarks Section */}
+          {ch.remark && (
+            <div className="mt-4">
+              <div className="border border-gray-300 rounded-lg p-3">
+                <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Remarks</h3>
+                <p className="text-sm font-medium text-gray-800 whitespace-pre-wrap">{ch.remark}</p>
+              </div>
             </div>
-
-            <div className="border border-gray-300 rounded-lg p-3">
-              <h3 className="text-xs font-semibold text-slate-700 uppercase border-b border-gray-200 pb-2 mb-2">Truck Fare Details</h3>
-              <table className="w-full text-sm">
-                <tbody>
-                  <tr>
-                    <td className="py-1 font-semibold text-slate-700">Truck Freight:</td>
-                    <td className="py-1 font-bold text-right">₹{ch.truckFreight || 0}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 font-semibold text-slate-700">Advance Paid:</td>
-                    <td className="py-1 font-bold text-right text-red-600">- ₹{ch.advanceAmount || 0}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-1 font-semibold text-slate-700 border-b border-gray-200 pb-1">Commission:</td>
-                    <td className="py-1 font-bold text-right border-b border-gray-200 pb-1">- ₹{ch.commission || 0}</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 font-bold text-gray-800">Balance To Pay:</td>
-                    <td className="py-2 font-bold text-right text-lg text-brand-primary">₹{(Number(ch.truckFreight || 0) - Number(ch.advanceAmount || 0) - Number(ch.commission || 0))}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
 
           {/* Signatures */}
           <div className="flex justify-between items-end mt-16 px-4">

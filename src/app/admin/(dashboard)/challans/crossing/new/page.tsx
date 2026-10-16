@@ -511,7 +511,7 @@ export default function AddCrossingPage() {
       destinationBranch: booking.destinationBranch || 'N/A'
     };
 
-    // Only fill the preview fields, don't add to list yet
+    // Fill the LR input and the preview details (Consignor, Consignee, Pkg, Weight)
     setScanGrNo(booking.lrNumber);
     setScannedLr(newScanned);
     setShowLrDropdown(false);
@@ -552,6 +552,19 @@ export default function AddCrossingPage() {
 
     return true;
   };
+
+  // Keyboard Shortcut: Ctrl + Enter to submit Crossing Memo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const form = document.getElementById('crossing-challan-form') as HTMLFormElement;
+        if (form) form.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -898,7 +911,23 @@ export default function AddCrossingPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form
+        id="crossing-challan-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            if (e.ctrlKey || e.metaKey) {
+              return;
+            }
+            if (target && target.tagName === 'TEXTAREA') {
+              return;
+            }
+            e.preventDefault();
+          }
+        }}
+        className="space-y-3"
+      >
         
         {/* Unified Single Sheet Card Container */}
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
@@ -1084,11 +1113,14 @@ export default function AddCrossingPage() {
                               handleScanLr();
                             }
                           } else if (e.key === 'Tab') {
-                            if (lrSuggestions.length > 0) {
-                              e.preventDefault();
-                              const idx = lrHighlightIndex >= 0 ? lrHighlightIndex : 0;
-                              handleSelectLrSuggestion(lrSuggestions[idx]);
+                            // On Tab, if a suggestion is active, fill it and let Tab focus + Add button
+                            if (lrHighlightIndex >= 0 && lrHighlightIndex < lrSuggestions.length) {
+                              handleSelectLrSuggestion(lrSuggestions[lrHighlightIndex]);
+                            } else if (lrSuggestions.length > 0 && scanGrNo.trim().length > 0) {
+                              handleSelectLrSuggestion(lrSuggestions[0]);
                             }
+                            setShowLrDropdown(false);
+                            // Do NOT preventDefault() so Tab naturally focuses the "+ Add" button!
                           } else if (e.key === 'Escape') {
                             setShowLrDropdown(false);
                           }
@@ -1099,9 +1131,22 @@ export default function AddCrossingPage() {
                       }}
                       onBlur={() => setTimeout(() => setShowLrDropdown(false), 200)}
                       onFocus={() => {
-                        if (scanGrNo.trim().length > 0 && lrSuggestions.length > 0) {
-                          setShowLrDropdown(true);
-                        }
+                        const query = scanGrNo.trim().toLowerCase();
+                        const filtered = allPendingBookings.filter((b: any) =>
+                          b.status === 'pending' &&
+                          (!query || String(b.lrNumber || '').toLowerCase().includes(query))
+                        ).slice(0, 15);
+                        setLrSuggestions(filtered);
+                        setShowLrDropdown(filtered.length > 0);
+                      }}
+                      onClick={() => {
+                        const query = scanGrNo.trim().toLowerCase();
+                        const filtered = allPendingBookings.filter((b: any) =>
+                          b.status === 'pending' &&
+                          (!query || String(b.lrNumber || '').toLowerCase().includes(query))
+                        ).slice(0, 15);
+                        setLrSuggestions(filtered);
+                        setShowLrDropdown(true);
                       }}
                       placeholder="Type or Scan LR Number..." 
                       className="h-9 text-sm border-[#64748b59] focus-visible:ring-brand-primary/50 rounded-[8px] font-medium"
@@ -1109,8 +1154,15 @@ export default function AddCrossingPage() {
                     />
                     <Button 
                       type="button"
+                      id="crossing-scan-lr-add-btn"
                       onClick={handleScanLr}
-                      className="h-9 px-4 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-[8px] font-bold text-xs shadow-xs shrink-0"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleScanLr();
+                        }
+                      }}
+                      className="h-9 px-4 bg-brand-primary hover:bg-brand-primary-dark text-white rounded-[8px] font-bold text-xs shadow-xs shrink-0 cursor-pointer"
                     >
                       + Add
                     </Button>
@@ -1701,9 +1753,14 @@ export default function AddCrossingPage() {
           <Button 
             type="submit" 
             disabled={isLoading} 
-            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all"
+            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
           >
-            {isLoading ? 'Submitting...' : 'Create Crossing Memo'}
+            {isLoading ? 'Submitting...' : (
+              <>
+                Create Crossing Memo
+                <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+              </>
+            )}
           </Button>
         </div>
 

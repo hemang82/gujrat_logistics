@@ -22,8 +22,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     await connectToDatabase();
 
-    const logisticId = (session.user as any).role === 'logistic' ? (session.user as any).id : (session.user as any).logisticId;
-    const branchFilter = (session.user as any).role === 'branch' ? { branch: (session.user as any).branch } : {};
+    const sessionUser = session.user as any;
+    const isSuperAdmin = sessionUser.role === 'superadmin';
+    const isLogistic = sessionUser.role === 'logistic';
+    const hasEwbApiAccess = isSuperAdmin || sessionUser.ewbApiAccess === true;
+
+    if (!hasEwbApiAccess) {
+      return NextResponse.json({ error: 'Access Denied: E-Way Bill API permission is not enabled for your account.' }, { status: 403 });
+    }
+
+    const logisticId = isLogistic ? sessionUser.id : sessionUser.logisticId;
+    const branchFilter = sessionUser.role === 'branch' ? { branch: sessionUser.branch } : {};
 
     const challan = await Challan.findOne({ _id: id, logisticId, ...branchFilter, isDeleted: false })
       .populate('bookings', 'lrNumber bookingDate ewayBillNo')

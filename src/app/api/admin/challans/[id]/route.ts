@@ -130,29 +130,34 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     await oldChallan.save();
 
-    // Mark added bookings as 'in_transit'
+    // Mark added bookings as 'in_transit' and assign vehicle & driver
     if (addedBookings.length > 0) {
+      const addedUpdates: any = { status: 'in_transit' };
+      if (oldChallan.truckNo) addedUpdates.vehicle = oldChallan.truckNo;
+      if (oldChallan.driverName) addedUpdates.driver = oldChallan.driverName;
+
       await Booking.updateMany(
         { _id: { $in: addedBookings } },
         { 
-          $set: { status: 'in_transit' },
+          $set: addedUpdates,
           $push: { 
             trackingHistory: { 
-              status: 'in_transit', 
-              timestamp: new Date(),
-              remarks: `Added to Challan No: ${oldChallan.challanNumber}`
+               status: 'in_transit', 
+               timestamp: new Date(),
+               remarks: `Added to Challan No: ${oldChallan.challanNumber}`
             } 
           }
         }
       );
     }
 
-    // Reset removed bookings status to 'pending'
+    // Reset removed bookings status to 'pending' and unassign vehicle & driver
     if (removedBookings.length > 0) {
       await Booking.updateMany(
         { _id: { $in: removedBookings } },
         { 
           $set: { status: 'pending' },
+          $unset: { vehicle: 1, driver: 1 },
           $push: { 
             trackingHistory: { 
               status: 'pending', 
@@ -237,6 +242,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
         { _id: { $in: challan.bookings } },
         { 
           $set: { status: 'pending' },
+          $unset: { vehicle: 1, driver: 1 },
           $push: { 
             trackingHistory: { 
               status: 'pending', 

@@ -29,6 +29,7 @@ export default function ChallansListPage() {
   const canCreate = user?.role !== 'superadmin' && user?.role !== 'logistic' && user?.permissions?.challans?.canAdd !== false;
   const canEdit = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canEdit !== false;
   const canDelete = user?.role === 'superadmin' || user?.role === 'logistic' || user?.permissions?.challans?.canDelete !== false;
+  const hasEwbAccess = Boolean(user?.role === 'superadmin' || user?.ewbApiAccess);
 
   useEffect(() => {
     if (user && !canView) {
@@ -228,18 +229,18 @@ export default function ChallansListPage() {
                   <th className="py-2.5 px-3.5">Route (From ➔ To)</th>
                   <th className="py-2.5 px-3.5">Truck / Driver</th>
                   <th className="py-2.5 px-3.5">Status</th>
-                  <th className="py-2.5 px-3.5">CEWB (Part-B)</th>
+                  {hasEwbAccess && <th className="py-2.5 px-3.5">CEWB (Part-B)</th>}
                   <th className="py-2.5 px-3.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 text-sm">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-gray-500 font-medium">Loading challans...</td>
+                    <td colSpan={hasEwbAccess ? 8 : 7} className="p-6 text-center text-gray-500 font-medium">Loading challans...</td>
                   </tr>
                 ) : challans.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-6 text-center text-gray-500 font-medium">No challans found.</td>
+                    <td colSpan={hasEwbAccess ? 8 : 7} className="p-6 text-center text-gray-500 font-medium">No challans found.</td>
                   </tr>
                 ) : (
                   challans.map((ch, index) => (
@@ -274,48 +275,50 @@ export default function ChallansListPage() {
                           {ch.status === 'in_transit' ? 'In Transit' : ch.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3.5">
-                        {ch.cewbNo ? (
-                          <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-300/80 rounded-[6px] px-2.5 py-1 shadow-2xs">
-                            <div className="flex flex-col">
-                              <span className="text-[9px] font-extrabold text-emerald-800 tracking-wider uppercase flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
-                                CEWB Active
-                              </span>
-                              <span className="text-xs font-mono font-extrabold text-slate-950 tracking-normal px-1 py-0.5 bg-white rounded border border-emerald-200/60 shadow-2xs">
-                                {ch.cewbNo}
-                              </span>
+                      {hasEwbAccess && (
+                        <td className="py-2.5 px-3.5">
+                          {ch.cewbNo ? (
+                            <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-300/80 rounded-[6px] px-2.5 py-1 shadow-2xs">
+                              <div className="flex flex-col">
+                                <span className="text-[9px] font-extrabold text-emerald-800 tracking-wider uppercase flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                                  CEWB Active
+                                </span>
+                                <span className="text-xs font-mono font-extrabold text-slate-950 tracking-normal px-1 py-0.5 bg-white rounded border border-emerald-200/60 shadow-2xs">
+                                  {ch.cewbNo}
+                                </span>
+                              </div>
+                              <a
+                                href={ch.cewbUrl || `https://ewaybillgst.gov.in/`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="ml-1 h-6 px-2 text-[11px] font-bold text-white bg-brand-primary hover:bg-brand-primary-dark rounded inline-flex items-center gap-1 shadow-2xs transition-colors"
+                                title="Open CEWB on E-Way Bill Portal"
+                              >
+                                View <ExternalLink className="w-2.5 h-2.5" />
+                              </a>
                             </div>
-                            <a
-                              href={ch.cewbUrl || `https://ewaybillgst.gov.in/`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-1 h-6 px-2 text-[11px] font-bold text-white bg-brand-primary hover:bg-brand-primary-dark rounded inline-flex items-center gap-1 shadow-2xs transition-colors"
-                              title="Open CEWB on E-Way Bill Portal"
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setCewbModalChallan(ch)}
+                              disabled={generatingCewbId !== null}
+                              className="h-7 text-xs bg-amber-50 hover:bg-amber-100/80 text-amber-900 border-amber-300 font-bold px-2.5 flex items-center gap-1.5 rounded-md shadow-2xs transition-all"
                             >
-                              View <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          </div>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setCewbModalChallan(ch)}
-                            disabled={generatingCewbId !== null}
-                            className="h-7 text-xs bg-amber-50 hover:bg-amber-100/80 text-amber-900 border-amber-300 font-bold px-2.5 flex items-center gap-1.5 rounded-md shadow-2xs transition-all"
-                          >
-                            {generatingCewbId === ch._id ? (
-                              <>
-                                <Loader2 className="w-3 h-3 animate-spin text-amber-700" /> Generating...
-                              </>
-                            ) : (
-                              <>
-                                <Zap className="w-3 h-3 text-amber-600 fill-amber-500" /> Generate CEWB
-                              </>
-                            )}
-                          </Button>
-                        )}
-                      </td>
+                              {generatingCewbId === ch._id ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 animate-spin text-amber-700" /> Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="w-3 h-3 text-amber-600 fill-amber-500" /> Generate CEWB
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </td>
+                      )}
                       <td className="py-2.5 px-3.5">
                         <div className="flex justify-center items-center">
                           <ListActions

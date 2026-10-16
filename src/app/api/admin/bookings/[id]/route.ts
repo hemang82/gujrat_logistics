@@ -9,6 +9,7 @@ import Driver from '@/models/Driver';
 import Branch from '@/models/Branch';
 import User from '@/models/User';
 import Client from '@/models/Client';
+import Challan from '@/models/Challan';
 import { resolveBranchId } from '@/lib/resolveBranch';
 import { getLogisticQuery, getLogisticIdForCreate } from '@/lib/apiAuth';
 
@@ -89,7 +90,15 @@ export async function GET(
       .lean();
     if (!booking) return NextResponse.json({ error: 'Booking not found or unauthorized' }, { status: 404 });
 
-    return NextResponse.json(booking);
+    const activeChallan = await Challan.findOne({
+      bookings: booking._id,
+      isDeleted: false
+    }).select('challanNumber').lean();
+
+    return NextResponse.json({
+      ...booking,
+      loadedOnChallan: activeChallan ? (activeChallan as any).challanNumber : null
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
@@ -137,11 +146,16 @@ export async function PUT(
       }
     }
 
-    if (isBranchUser) {
-      const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
-      if (userDoc && userDoc.permissions?.bookings?.canEdit === false) {
-        return NextResponse.json({ error: 'Permission denied: You do not have permission to edit LRs.' }, { status: 403 });
-      }
+    // Check if LR is already loaded on an active Challan
+    const activeChallan = await Challan.findOne({
+      bookings: existingBooking._id,
+      isDeleted: false
+    }).select('challanNumber').lean();
+
+    if (activeChallan) {
+      return NextResponse.json({ 
+        error: `Cannot edit LR-${existingBooking.lrNumber}: It is already loaded on Challan No: ${(activeChallan as any).challanNumber}. Please remove it from the Challan first.` 
+      }, { status: 400 });
     }
 
     if (payload.lrNumber && payload.lrNumber !== existingBooking.lrNumber) {
@@ -263,6 +277,18 @@ export async function DELETE(
       if (!userDoc || !userDoc.permissions?.bookings?.canDelete) {
         return NextResponse.json({ error: 'Permission denied: You do not have permission to delete LRs.' }, { status: 403 });
       }
+    }
+
+    // Check if LR is already loaded on an active Challan
+    const activeChallan = await Challan.findOne({
+      bookings: booking._id,
+      isDeleted: false
+    }).select('challanNumber').lean();
+
+    if (activeChallan) {
+      return NextResponse.json({ 
+        error: `Cannot delete LR-${booking.lrNumber}: It is already loaded on Challan No: ${(activeChallan as any).challanNumber}. Please remove it from the Challan first.` 
+      }, { status: 400 });
     }
 
     const deletedBooking = await Booking.findOneAndUpdate({ _id: id, ...(await getLogisticQuery()) }, { 

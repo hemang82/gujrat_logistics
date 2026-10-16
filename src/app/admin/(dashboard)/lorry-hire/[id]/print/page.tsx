@@ -19,6 +19,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
     .populate('fromBranch', 'name code')
     .populate('toBranch', 'name code')
     .populate('truckNo', 'vehicleNumber vehicleType')
+    .populate('driver', 'name phone')
     .populate('balancePaidBy', 'name code')
     .populate('logisticId', 'name companyLogo')
     .populate({
@@ -73,7 +74,7 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
         </div>
 
         {/* Voucher Meta details */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Voucher No</p>
             <p className="font-bold text-base text-gray-800">{lorryHire.voucherNo}</p>
@@ -85,6 +86,10 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
           <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Truck No</p>
             <p className="font-bold text-base text-gray-800">{lorryHire.truckNo?.vehicleNumber || 'N/A'}</p>
+          </div>
+          <div className="p-3 border border border-[#64748b59] rounded-[8px]">
+            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Driver</p>
+            <p className="font-bold text-base text-gray-800">{lorryHire.driver?.name || 'Not Specified'}</p>
           </div>
           <div className="p-3 border border border-[#64748b59] rounded-[8px]">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Status</p>
@@ -108,58 +113,81 @@ export default async function LorryHirePrintPage({ params }: { params: Promise<{
         {/* Challans List */}
         <div className="mb-8">
           <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide border-b-2 border-gray-200 pb-2 mb-4">Assigned Challans</h3>
-          <table className="w-full text-sm text-left border-collapse border border-gray-200">
-            <thead className="bg-gray-100 text-gray-700 font-bold text-xs uppercase tracking-wide">
+          <table className="w-full text-xs text-left border-collapse border border-gray-200">
+            <thead className="bg-gray-100 text-gray-700 font-bold uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="py-2.5 px-3 border border-gray-200">Challan No</th>
-                <th className="py-2.5 px-3 border border-gray-200">Station</th>
-                <th className="py-2.5 px-3 border border-gray-200 text-center">LRs</th>
-                <th className="py-2.5 px-3 border border-gray-200 text-center">Articles</th>
-                <th className="py-2.5 px-3 border border-gray-200 text-center">Weight</th>
-                <th className="py-2.5 px-3 border border-gray-200 text-right">Freight</th>
+                <th className="py-2.5 px-3 border border-gray-200 font-bold">Challan No</th>
+                <th className="py-2.5 px-3 border border-gray-200 font-bold">Station</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold">LRs</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold">Packages</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold">Weight (KG)</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold">Freight</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold text-orange-600">To Pay</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold text-emerald-600">Paid</th>
+                <th className="py-2.5 px-3 border border-gray-200 text-center font-bold text-blue-600">T.B.B</th>
               </tr>
             </thead>
             <tbody>
               {challans.map((c: any, index: number) => {
                 const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                 const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
-                const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
+                const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.freightAmount) || Number(b.charges?.totalAmount) || 0), 0) || 0;
+                
+                const toPayTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+                const paidTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+                const tbbTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+
                 return (
                   <tr key={c._id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                    <td className="py-2.5 px-3 border border-gray-200 font-bold">CH-{c.challanNumber}</td>
-                    <td className="py-2.5 px-3 border border-gray-200 font-semibold uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || 'N/A'}</td>
-                    <td className="py-2.5 px-3 border border-gray-200 text-center font-medium">{c.bookings?.length || 0}</td>
-                    <td className="py-2.5 px-3 border border-gray-200 text-center">{totalPackages}</td>
-                    <td className="py-2.5 px-3 border border-gray-200 text-center">{totalWeight}</td>
-                    <td className="py-2.5 px-3 border border-gray-200 text-right font-semibold text-gray-800">
-                      {totalLRFreight > 0 ? `₹${totalLRFreight.toLocaleString()}` : '-'}
+                    <td className="py-2 px-3 border border-gray-200 font-bold">CH-{c.challanNumber}</td>
+                    <td className="py-2 px-3 border border-gray-200 font-semibold uppercase">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || c.memoDestinationBranch || 'N/A'}</td>
+                    <td className="py-2 px-3 border border-gray-200 text-center font-medium">{c.bookings?.length || 0}</td>
+                    <td className="py-2 px-3 border border-gray-200 text-center">{totalPackages}</td>
+                    <td className="py-2 px-3 border border-gray-200 text-center">{totalWeight} KG</td>
+                    <td className="py-2 px-3 border border-gray-200 text-center font-semibold text-gray-800">
+                      ₹{totalLRFreight}
+                    </td>
+                    <td className="py-2 px-3 border border-gray-200 text-center font-bold text-orange-600">
+                      {toPayTotal > 0 ? `₹${toPayTotal}` : '-'}
+                    </td>
+                    <td className="py-2 px-3 border border-gray-200 text-center font-bold text-emerald-600">
+                      {paidTotal > 0 ? `₹${paidTotal}` : '-'}
+                    </td>
+                    <td className="py-2 px-3 border border-gray-200 text-center font-bold text-blue-600">
+                      {tbbTotal > 0 ? `₹${tbbTotal}` : '-'}
                     </td>
                   </tr>
                 );
               })}
               {challans.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-500">No challans found</td>
+                  <td colSpan={9} className="py-4 text-center text-gray-500">No challans found</td>
                 </tr>
               )}
             </tbody>
-            <tfoot className="bg-gray-100 font-bold border-t border-gray-300">
+            <tfoot className="bg-gray-100 font-bold border-t-2 border-gray-300">
               <tr>
-                <td colSpan={2} className="py-2.5 px-3 border border-gray-200">TOTAL</td>
-                <td className="py-2.5 px-3 border border-gray-200 text-center">
+                <td colSpan={2} className="py-2 px-3 border border-gray-200 uppercase text-xs">Total</td>
+                <td className="py-2 px-3 border border-gray-200 text-center">
                   {challans.reduce((acc: number, c: any) => acc + (c.bookings?.length || 0), 0)}
                 </td>
-                <td className="py-2.5 px-3 border border-gray-200 text-center">
+                <td className="py-2 px-3 border border-gray-200 text-center">
                   {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
                 </td>
-                <td className="py-2.5 px-3 border border-gray-200 text-center">
-                  {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
+                <td className="py-2 px-3 border border-gray-200 text-center">
+                  {challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)} KG
                 </td>
-                <td className="py-2.5 px-3 border border-gray-200 text-right">
-                  {(() => {
-                    const totalFreight = challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0);
-                    return totalFreight > 0 ? `₹${totalFreight.toLocaleString()}` : '-';
-                  })()}
+                <td className="py-2 px-3 border border-gray-200 text-center">
+                  ₹{challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.freightAmount) || Number(b.charges?.totalAmount) || 0), 0) || 0), 0)}
+                </td>
+                <td className="py-2 px-3 border border-gray-200 text-center text-orange-600">
+                  ₹{challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
+                </td>
+                <td className="py-2 px-3 border border-gray-200 text-center text-emerald-600">
+                  ₹{challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
+                </td>
+                <td className="py-2 px-3 border border-gray-200 text-center text-blue-600">
+                  ₹{challans.reduce((acc: number, c: any) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
                 </td>
               </tr>
             </tfoot>

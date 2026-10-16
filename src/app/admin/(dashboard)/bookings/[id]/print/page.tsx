@@ -4,6 +4,9 @@ import { headers } from 'next/headers';
 import { authOptions } from '@/lib/auth';
 import connectToDatabase from '@/lib/db';
 import Booking from '@/models/Booking';
+import Challan from '@/models/Challan';
+import Vehicle from '@/models/Vehicle';
+import Driver from '@/models/Driver';
 import { Truck, Scissors, ArrowLeft } from 'lucide-react';
 import PrintButton from '@/components/admin/PrintButton';
 import QRCodeDisplay from '@/components/admin/QRCodeDisplay';
@@ -148,41 +151,52 @@ const LRCopy = ({ booking, copyType, trackingUrl, logisticName, companyLogo }: {
             </table>
             </div>
             
-            {/* Invoice & Eway Bill Info */}
-            <div className="mt-auto p-1 border-t border-gray-400 bg-gray-50/50 flex flex-wrap gap-2 text-[10px]">
-               <div><span className="font-semibold text-slate-700 mr-1">Invoice No:</span> <span className="font-bold">{booking.invoiceNo || 'N/A'}</span></div>
+            {/* Invoice & Eway Bill & Vehicle Info */}
+            <div className="mt-auto p-1 border-t border-gray-400 bg-gray-50/50 flex flex-wrap gap-x-3 gap-y-0.5 text-[9.5px]">
+               <div><span className="font-semibold text-slate-700 mr-1">Invoice:</span> <span className="font-bold">{booking.invoiceNo || 'N/A'}</span></div>
                <div><span className="font-semibold text-slate-700 mr-1">E-Way Bill:</span> <span className="font-bold">{booking.ewayBillNo || 'N/A'}</span></div>
-               <div><span className="font-semibold text-slate-700 mr-1">Vehicle:</span> <span className="font-bold">{booking.vehicle?.vehicleNumber || 'N/A'}</span></div>
+               <div><span className="font-semibold text-slate-700 mr-1">Value:</span> <span className="font-bold">₹{booking.value || '0.00'}</span></div>
+               <div><span className="font-semibold text-slate-700 mr-1">Del. Type:</span> <span className="font-bold">{booking.deliveryType || 'Godown Delivery'}</span></div>
+               {booking.pvtMarka && <div><span className="font-semibold text-slate-700 mr-1">Marka:</span> <span className="font-bold">{booking.pvtMarka}</span></div>}
+               <div><span className="font-semibold text-slate-700 mr-1">Truck No:</span> <span className="font-bold uppercase text-brand-primary">{booking.vehicle?.vehicleNumber || 'N/A'}</span></div>
+               {booking.driver?.name && <div><span className="font-semibold text-slate-700 mr-1">Driver:</span> <span className="font-bold">{booking.driver.name}</span></div>}
+               {booking.challanNumber && <div><span className="font-semibold text-slate-700 mr-1">Challan:</span> <span className="font-bold">CH-{booking.challanNumber}</span></div>}
             </div>
           </div>
 
           {/* Right side: Charges */}
-          <div className="flex-[1.5] flex flex-col">
-            <div className="flex border-b border-gray-200 p-1">
-              <span className="flex-1 text-gray-600">Freight</span>
-              <span className="font-bold text-right">₹{booking.charges?.freightAmount || 0}</span>
-            </div>
-            <div className="flex border-b border-gray-200 p-1">
-              <span className="flex-1 text-gray-600">Sur Charge</span>
-              <span className="font-bold text-right">₹{booking.charges?.surCharge || 0}</span>
-            </div>
-            <div className="flex border-b border-gray-200 p-1">
-              <span className="flex-1 text-gray-600">Hamali / L.C.</span>
-              <span className="font-bold text-right">₹{booking.charges?.hamali || 0}</span>
-            </div>
-            <div className="flex border-b border-gray-200 p-1">
-              <span className="flex-1 text-gray-600">Bilty Chg.</span>
-              <span className="font-bold text-right">₹{booking.charges?.biltyCharge || 0}</span>
-            </div>
-            {booking.charges?.gstAmount > 0 && (
-              <div className="flex border-b border-gray-200 p-1">
-                <span className="flex-1 text-gray-600">GST ({booking.charges?.gstRate}%)</span>
-                <span className="font-bold text-right">₹{booking.charges?.gstAmount || 0}</span>
+          <div className="flex-[1.5] flex flex-col justify-between text-[12px] leading-snug">
+            <div className="divide-y divide-gray-200">
+              <div className="flex justify-between py-0.5 px-1.5">
+                <span className="text-gray-600">Freight:</span>
+                <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.freightAmount || 0).toFixed(2)}</span>
               </div>
-            )}
-            <div className="mt-auto flex border-t-2 border-gray-400 p-1.5 bg-gray-100">
-              <span className="flex-1 font-bold text-[12px] uppercase">Grand Total</span>
-              <span className="font-extrabold text-[12px] text-right">₹{booking.charges?.totalAmount || 0}</span>
+              <div className="flex justify-between py-0.5 px-1.5">
+                <span className="text-gray-600">PF Charges:</span>
+                <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.pf || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-0.5 px-1.5">
+                <span className="text-gray-600">Labour (Hamali):</span>
+                <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.hamali || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-0.5 px-1.5">
+                <span className="text-gray-600">DD Charge:</span>
+                <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.ddCharge || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-0.5 px-1.5">
+                <span className="text-gray-600">Bilty Charge:</span>
+                <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.biltyCharge ?? 10).toFixed(2)}</span>
+              </div>
+              {Number(booking.charges?.gstAmount) > 0 && (
+                <div className="flex justify-between py-0.5 px-1.5">
+                  <span className="text-gray-600">GST ({booking.charges?.gstRate || 0}%):</span>
+                  <span className="font-bold text-slate-800">₹{parseFloat(booking.charges?.gstAmount || 0).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-auto flex justify-between items-center border-t-2 border-gray-400 p-1 bg-gray-100">
+              <span className="font-bold text-[12px] uppercase text-slate-800">Total:</span>
+              <span className="font-extrabold text-[13px] text-right text-brand-primary">₹{parseFloat(booking.charges?.totalAmount || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -230,11 +244,32 @@ export default async function LRPrintPage({ params }: { params: Promise<{ id: st
     .populate('bookingBranch', 'name code')
     .populate('destinationBranch', 'name code')
     .populate('vehicle', 'vehicleNumber vehicleType')
+    .populate('driver', 'name phone')
     .populate('logisticId', 'name companyLogo')
     .lean() as any;
 
   if (!booking) {
     return <div className="p-8 text-center text-red-500 font-semibold text-lg">Booking/LR not found.</div>;
+  }
+
+  // Find if this booking is assigned to any active Challan
+  const loadedChallan = await Challan.findOne({
+    bookings: booking._id,
+    isDeleted: false
+  })
+    .populate('truckNo', 'vehicleNumber vehicleType')
+    .populate('driverName', 'name phone')
+    .lean() as any;
+
+  // Augment booking with active vehicle and driver for print display
+  if (loadedChallan) {
+    booking.challanNumber = loadedChallan.challanNumber;
+    if (loadedChallan.truckNo) {
+      booking.vehicle = loadedChallan.truckNo;
+    }
+    if (loadedChallan.driverName) {
+      booking.driver = loadedChallan.driverName;
+    }
   }
 
   const logisticName = booking.logisticId?.name || sessionLogisticName;

@@ -178,20 +178,22 @@ export default function LorryHireForm() {
   // ------------- CHALLAN AUTOCOMPLETE -------------
   useEffect(() => {
     if (!scanChallanNo || scanChallanNo.trim().length < 1) {
-      const allPending = challans.filter(c => c.status === 'pending').map(c => ({
-        value: c._id,
-        label: `CH-${c.challanNumber}`,
-        original: c
-      }));
+      const allPending = challans
+        .filter(c => c.status === 'pending' && !selectedChallans.some(sc => sc._id === c._id))
+        .map(c => ({
+          value: c._id,
+          label: `CH-${c.challanNumber}`,
+          original: c
+        }));
       setChallanSuggestions(allPending);
       return;
     }
     const query = scanChallanNo.trim().toLowerCase().replace(/^ch-/i, '');
     const filtered = challans
-      .filter(c => String(c.challanNumber).toLowerCase().includes(query))
+      .filter(c => !selectedChallans.some(sc => sc._id === c._id) && String(c.challanNumber).toLowerCase().includes(query))
       .map(c => ({ value: c._id, label: `CH-${c.challanNumber}`, original: c }));
     setChallanSuggestions(filtered);
-  }, [scanChallanNo, challans]);
+  }, [scanChallanNo, challans, selectedChallans]);
 
   useEffect(() => setChallanHighlightIndex(-1), [challanSuggestions]);
 
@@ -514,18 +516,6 @@ export default function LorryHireForm() {
       const fromBranch = challan.branch?._id || challan.branch || '';
       const toBranch = challan.memoDestinationBranch?._id || challan.memoDestinationBranch || challan.lrToBranch?._id || challan.lrToBranch || '';
       const truck = challan.truckNo?._id || challan.truckNo || '';
-      
-      // Calculate total from LR charges instead of truckFreight
-      const lrTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
-      
-      setFormData(prev => ({
-        ...prev,
-        fromBranch: fromBranch,
-        toBranch: toBranch,
-        truckNo: truck,
-        totalAmount: lrTotal.toString(),
-        advanceAmount: challan.advanceAmount?.toString() || '',
-      }));
 
       // Update search inputs for UI feedback
       let newFromCity = formData.fromCity, newFromState = formData.fromState, newFromPincode = formData.fromPincode;
@@ -593,6 +583,9 @@ export default function LorryHireForm() {
       
       setFormData(p => ({
         ...p,
+        fromBranch: fromBranch,
+        toBranch: toBranch,
+        truckNo: truck,
         fromCity: newFromCity,
         fromState: newFromState,
         fromPincode: newFromPincode,
@@ -601,18 +594,10 @@ export default function LorryHireForm() {
         toPincode: newToPincode,
         driver: newDriver
       }));
-    } else {
-      // Sum LR charges for the new challan being added
-      const newChallanLRTotal = challan.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
-      setFormData(prev => ({
-        ...prev,
-        totalAmount: (Number(prev.totalAmount || 0) + newChallanLRTotal).toString(),
-        advanceAmount: (Number(prev.advanceAmount || 0) + Number(challan.advanceAmount || 0)).toString()
-      }));
     }
     
     setScanChallanNo('');
-    toast.success('Challan added & Details Auto-Filled!');
+    toast.success('Challan added!');
   };
 
   const removeChallan = (id: string) => {
@@ -626,6 +611,19 @@ export default function LorryHireForm() {
     const hamaliAmt = Number(formData.hamali) || 0;
     return total - advance - comm + hamaliAmt;
   };
+
+  // Keyboard Shortcut: Ctrl + Enter to submit Lorry Hire
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const form = document.getElementById('lorry-hire-form') as HTMLFormElement;
+        if (form) form.requestSubmit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -719,7 +717,23 @@ export default function LorryHireForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form
+        id="lorry-hire-form"
+        onSubmit={handleSubmit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const target = e.target as HTMLElement;
+            if (e.ctrlKey || e.metaKey) {
+              return;
+            }
+            if (target && target.tagName === 'TEXTAREA') {
+              return;
+            }
+            e.preventDefault();
+          }
+        }}
+        className="space-y-3"
+      >
         {/* Unified Single Sheet Card Container */}
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
           
@@ -1007,35 +1021,53 @@ export default function LorryHireForm() {
             </div>
 
             {selectedChallans.length > 0 ? (
-              <div className="border border-slate-200/90 rounded-xl overflow-hidden shadow-xs">
+              <div className="border border-slate-200/90 rounded-xl overflow-x-auto shadow-xs bg-white">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200/90">
+                  <thead className="bg-gray-50 text-slate-700 font-bold border-b border-slate-200 uppercase tracking-wider">
                     <tr>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 font-bold">Challan No</th>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 font-bold">Station</th>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">LRs</th>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">Articles</th>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-center font-bold">Weight</th>
-                      <th className="px-3.5 py-2.5 border-r border-slate-200/90 text-right font-bold">Freight</th>
-                      <th className="px-3.5 py-2.5 text-right w-16 font-bold">Action</th>
+                      <th className="p-3 border-r border-slate-200 font-bold">Challan No</th>
+                      <th className="p-3 border-r border-slate-200 font-bold">Station</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold">LRs</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold">Packages</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold">Weight (KG)</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold">Freight</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold text-orange-600">To Pay</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold text-emerald-600">Paid</th>
+                      <th className="p-3 border-r border-slate-200 text-center font-bold text-blue-600">T.B.B</th>
+                      <th className="p-3 text-center w-14 font-bold">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-gray-100 text-gray-700 font-semibold">
                     {selectedChallans.map(c => {
                       const totalPackages = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0;
                       const totalWeight = c.bookings?.reduce((acc: number, b: any) => acc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0;
-                      const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0;
+                      const totalLRFreight = c.bookings?.reduce((acc: number, b: any) => acc + (Number(b.charges?.freightAmount) || Number(b.charges?.totalAmount) || 0), 0) || 0;
+                      
+                      const toPayTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+                      const paidTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+                      const tbbTotal = c.bookings?.reduce((acc: number, b: any) => acc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0;
+                      
                       return (
-                        <tr key={c._id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="px-3.5 py-2 font-bold text-brand-primary border-r border-slate-100">CH-{c.challanNumber}</td>
-                          <td className="px-3.5 py-2 font-bold text-slate-700 capitalize border-r border-slate-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch || 'N/A'}</td>
-                          <td className="px-3.5 py-2 font-bold text-slate-800 text-center border-r border-slate-100">{c.bookings?.length || 0}</td>
-                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalPackages}</td>
-                          <td className="px-3.5 py-2 text-center border-r border-slate-100 font-semibold text-slate-700">{totalWeight}</td>
-                          <td className="px-3.5 py-2 text-right font-bold text-slate-800 border-r border-slate-100">₹{totalLRFreight.toFixed(2)}</td>
-                          <td className="px-3.5 py-2 text-right">
+                        <tr key={c._id} className="hover:bg-gray-50/70 transition-colors">
+                          <td className="p-3 font-bold text-brand-primary border-r border-slate-100">CH-{c.challanNumber}</td>
+                          <td className="p-3 font-bold text-brand-primary uppercase border-r border-slate-100">{c.memoDestinationBranch?.name || c.memoDestinationBranch?.code || c.memoDestinationBranch || 'N/A'}</td>
+                          <td className="p-3 font-bold text-slate-800 text-center border-r border-slate-100">{c.bookings?.length || 0}</td>
+                          <td className="p-3 text-center border-r border-slate-100 font-semibold text-slate-700">{totalPackages}</td>
+                          <td className="p-3 text-center border-r border-slate-100 font-semibold text-slate-700">{totalWeight} KG</td>
+                          <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-100">₹{totalLRFreight}</td>
+                          <td className="p-3 text-center font-bold text-orange-600 border-r border-slate-100">
+                            {toPayTotal > 0 ? `₹${toPayTotal}` : '-'}
+                          </td>
+                          <td className="p-3 text-center font-bold text-emerald-600 border-r border-slate-100">
+                            {paidTotal > 0 ? `₹${paidTotal}` : '-'}
+                          </td>
+                          <td className="p-3 text-center font-bold text-blue-600 border-r border-slate-100">
+                            {tbbTotal > 0 ? `₹${tbbTotal}` : '-'}
+                          </td>
+                          <td className="p-3 text-center">
                             <Button
                               type="button"
+                              tabIndex={-1}
                               variant="ghost"
                               size="sm"
                               className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 w-7 p-0 rounded-md"
@@ -1048,22 +1080,33 @@ export default function LorryHireForm() {
                       );
                     })}
                   </tbody>
-                  <tfoot className="bg-slate-50/90 font-bold text-slate-800 border-t border-slate-200">
+                  <tfoot className="bg-brand-primary/5 text-gray-700 font-bold border-t-2 border-brand-primary/20">
                     <tr>
-                      <td colSpan={2} className="px-3.5 py-2 text-right border-r border-slate-200/90 font-bold text-xs text-slate-600">Total:</td>
-                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
+                      <td colSpan={2} className="p-3 text-left uppercase text-xs">
+                        Total Challans: <span className="text-brand-primary text-sm font-black">{selectedChallans.length}</span>
+                      </td>
+                      <td className="p-3 text-center font-bold text-slate-800 text-sm">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.length || 0), 0)}
                       </td>
-                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 font-black text-slate-900">
+                      <td className="p-3 text-center text-brand-primary text-sm font-bold">
                         {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.packages) || 0), 0) || b.material?.quantity || 1), 0) || 0), 0)}
                       </td>
-                      <td className="px-3.5 py-2 text-center border-r border-slate-200/90 text-brand-primary font-black">
-                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)}
+                      <td className="p-3 text-center text-brand-primary text-sm font-bold">
+                        {selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.items?.reduce((sum: number, item: any) => sum + (Number(item.weight) || 0), 0) || b.material?.weight || 0), 0) || 0), 0)} KG
                       </td>
-                      <td className="px-3.5 py-2 text-right border-r border-slate-200/90 text-brand-primary font-black">
-                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0), 0) || 0), 0).toFixed(2)}
+                      <td className="p-3 text-center text-brand-primary text-sm font-bold">
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (Number(b.charges?.freightAmount) || Number(b.charges?.totalAmount) || 0), 0) || 0), 0)}
                       </td>
-                      <td className="px-3.5 py-2"></td>
+                      <td className="p-3 text-center text-orange-600 text-sm font-bold">
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'to_pay' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
+                      </td>
+                      <td className="p-3 text-center text-emerald-600 text-sm font-bold">
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'paid' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
+                      </td>
+                      <td className="p-3 text-center text-blue-600 text-sm font-bold">
+                        ₹{selectedChallans.reduce((acc, c) => acc + (c.bookings?.reduce((bAcc: number, b: any) => bAcc + (b.paymentCondition === 'tbb' ? (Number(b.charges?.totalAmount) || Number(b.charges?.freightAmount) || 0) : 0), 0) || 0), 0)}
+                      </td>
+                      <td className="p-3"></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -1095,7 +1138,7 @@ export default function LorryHireForm() {
                   value={formData.totalAmount}
                   onChange={handleChange}
                   placeholder="0.00"
-                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] bg-slate-50 px-3"
+                  className="h-9 text-xs font-bold text-slate-900 rounded-[8px] border-[#64748b59] px-3"
                 />
               </div>
 
@@ -1217,10 +1260,11 @@ export default function LorryHireForm() {
           <Button 
             type="submit" 
             disabled={isLoading} 
-            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+            className="h-9 px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Lorry Hire
+            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
           </Button>
         </div>
       </form>
