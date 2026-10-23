@@ -634,12 +634,18 @@ export default function EditBookingPage() {
     return { subTotal, gstAmount, total };
   };
 
-  // Keyboard Shortcut: Ctrl + Enter to instantly Save, Print & Share
+  // Keyboard Shortcut: Enter to instantly Save, Print & Share
   const submitActionRef = useRef<'save' | 'print'>('save');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0')) return;
+        if (target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button')) return;
+        if (target.getAttribute('name') === 'ewayBillNo' || target.id === 'fetch-ewb-btn' || target.closest('#fetch-ewb-btn')) return;
+
         e.preventDefault();
         submitActionRef.current = 'print';
         setSubmitAction('print');
@@ -882,9 +888,6 @@ export default function EditBookingPage() {
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             const target = e.target as HTMLElement;
-            if (e.ctrlKey || e.metaKey) {
-              return;
-            }
             // If Enter on E-Way bill input or fetch button, trigger fetch
             if (target && (target.getAttribute('name') === 'ewayBillNo' || target.id === 'fetch-ewb-btn' || target.closest('#fetch-ewb-btn'))) {
               e.preventDefault();
@@ -895,7 +898,19 @@ export default function EditBookingPage() {
             if (target && target.tagName === 'TEXTAREA') {
               return;
             }
+            if (target && (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0') || target.tagName === 'BUTTON' || target.closest('button'))) {
+              return;
+            }
             e.preventDefault();
+            submitActionRef.current = 'print';
+            setSubmitAction('print');
+            const printBtn = document.getElementById('save-print-share-edit-btn') as HTMLButtonElement;
+            if (printBtn) {
+              printBtn.click();
+            } else {
+              const form = document.getElementById('edit-booking-form') as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }
           }
         }}
         noValidate
@@ -1584,7 +1599,7 @@ export default function EditBookingPage() {
                   {isLoading && submitAction === 'print' ? 'Printing...' : (
                     <>
                       <Printer className="w-3.5 h-3.5" /> Save, Print & Share
-                      <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+                      <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">↵ Enter</kbd>
                     </>
                   )}
                 </Button>

@@ -627,10 +627,15 @@ export default function EditCrossingPage() {
     return true;
   };
 
-  // Keyboard Shortcut: Ctrl + Enter to update Crossing Memo
+  // Keyboard Shortcut: Enter to update Crossing Memo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0')) return;
+        if (target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button')) return;
+
         e.preventDefault();
         const form = document.getElementById('edit-crossing-challan-form') as HTMLFormElement;
         if (form) form.requestSubmit();
@@ -1002,13 +1007,15 @@ export default function EditCrossingPage() {
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             const target = e.target as HTMLElement;
-            if (e.ctrlKey || e.metaKey) {
-              return;
-            }
             if (target && target.tagName === 'TEXTAREA') {
               return;
             }
+            if (target && (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0') || target.tagName === 'BUTTON' || target.closest('button'))) {
+              return;
+            }
             e.preventDefault();
+            const form = document.getElementById('edit-crossing-challan-form') as HTMLFormElement;
+            if (form) form.requestSubmit();
           }
         }}
         className="space-y-3"
@@ -1843,7 +1850,7 @@ export default function EditCrossingPage() {
             {isLoading ? 'Updating...' : (
               <>
                 Update Crossing Memo
-                <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+                <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">↵ Enter</kbd>
               </>
             )}
           </Button>

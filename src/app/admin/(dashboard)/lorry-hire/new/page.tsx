@@ -612,10 +612,15 @@ export default function LorryHireForm() {
     return total - advance - comm + hamaliAmt;
   };
 
-  // Keyboard Shortcut: Ctrl + Enter to submit Lorry Hire
+  // Keyboard Shortcut: Enter to submit Lorry Hire
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+        if (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0')) return;
+        if (target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button')) return;
+
         e.preventDefault();
         const form = document.getElementById('lorry-hire-form') as HTMLFormElement;
         if (form) form.requestSubmit();
@@ -723,13 +728,15 @@ export default function LorryHireForm() {
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             const target = e.target as HTMLElement;
-            if (e.ctrlKey || e.metaKey) {
-              return;
-            }
             if (target && target.tagName === 'TEXTAREA') {
               return;
             }
+            if (target && (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0') || target.tagName === 'BUTTON' || target.closest('button'))) {
+              return;
+            }
             e.preventDefault();
+            const form = document.getElementById('lorry-hire-form') as HTMLFormElement;
+            if (form) form.requestSubmit();
           }
         }}
         className="space-y-3"
@@ -1264,7 +1271,7 @@ export default function LorryHireForm() {
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Lorry Hire
-            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">Ctrl+↵</kbd>
+            <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">↵ Enter</kbd>
           </Button>
         </div>
       </form>
