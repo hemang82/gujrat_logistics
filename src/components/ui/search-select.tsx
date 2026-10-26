@@ -125,7 +125,7 @@ export function SearchSelect({
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-100 bg-white p-1.5 shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="absolute z-[9999] mt-1 w-full rounded-xl border border-brand-primary bg-white p-1.5 shadow-md animate-in fade-in-50 zoom-in-95 duration-150">
           {/* Search Input */}
           <div className="relative mb-1 flex items-center border-b border-gray-100 pb-1.5 px-1 pt-0.5">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />

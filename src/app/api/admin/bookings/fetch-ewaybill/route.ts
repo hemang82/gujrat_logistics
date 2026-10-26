@@ -8,6 +8,47 @@ import Client from '@/models/Client';
 import Branch from '@/models/Branch';
 import { EwayBillService } from '@/services/ewaybillService';
 
+    // Helper function to parse EWB date (formats like "16/10/2026 04:24:00 PM" or "2026-10-16 16:24:00")
+    const parseEwbDate = (dateStr?: string): Date | null => {
+      if (!dateStr) return null;
+      if (typeof dateStr !== 'string') return null;
+      if (dateStr.includes('/')) {
+        const parts = dateStr.trim().split(' ');
+        const dateParts = parts[0].split('/');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          const year = parseInt(dateParts[2], 10);
+          if (parts.length > 1) {
+            const timeParts = parts[1].split(':');
+            let hours = parseInt(timeParts[0], 10);
+            const minutes = parseInt(timeParts[1] || '0', 10);
+            const seconds = parseInt(timeParts[2] || '0', 10);
+            if (parts[2] && parts[2].toUpperCase() === 'PM' && hours < 12) hours += 12;
+            if (parts[2] && parts[2].toUpperCase() === 'AM' && hours === 12) hours = 0;
+            return new Date(year, month, day, hours, minutes, seconds);
+          }
+          return new Date(year, month, day, 23, 59, 59);
+        }
+      }
+      const parsed = new Date(dateStr);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    // Helper to evaluate expiry from any date strings
+    const evaluateExpiry = (dataObj: any) => {
+      const validStr = dataObj.validUpto || dataObj.valid_upto || dataObj.valid_until || dataObj.ewayBillDate || dataObj.eway_bill_date || '';
+      const parsed = parseEwbDate(validStr);
+      const currNow = new Date();
+      const isExpired = parsed ? currNow.getTime() > parsed.getTime() : false;
+      const hoursSince = (isExpired && parsed) ? Math.max(0, Math.round((currNow.getTime() - parsed.getTime()) / (1000 * 60 * 60))) : 0;
+      return {
+        isExpired,
+        hoursSinceExpiry: hoursSince,
+        validUpto: validStr
+      };
+    };
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -50,10 +91,15 @@ export async function GET(request: Request) {
     }).sort({ createdAt: -1 });
 
     if (cachedLog && cachedLog.errorMessage) {
-      // If we saved the parsed JSON inside errorMessage string (hacky but works for mock cache)
       try {
         const cachedData = JSON.parse(cachedLog.errorMessage);
         
+        // Re-calculate expiry on cached data with current timestamp
+        const expiryEvaluation = evaluateExpiry(cachedData);
+        cachedData.isExpired = expiryEvaluation.isExpired;
+        cachedData.hoursSinceExpiry = expiryEvaluation.hoursSinceExpiry;
+        cachedData.validUpto = expiryEvaluation.validUpto;
+
         // Log this cache hit
         await ApiLog.create({
           userId: dbUser._id,
@@ -135,10 +181,16 @@ export async function GET(request: Request) {
       }
     }
 
+    const expiryEvaluation = evaluateExpiry(ewbData);
+
     // Map Masters India response to our Frontend UI format
     const mappedDetails = {
       ewayBillNo: ewbData.eway_bill_number || number,
       ewayBillDate: ewbData.eway_bill_date || '',
+      validUpto: expiryEvaluation.validUpto,
+      isExpired: expiryEvaluation.isExpired,
+      hoursSinceExpiry: expiryEvaluation.hoursSinceExpiry,
+      ewbStatus: ewbData.status || '',
       consignor: {
         name: consignorName,
         gst: consignorGst,

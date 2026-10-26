@@ -18,7 +18,15 @@ export function AdminLayoutWrapper({
   const setUser = useUserStore((state) => state.setUser);
   const pathname = usePathname();
   const isPrintPage = pathname?.endsWith('/print');
-  const hideTopbar = isPrintPage || pathname === '/admin/bookings/new' || pathname === '/admin/challans/new' || pathname === '/admin/challans/crossing/new' || pathname === '/admin/lorry-hire/new';
+  const isBookingViewOrEdit = /^\/admin\/bookings\/[a-zA-Z0-9_-]+(\/edit)?$/.test(pathname || '');
+  const isLorryHireEdit = /^\/admin\/lorry-hire\/[a-zA-Z0-9_-]+(\/edit)?$/.test(pathname || '');
+  const hideTopbar = isPrintPage || 
+    pathname === '/admin/bookings/new' || 
+    isBookingViewOrEdit ||
+    pathname === '/admin/challans/new' || 
+    pathname === '/admin/challans/crossing/new' || 
+    pathname === '/admin/lorry-hire/new' ||
+    isLorryHireEdit;
 
   useEffect(() => {
     // 1. Set initial values from NextAuth session

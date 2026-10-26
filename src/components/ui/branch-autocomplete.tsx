@@ -96,8 +96,10 @@ export function BranchAutocomplete({
       );
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (highlightIndex >= 0 && highlightIndex < filteredOptions.length) {
-        const selected = filteredOptions[highlightIndex];
+      e.stopPropagation();
+      if (showDropdown && filteredOptions.length > 0) {
+        const targetIdx = highlightIndex >= 0 && highlightIndex < filteredOptions.length ? highlightIndex : 0;
+        const selected = filteredOptions[targetIdx];
         onChange({ target: { name, value: selected.value } });
         setSearch(selected.label);
         setShowDropdown(false);
@@ -182,7 +184,7 @@ export function BranchAutocomplete({
       </div>
 
       {showDropdown && filteredOptions.length > 0 && (
-        <div className="absolute z-50 mt-1.5 w-full bg-white rounded-xl border border-gray-100 shadow-2xl shadow-black/10 p-1.5 max-h-[350px] overflow-y-auto space-y-0.5">
+        <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary shadow-md p-1.5 max-h-[350px] overflow-y-auto space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-150">
           {filteredOptions.map((suggestion, index) => (
             <div
               key={suggestion.value}

@@ -26,6 +26,17 @@ function NewBookingForm() {
   const [isEwbLocked, setIsEwbLocked] = useState(false);
   const [showChangeEwbModal, setShowChangeEwbModal] = useState(false);
 
+  // E-Way Bill Expired Modal State
+  const [showEwbExpiredModal, setShowEwbExpiredModal] = useState(false);
+  const [expiredEwbInfo, setExpiredEwbInfo] = useState<{
+    ewbNo: string;
+    validUpto: string;
+    hoursSinceExpiry: number;
+    consignorName: string;
+    consignorPhone: string;
+    invoiceNo: string;
+  } | null>(null);
+
   // Quick-Add Destination Branch Modal State
   const [isQuickBranchModalOpen, setIsQuickBranchModalOpen] = useState(false);
   const [isSavingQuickBranch, setIsSavingQuickBranch] = useState(false);
@@ -365,6 +376,26 @@ function NewBookingForm() {
       const res = await fetch(`/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+
+      // Check if E-Way Bill is EXPIRED
+      if (data.isExpired) {
+        setExpiredEwbInfo({
+          ewbNo: data.ewayBillNo || formData.ewayBillNo,
+          validUpto: data.validUpto || 'Expired',
+          hoursSinceExpiry: data.hoursSinceExpiry || 0,
+          consignorName: data.consignor?.name || '',
+          consignorPhone: data.consignor?.phone || '',
+          invoiceNo: data.invoiceNumber || ''
+        });
+        setShowEwbExpiredModal(true);
+        setIsEwbLocked(false);
+        setErrors(prev => ({
+          ...prev,
+          ewayBillNo: `E-Way Bill is EXPIRED on ${data.validUpto || 'past date'}! Cannot load LR.`
+        }));
+        toast.error(`E-Way Bill Expired on ${data.validUpto || 'past date'}!`);
+        return;
+      }
 
       // Auto-fill values in form
       setFormData(prev => ({
@@ -748,14 +779,10 @@ function NewBookingForm() {
   }, [descriptionSuggestions]);
 
   // Fetch suggestions from masters API
-  const fetchMasterSuggestions = useCallback(async (type: 'packaging' | 'description', query: string) => {
-    if (!query || query.length < 1) {
-      if (type === 'packaging') setPackagingSuggestions([]);
-      else setDescriptionSuggestions([]);
-      return;
-    }
+  const fetchMasterSuggestions = useCallback(async (type: 'packaging' | 'description', query: string = '') => {
     try {
-      const res = await fetch(`/api/admin/masters?type=${type}&q=${encodeURIComponent(query)}&suggest=true`);
+      const qParam = query && query.trim() ? `&q=${encodeURIComponent(query.trim())}` : '';
+      const res = await fetch(`/api/admin/masters?type=${type}&suggest=true${qParam}`);
       if (res.ok) {
         const data = await res.json();
         const names = data.map((d: any) => d.name);
@@ -877,10 +904,10 @@ function NewBookingForm() {
       e.preventDefault();
       setPackagingHighlightIndex(prev => prev > 0 ? prev - 1 : packagingSuggestions.length - 1);
     } else if (e.key === 'Enter') {
-      if (packagingHighlightIndex >= 0 && packagingHighlightIndex < packagingSuggestions.length) {
-        e.preventDefault();
-        selectPackagingSuggestion(index, packagingSuggestions[packagingHighlightIndex]);
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      const targetIdx = packagingHighlightIndex >= 0 && packagingHighlightIndex < packagingSuggestions.length ? packagingHighlightIndex : 0;
+      selectPackagingSuggestion(index, packagingSuggestions[targetIdx]);
     } else if (e.key === 'Escape') {
       setActivePackagingIndex(null);
       setPackagingHighlightIndex(-1);
@@ -908,10 +935,10 @@ function NewBookingForm() {
       e.preventDefault();
       setDescriptionHighlightIndex(prev => prev > 0 ? prev - 1 : descriptionSuggestions.length - 1);
     } else if (e.key === 'Enter') {
-      if (descriptionHighlightIndex >= 0 && descriptionHighlightIndex < descriptionSuggestions.length) {
-        e.preventDefault();
-        selectDescriptionSuggestion(index, descriptionSuggestions[descriptionHighlightIndex]);
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      const targetIdx = descriptionHighlightIndex >= 0 && descriptionHighlightIndex < descriptionSuggestions.length ? descriptionHighlightIndex : 0;
+      selectDescriptionSuggestion(index, descriptionSuggestions[targetIdx]);
     } else if (e.key === 'Escape') {
       setActiveDescriptionIndex(null);
       setDescriptionHighlightIndex(-1);
@@ -946,33 +973,10 @@ function NewBookingForm() {
     return { subTotal, gstAmount, total };
   };
 
-  // Keyboard Shortcut: Enter to instantly Save, Print & Share
+  // Keyboard Shortcut: Enter to instantly Save & Print
   const submitActionRef = useRef<'save' | 'print'>('save');
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        const target = e.target as HTMLElement | null;
-        if (!target) return;
-        if (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0')) return;
-        if (target.tagName === 'TEXTAREA' || target.tagName === 'BUTTON' || target.tagName === 'A' || target.closest('button')) return;
-        if (target.getAttribute('name') === 'ewayBillNo' || target.id === 'fetch-ewb-btn' || target.closest('#fetch-ewb-btn')) return;
-
-        e.preventDefault();
-        submitActionRef.current = 'print';
-        setSubmitAction('print');
-        const printBtn = document.getElementById('save-print-share-btn') as HTMLButtonElement;
-        if (printBtn) {
-          printBtn.click();
-        } else {
-          const form = document.getElementById('booking-form') as HTMLFormElement;
-          if (form) form.requestSubmit();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -1103,16 +1107,6 @@ function NewBookingForm() {
         router.refresh();
         const actionToPerform = submitActionRef.current || submitAction;
         if (actionToPerform === 'print') {
-          if (formData.consignorPhone && formData.consignorPhone !== '0000000000' && formData.consignorPhone.length >= 10) {
-            const logisticNameStr = user?.logisticName || 'Trust Logistic';
-            const appUrl = window.location.origin;
-            const finalLrNumber = createdBooking.lrNumber || formData.grNo || '';
-            const waLink = getWhatsAppShareLink(
-              formData.consignorPhone,
-              `Hello ${formData.consignorName || 'Customer'},\nYour Booking (LR No: ${finalLrNumber}) via ${logisticNameStr} is confirmed. Track it here: ${appUrl}/track?lr=${finalLrNumber}`
-            );
-            window.open(waLink, 'whatsapp_share_tab');
-          }
           router.push(`/admin/bookings/${bookingId}/print?print=true`);
         } else {
           router.push('/admin/bookings');
@@ -1132,14 +1126,14 @@ function NewBookingForm() {
 
   const renderError = (field: string) => {
     if (errors[field]) {
-      return <p className="text-red-500 text-xs mt-1 font-semibold">{errors[field]}</p>;
+      return <p className="text-red-500 text-[10.5px] mt-1 font-medium leading-tight">{errors[field]}</p>;
     }
     return null;
   };
 
   const renderCellError = (field: string) => {
     if (errors[field]) {
-      return <p className="text-red-500 text-xs font-semibold absolute left-0 bottom-0 leading-none">{errors[field]}</p>;
+      return <p className="text-red-500 text-[10px] font-medium absolute left-0 top-[calc(100%+3px)] leading-none whitespace-nowrap">{errors[field]}</p>;
     }
     return null;
   };
@@ -1199,24 +1193,11 @@ function NewBookingForm() {
               handleFetchEwayBill();
               return;
             }
-            // Allow Enter inside textarea (e.g. multi-line notes or remarks)
-            if (target && target.tagName === 'TEXTAREA') {
-              return;
-            }
-            // Allow normal behavior inside dialogs, modals, and buttons
-            if (target && (target.closest('[role="dialog"]') || target.closest('.fixed.inset-0') || target.tagName === 'BUTTON' || target.closest('button'))) {
-              return;
-            }
-            // Submit on Enter
-            e.preventDefault();
-            submitActionRef.current = 'print';
-            setSubmitAction('print');
-            const printBtn = document.getElementById('save-print-share-btn') as HTMLButtonElement;
-            if (printBtn) {
-              printBtn.click();
-            } else {
-              const form = document.getElementById('booking-form') as HTMLFormElement;
-              if (form) form.requestSubmit();
+            // If focus is directly on the submit buttons, allow normal submit; otherwise prevent auto form submission
+            if (!target || (!target.closest('#save-print-share-btn') && !target.closest('#save-print-share-edit-btn') && target.tagName !== 'BUTTON')) {
+              if (target && target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
             }
           }
         }}
@@ -1278,7 +1259,7 @@ function NewBookingForm() {
               /* Manual Mode (Row 1 & Row 2) */
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <div className="space-y-1 relative pb-4 sm:max-w-[95%]">
+                  <div className="space-y-1 relative pb-4 mb-0.5 sm:max-w-[95%]">
                     <Label className="text-xs font-bold text-slate-800">LR No <span className="text-red-500">*</span></Label>
                     <Input name="grNo" value={formData.grNo} onChange={handleChange} placeholder="Please enter LR No" className={`h-9 rounded-[8px] text-sm font-medium text-slate-800 uppercase ${errors.grNo ? 'border-red-500' : 'border-[#64748b59]'}`} />
                     {renderError('grNo')}
@@ -1581,7 +1562,7 @@ function NewBookingForm() {
                   {renderError('consignorName')}
 
                   {showConsignorDropdown && consignorSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                       {consignorSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.name}
@@ -1650,7 +1631,7 @@ function NewBookingForm() {
                   {renderError('consigneeName')}
 
                   {showConsigneeDropdown && consigneeSuggestions.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                       {consigneeSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.name}
@@ -1716,7 +1697,7 @@ function NewBookingForm() {
               <div className="p-2 space-y-1.5 bg-white">
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
-                    <div className="col-span-1 relative pb-4">
+                    <div className="col-span-1 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
                       <Input
                         value={item.packages}
@@ -1726,7 +1707,7 @@ function NewBookingForm() {
                       />
                       {renderCellError(`item_${index}_packages`)}
                     </div>
-                    <div className="col-span-2 relative pb-4" ref={el => { packagingDropdownRefs.current[index] = el; }}>
+                    <div className="col-span-2 relative pb-4 mb-0.5" ref={el => { packagingDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Packaging</Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
@@ -1743,19 +1724,16 @@ function NewBookingForm() {
                           onBlur={() => setTimeout(() => setActivePackagingIndex(null), 200)}
                           onKeyDown={(e) => handlePackagingKeyDown(index, e)}
                           placeholder="Bora / Bag / Roll"
-                          className="h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent border-gray-200"
+                          className="h-9 text-sm font-medium text-slate-800 rounded-[8px] relative z-10 bg-transparent pr-7 border border-[#64748b59] focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/20 focus:bg-teal-50/20"
                           autoComplete="off"
                         />
                         {activePackagingIndex === index && packagingSuggestions.length > 0 && (
-                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                             {packagingSuggestions.map((s, si) => (
                               <div
                                 key={si}
                                 onMouseDown={() => selectPackagingSuggestion(index, s)}
-                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === packagingHighlightIndex
-                                  ? 'bg-brand-primary/10 text-brand-primary'
-                                  : 'hover:bg-gray-50 text-gray-800'
-                                  }`}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === packagingHighlightIndex ? 'bg-brand-primary/10 text-brand-primary' : item.packaging === s ? 'bg-brand-primary/5 text-brand-primary font-bold' : 'hover:bg-gray-50 text-gray-700'} flex items-center justify-between !border-b !border-b-gray-100 last:!border-b-0 pb-1.5 mb-0.5`}
                               >
                                 {s}
                               </div>
@@ -1764,7 +1742,7 @@ function NewBookingForm() {
                         )}
                       </div>
                     </div>
-                    <div className="col-span-3 relative pb-4" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
+                    <div className="col-span-3 relative pb-4 mb-0.5" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Description <span className="text-red-500">*</span></Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
@@ -1785,15 +1763,12 @@ function NewBookingForm() {
                           autoComplete="off"
                         />
                         {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
-                          <div className="absolute z-50 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-lg max-h-56 overflow-y-auto">
+                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                             {descriptionSuggestions.map((s, si) => (
                               <div
                                 key={si}
                                 onMouseDown={() => selectDescriptionSuggestion(index, s)}
-                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === descriptionHighlightIndex
-                                  ? 'bg-brand-primary/10 text-brand-primary'
-                                  : 'hover:bg-gray-50 text-gray-800'
-                                  }`}
+                                className={`flex flex-col px-3 py-2 text-xs font-bold rounded-lg cursor-pointer transition-colors ${si === descriptionHighlightIndex ? 'bg-brand-primary/10 text-brand-primary' : item.description === s ? 'bg-brand-primary/5 text-brand-primary font-bold' : 'hover:bg-gray-50 text-gray-700'} flex items-center justify-between !border-b !border-b-gray-100 last:!border-b-0 pb-1.5 mb-0.5`}
                               >
                                 {s}
                               </div>
@@ -1803,7 +1778,7 @@ function NewBookingForm() {
                       </div>
                       {renderCellError(`item_${index}_description`)}
                     </div>
-                    <div className="col-span-2 relative pb-4">
+                    <div className="col-span-2 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Weight</Label>
                       <Input
                         value={item.weight}
@@ -1812,7 +1787,7 @@ function NewBookingForm() {
                         className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]"
                       />
                     </div>
-                    <div className="col-span-1 relative pb-4">
+                    <div className="col-span-1 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">N / W</Label>
                       <Input
                         value={item.nw}
@@ -1821,7 +1796,7 @@ function NewBookingForm() {
                         className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] text-center"
                       />
                     </div>
-                    <div className="col-span-1 relative pb-4">
+                    <div className="col-span-1 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Rate</Label>
                       <Input
                         value={item.rate}
@@ -1830,7 +1805,7 @@ function NewBookingForm() {
                         className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59]"
                       />
                     </div>
-                    <div className="col-span-2 relative pb-4 flex items-start gap-2">
+                    <div className="col-span-2 relative pb-4 mb-0.5 flex items-start gap-2">
                       <div className="w-full">
                         <Label className="text-xs font-bold text-slate-800 lg:hidden">Amount</Label>
                         <Input
@@ -2061,8 +2036,8 @@ function NewBookingForm() {
                 >
                   {isLoading && submitAction === 'print' ? 'Printing...' : (
                     <>
-                      <Printer className="w-3.5 h-3.5" /> Save, Print & Share
-                      <kbd className="hidden sm:inline-block ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-white/20 rounded text-white">↵ Enter</kbd>
+                      <Printer className="w-3.5 h-3.5" /> Save & Print
+                      
                     </>
                   )}
                 </Button>
@@ -2112,6 +2087,94 @@ function NewBookingForm() {
                 >
                   Yes, Change EWB
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* E-Way Bill Expired Modal (Strict GST Rule & Optional WhatsApp Alert to Party) */}
+        {showEwbExpiredModal && expiredEwbInfo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl border border-red-200 max-w-lg w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-red-600 animate-pulse" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 mb-1">
+                    GST Rule Violation Detected
+                  </div>
+                  <h3 className="text-base font-bold text-red-950">E-Way Bill is EXPIRED!</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    This E-Way Bill (<strong className="font-mono text-red-800">{expiredEwbInfo.ewbNo}</strong>) has expired and is legally invalid for vehicle transit.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-red-50/70 border border-red-200/90 rounded-xl p-3.5 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-600 font-medium">Expired Date & Time:</span>
+                  <span className="font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded border border-red-200 font-mono">
+                    {expiredEwbInfo.validUpto}
+                  </span>
+                </div>
+                {expiredEwbInfo.consignorName && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-600 font-medium">Sender (Party):</span>
+                    <span className="font-bold text-slate-800">{expiredEwbInfo.consignorName}</span>
+                  </div>
+                )}
+                {expiredEwbInfo.invoiceNo && (
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-600 font-medium">Invoice No:</span>
+                    <span className="font-bold text-slate-800">{expiredEwbInfo.invoiceNo}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900 space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  Government GST Rules for Expired E-Way Bill:
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 pl-1 text-amber-900/90">
+                  <li><strong>Within 8 Hours of Expiry:</strong> Customer can <em>Extend Validity</em> on the GST EWB portal.</li>
+                  <li><strong>After 8 Hours:</strong> Customer must <em>Generate a New E-Way Bill</em> for this invoice.</li>
+                </ul>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
+                {/* Optional WhatsApp Share Button: Only show if phone exists or user wants to send */}
+                {expiredEwbInfo.consignorPhone && expiredEwbInfo.consignorPhone !== '0000000000' && expiredEwbInfo.consignorPhone.length >= 10 ? (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const logisticNameStr = user?.logisticName || 'Transport Office';
+                      const message = `*E-Way Bill Expired Alert*\n\nHello *${expiredEwbInfo.consignorName || 'Customer'}*,\nYour E-Way Bill No: *${expiredEwbInfo.ewbNo}* (Invoice: ${expiredEwbInfo.invoiceNo || 'N/A'}) has EXPIRED on *${expiredEwbInfo.validUpto}*.\n\nAs per government GST rules, vehicles cannot travel with an expired EWB. Kindly extend the validity or generate a new E-Way Bill and send us the updated copy.\n\nRegards,\n*${logisticNameStr}*`;
+                      const waLink = getWhatsAppShareLink(expiredEwbInfo.consignorPhone, message);
+                      window.open(waLink, 'whatsapp_share_tab');
+                    }}
+                    className="w-full sm:w-auto h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <span>Send WhatsApp to Party</span>
+                  </Button>
+                ) : (
+                  <span className="text-[11px] text-slate-400 italic">Party phone not found in EWB</span>
+                )}
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowEwbExpiredModal(false);
+                      setFormData(prev => ({ ...prev, ewayBillNo: '' }));
+                    }}
+                    className="h-9 px-4 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold"
+                  >
+                    Close & Clear
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -2208,7 +2271,7 @@ function NewBookingForm() {
                         </div>
                       )}
                       {showAreaDropdown && areaSuggestions.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 mt-1.5 bg-white rounded-xl border border-slate-200 p-1.5 shadow-2xl max-h-56 overflow-y-auto">
+                        <div className="absolute z-[9999] left-0 right-0 mt-1 bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                           <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Location:</div>
                           {areaSuggestions.map((item, idx) => (
                             <div
@@ -2253,7 +2316,7 @@ function NewBookingForm() {
                         <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-brand-primary border-t-transparent rounded-full animate-spin"></div>
                       )}
                       {pincodePostOffices.length > 0 && (
-                        <div className="absolute z-50 left-0 right-0 mt-1 w-full bg-white rounded-lg border border-gray-200 p-1.5 shadow-xl max-h-56 overflow-y-auto">
+                        <div className="absolute z-50 left-0 right-0 mt-1.5 w-full bg-white rounded-xl border-2 border-brand-primary/30 p-1.5 shadow-2xl shadow-brand-primary/10 ring-4 ring-brand-primary/10 max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
                           <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Select Location</div>
                           {pincodePostOffices.map((po: any, index: number) => (
                             <div
