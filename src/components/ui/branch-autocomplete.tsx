@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, MapPin } from 'lucide-react';
+import { ChevronDown, MapPin, Check } from 'lucide-react';
 import { Input } from './input';
 import { cn } from '@/lib/utils';
 
@@ -64,9 +64,13 @@ export function BranchAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(o => 
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const currentSelectedOpt = options.find(o => o.value === value);
+  const isSearchMatchingSelected = currentSelectedOpt && search.trim().toLowerCase() === currentSelectedOpt.label.trim().toLowerCase();
+
+  // If search matches the current selected value or is empty, show ALL branches so the user sees the full list!
+  const filteredOptions = (!search.trim() || isSearchMatchingSelected)
+    ? options
+    : options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -195,7 +199,7 @@ export function BranchAutocomplete({
               className={`flex items-center gap-2 px-2.5 py-1.5 text-sm font-medium rounded-lg cursor-pointer transition-all border-b border-transparent ${
                 index === highlightIndex
                   ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/10'
-                  : 'hover:bg-gray-50 text-gray-700 hover:border-gray-200'
+                  : value === suggestion.value ? 'bg-brand-primary/5 text-brand-primary font-bold' : 'hover:bg-gray-50 text-gray-700'
               } ${index !== filteredOptions.length - 1 ? '!border-b-gray-100 pb-2 mb-0.5' : ''}`}
             >
               {suggestion.value !== '' && (
@@ -203,7 +207,7 @@ export function BranchAutocomplete({
               )}
               <span className="flex-1">{suggestion.label}</span>
               {value === suggestion.value && (
-                <div className="w-2 h-2 rounded-full bg-brand-primary shadow-[0_0_0_3px_rgba(var(--brand-primary),0.2)]" />
+                <Check className="w-4 h-4 text-brand-primary shrink-0" />
               )}
             </div>
           ))}

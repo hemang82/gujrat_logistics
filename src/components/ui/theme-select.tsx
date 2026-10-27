@@ -64,9 +64,13 @@ export function ThemeSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredOptions = options.filter(o =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const currentSelectedOpt = options.find(o => o.value === value);
+  const isSearchMatchingSelected = currentSelectedOpt && search.trim().toLowerCase() === currentSelectedOpt.label.trim().toLowerCase();
+  
+  // If search matches the current selected value or is empty, show ALL options so the user sees the full list!
+  const filteredOptions = (!search.trim() || isSearchMatchingSelected)
+    ? options
+    : options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;

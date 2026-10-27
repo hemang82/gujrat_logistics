@@ -1789,11 +1789,15 @@ function NewBookingForm() {
                     </div>
                     <div className="col-span-1 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">N / W</Label>
-                      <Input
-                        value={item.nw}
+                      <ThemeSelect
+                        name="nw"
+                        value={item.nw || 'N'}
                         onChange={(e) => handleItemChange(index, 'nw', e.target.value)}
-                        placeholder="N"
-                        className="h-9 text-sm font-medium text-slate-800 rounded-[8px] border border-[#64748b59] text-center"
+                        options={[
+                          { value: 'N', label: 'N' },
+                          { value: 'W', label: 'W' }
+                        ]}
+                        className="text-center font-bold px-1.5"
                       />
                     </div>
                     <div className="col-span-1 relative pb-4 mb-0.5">
