@@ -49,7 +49,7 @@ export default function EditBookingPage() {
   const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const handleFetchEwayBill = async (forceRefresh = false) => {
+  const handleFetchEwayBill = async (forceRefresh: boolean | any = false) => {
     setErrors(prev => {
       const copy = { ...prev };
       delete copy.ewayBillNo;
@@ -921,7 +921,7 @@ export default function EditBookingPage() {
                       {user?.ewbApiAccess && (
                         <Button
                           type="button"
-                          onClick={handleFetchEwayBill}
+                          onClick={() => handleFetchEwayBill()}
                           disabled={isFetchingEway}
                           size="sm"
                           className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
@@ -1005,7 +1005,7 @@ export default function EditBookingPage() {
                         <Button
                           id="fetch-ewb-btn"
                           type="button"
-                          onClick={handleFetchEwayBill}
+                          onClick={() => handleFetchEwayBill()}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -1458,7 +1458,7 @@ export default function EditBookingPage() {
                         {user?.ewbApiAccess && (
                           <Button
                             type="button"
-                            onClick={handleFetchEwayBill}
+                            onClick={() => handleFetchEwayBill()}
                             disabled={isFetchingEway}
                             size="sm"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
