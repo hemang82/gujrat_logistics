@@ -45,8 +45,6 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   if (userLogisticId) {
     branchQuery.logisticId = userLogisticId;
   }
-  const branchesDoc = await Branch.find(branchQuery).select('_id name code').lean();
-  const branches = branchesDoc.map((b: any) => ({ ...b, _id: b._id.toString() }));
 
   // Build query
   const query: any = { isDeleted: { $ne: true } };
@@ -110,6 +108,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
 
   const skip = (page - 1) * limit;
 
+  let branches: any[] = [];
   let bookings: any[] = [];
   let totalBookings = 0;
   let totalPages = 0;
@@ -123,21 +122,31 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   const assignedBookingIds = new Set<string>();
 
   if (isLogisticAdmin && !filterBranch) {
-    // Return empty list if no branch is selected by admin
+    const branchesDoc = await Branch.find(branchQuery).select('_id name code').lean();
+    branches = branchesDoc.map((b: any) => ({ ...b, _id: b._id.toString() }));
     bookings = [];
     totalBookings = 0;
     totalPages = 0;
   } else {
-    // Fetch paginated bookings
-    bookings = await Booking.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate('destinationBranch', 'name')
-      .populate('bookingBranch', 'name')
-      .lean();
+    // Fetch branches, paginated bookings, total count, and user permissions concurrently with Promise.all
+    const [branchesDoc, bookingsResult, totalCount, userDoc] = await Promise.all([
+      Branch.find(branchQuery).select('_id name code').lean(),
+      Booking.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('destinationBranch', 'name')
+        .populate('bookingBranch', 'name')
+        .lean(),
+      Booking.countDocuments(query),
+      session && (role === 'branch_user' || role === 'branch')
+        ? User.findById((session.user as any).id).select('permissions').lean()
+        : Promise.resolve(null)
+    ]);
 
-    totalBookings = await Booking.countDocuments(query);
+    branches = branchesDoc.map((b: any) => ({ ...b, _id: b._id.toString() }));
+    bookings = bookingsResult;
+    totalBookings = totalCount;
     totalPages = Math.ceil(totalBookings / limit);
 
     // Find which of these bookings are loaded on active Challans
@@ -153,24 +162,17 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
       });
     });
 
-    // Fetch permissions for branch users
-    if (session && (role === 'branch_user' || role === 'branch')) {
-      try {
-        const userDoc = await User.findById((session.user as any).id).select('permissions').lean();
-        if (userDoc && userDoc.permissions?.bookings) {
-          canViewBooking = userDoc.permissions.bookings.canView !== false;
-          canAddBooking = userDoc.permissions.bookings.canAdd !== false;
-          canEditBooking = userDoc.permissions.bookings.canEdit !== false;
-          canDeleteBooking = userDoc.permissions.bookings.canDelete === true;
-        } else {
-          canViewBooking = true;
-          canAddBooking = true;
-          canEditBooking = true;
-          canDeleteBooking = false; // default for older users
-        }
-      } catch (e) {
-        console.error("Error fetching user permissions", e);
-      }
+    // Process permissions for branch users
+    if (userDoc && (userDoc as any).permissions?.bookings) {
+      canViewBooking = (userDoc as any).permissions.bookings.canView !== false;
+      canAddBooking = (userDoc as any).permissions.bookings.canAdd !== false;
+      canEditBooking = (userDoc as any).permissions.bookings.canEdit !== false;
+      canDeleteBooking = (userDoc as any).permissions.bookings.canDelete === true;
+    } else if (session && (role === 'branch_user' || role === 'branch')) {
+      canViewBooking = true;
+      canAddBooking = true;
+      canEditBooking = true;
+      canDeleteBooking = false; // default for older users
     }
   }
 

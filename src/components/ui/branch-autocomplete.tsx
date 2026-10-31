@@ -150,7 +150,7 @@ export function BranchAutocomplete({
   };
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className={cn("relative w-full", showDropdown && "z-50")}>
       <div className="relative">
         <Input
           name={`${name}_search`}
@@ -188,7 +188,7 @@ export function BranchAutocomplete({
       </div>
 
       {showDropdown && filteredOptions.length > 0 && (
-        <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary shadow-md p-1.5 max-h-[350px] overflow-y-auto space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-150">
+        <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary shadow-2xl p-1.5 max-h-[350px] overflow-y-auto space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-150 ring-1 ring-black/5">
           {filteredOptions.map((suggestion, index) => (
             <div
               key={suggestion.value}

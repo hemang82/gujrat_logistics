@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       .limit(limit)
       .populate('destinationBranch', 'name code')
       .populate('bookingBranch', 'name code')
+      .populate('branch', 'name code')
       .lean();
 
     return NextResponse.json({ bookings, totalPages, totalCount, currentPage: page });

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, MapPin, Handshake, Info, CreditCard, PackageCheck, CheckCircle, MessageCircle } from 'lucide-react';
+import { Search, MapPin, Handshake, Info, CreditCard, PackageCheck, CheckCircle, MessageCircle, Clock } from 'lucide-react';
 import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/admin/ConfirmDialog';
@@ -198,7 +198,7 @@ export default function DeliveryEntryPage() {
                         </p>
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-600">
-                        {bk.originBranch?.name || 'N/A'}
+                        {bk.bookingBranch?.name || bk.branch?.name || bk.originBranch?.name || 'N/A'}
                       </td>
                       <td className="px-4 py-3">
                         <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold ${
@@ -214,8 +214,16 @@ export default function DeliveryEntryPage() {
                         )}
                       </td>
                       {activeTab === 'delivered' && (
-                        <td className="px-4 py-3 text-gray-600 font-medium">
-                          {formatDate(bk.deliveryDate)}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-col gap-1 whitespace-nowrap">
+                            <span className="font-bold text-slate-800 text-xs">
+                              {formatDate(bk.deliveryDate || bk.updatedAt, 'dd/MM/yyyy')}
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50/80 border border-emerald-200/70 px-2 py-0.5 rounded-md w-fit">
+                              <Clock className="w-3 h-3 text-emerald-600 shrink-0" />
+                              {formatDate(bk.deliveryDate || bk.updatedAt, 'hh:mm a')}
+                            </span>
+                          </div>
                         </td>
                       )}
                       <td className="px-4 py-3 text-right">

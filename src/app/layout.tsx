@@ -4,9 +4,12 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import NextTopLoader from "nextjs-toploader";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -59,7 +62,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`min-h-full flex flex-col ${plusJakartaSans.className}`}>
+      <body className={`min-h-full flex flex-col font-sans ${plusJakartaSans.variable} ${plusJakartaSans.className}`}>
+        <NextTopLoader
+          color="#0F766E"
+          initialPosition={0.15}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #0F766E, 0 0 5px #0F766E"
+        />
         {children}
         <Toaster position="top-center" richColors />
         <Analytics />

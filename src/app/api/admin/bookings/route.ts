@@ -125,6 +125,15 @@ export async function POST(req: Request) {
     if (data.bookingBranch) data.bookingBranch = await resolveBranchId(data.bookingBranch);
     if (data.destinationBranch) data.destinationBranch = await resolveBranchId(data.destinationBranch);
     
+    // Validate: Origin branch and Destination branch cannot be the same
+    if (data.destinationBranch && (data.branch || data.bookingBranch)) {
+      const originId = String(data.branch || data.bookingBranch);
+      const destId = String(data.destinationBranch);
+      if (originId === destId) {
+        return NextResponse.json({ error: 'Origin branch and Destination branch cannot be the same' }, { status: 400 });
+      }
+    }
+    
     // Note: LR number duplicate check is now handled below in the generation logic
     
     

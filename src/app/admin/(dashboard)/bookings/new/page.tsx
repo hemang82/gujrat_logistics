@@ -1166,7 +1166,11 @@ function NewBookingForm() {
     // --- Common required fields (both modes) ---
     if (user?.role === 'superadmin' && !selectedLogisticId) newErrors.selectedLogisticId = "Select a Logistic Company";
     if (!formData.branch) newErrors.branch = "Please select a Booking Branch";
-    if (!formData.destinationBranch) newErrors.destinationBranch = "Please enter Destination Branch";
+    if (!formData.destinationBranch) {
+      newErrors.destinationBranch = "Please enter Destination Branch";
+    } else if (formData.branch && formData.destinationBranch === formData.branch) {
+      newErrors.destinationBranch = "Destination Branch cannot be the same as Booking Branch";
+    }
     if (!formData.consignorName) newErrors.consignorName = "Please enter Consignor Name";
     if (!formData.consigneeName) newErrors.consigneeName = "Please enter Consignee Name";
     if (!formData.bookingDate) newErrors.bookingDate = "Please enter Booking Date";
@@ -1434,7 +1438,7 @@ function NewBookingForm() {
         {/* Unified Single Sheet Card Container */}
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-4 relative z-10 !overflow-visible space-y-4">
           {/* Section 1: Booking & Route Details */}
-          <div className="relative z-20 !overflow-visible">
+          <div className="relative z-40 focus-within:z-50 !overflow-visible">
             <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
               <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
               <span className="text-[11px] font-bold text-slate-700 tracking-wider">
@@ -1534,7 +1538,7 @@ function NewBookingForm() {
                           name="destinationBranch"
                           value={formData.destinationBranch}
                           onChange={handleChange as any}
-                          options={branchesList}
+                          options={branchesList.filter(b => b.value !== formData.branch && b.value !== (user as any)?.branch)}
                           placeholder="Search or type Branch..."
                           error={!formData.destinationBranch && !!errors.destinationBranch}
                         />
@@ -1721,7 +1725,7 @@ function NewBookingForm() {
                           name="destinationBranch"
                           value={formData.destinationBranch}
                           onChange={handleChange as any}
-                          options={branchesList}
+                          options={branchesList.filter(b => b.value !== formData.branch && b.value !== (user as any)?.branch)}
                           placeholder="Search or type Branch..."
                           error={!formData.destinationBranch && !!errors.destinationBranch}
                         />
@@ -1762,7 +1766,8 @@ function NewBookingForm() {
         </div>
 
         {/* Section 2: Consignor & Consignee Details */}
-        <div className="relative z-10 !overflow-visible">
+        <div className={`relative !overflow-visible transition-none ${showConsignorDropdown || showConsigneeDropdown ? "z-50" : "z-30 focus-within:z-50"}`}>
+
           <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
             <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
             <span className="text-[11px] font-bold text-slate-700 tracking-wider">
@@ -1773,7 +1778,7 @@ function NewBookingForm() {
             {/* Left side: Consignor */}
             <div className="pr-0 lg:pr-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                <div className="sm:col-span-2 space-y-1 relative sm:max-w-[96%]">
+                <div className={`sm:col-span-2 space-y-1 relative sm:max-w-[96%] ${showConsignorDropdown ? "z-50" : "z-20"}`}>
                   <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignor Name (Sender) <span className="text-red-500">*</span></Label>
                   <div className="relative">
                     {/* Backdrop autocomplete suggestion */}
@@ -1797,7 +1802,7 @@ function NewBookingForm() {
                   {renderError('consignorName')}
 
                   {showConsignorDropdown && consignorSuggestions.length > 0 && (
-                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
+                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150 ring-1 ring-black/5">
                       {consignorSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.name}
@@ -1842,14 +1847,14 @@ function NewBookingForm() {
             {/* Right side: Consignee */}
             <div className="pt-3 lg:pt-0 pl-0 lg:pl-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-                <div className="sm:col-span-2 space-y-1 relative sm:max-w-[96%]">
+                <div className={`sm:col-span-2 space-y-1 relative sm:max-w-[96%] ${showConsigneeDropdown ? "z-50" : "z-20"}`}>
                   <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Consignee Name (Receiver) <span className="text-red-500">*</span></Label>
                   <div className="relative">
                     {/* Backdrop autocomplete suggestion */}
-                    {formData.consigneeName && consignorSuggestions.length > 0 && consignorSuggestions[0]?.name.toLowerCase().startsWith(formData.consigneeName.toLowerCase()) && (
+                    {formData.consigneeName && consigneeSuggestions.length > 0 && consigneeSuggestions[0]?.name.toLowerCase().startsWith(formData.consigneeName.toLowerCase()) && (
                       <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm text-slate-300 select-none font-medium z-0 pl-[1px]">
-                        <span className="opacity-0">{consignorSuggestions[0].name.slice(0, formData.consigneeName.length)}</span>
-                        <span>{consignorSuggestions[0].name.slice(formData.consigneeName.length)}</span>
+                        <span className="opacity-0">{consigneeSuggestions[0].name.slice(0, formData.consigneeName.length)}</span>
+                        <span>{consigneeSuggestions[0].name.slice(formData.consigneeName.length)}</span>
                       </div>
                     )}
                     <Input
@@ -1866,7 +1871,7 @@ function NewBookingForm() {
                   {renderError('consigneeName')}
 
                   {showConsigneeDropdown && consigneeSuggestions.length > 0 && (
-                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
+                    <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150 ring-1 ring-black/5">
                       {consigneeSuggestions.map((suggestion, index) => (
                         <div
                           key={suggestion.name}
@@ -1911,7 +1916,7 @@ function NewBookingForm() {
         </div>
 
         {/* Section 3: Material & Parcel Details */}
-        <div className="overflow-visible">
+        <div className={`relative !overflow-visible ${activePackagingIndex !== null || activeDescriptionIndex !== null ? "z-50" : "z-20 focus-within:z-50"}`}>
           <div className="flex items-center gap-2 pb-1.5 mb-2.5 border-b border-slate-100">
             <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
             <span className="text-[11px] font-bold text-slate-700 tracking-wider">
@@ -1931,7 +1936,8 @@ function NewBookingForm() {
               </div>
               <div className="p-2 space-y-1.5 bg-white">
                 {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0">
+                  <div key={index} className={`grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start border-b pb-2.5 lg:border-none lg:pb-0 relative ${activePackagingIndex === index || activeDescriptionIndex === index ? "z-50" : "z-10"}`}>
+
                     <div className="col-span-1 relative pb-4 mb-0.5">
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Pkgs <span className="text-red-500">*</span></Label>
                       <Input
@@ -1942,7 +1948,7 @@ function NewBookingForm() {
                       />
                       {renderCellError(`item_${index}_packages`)}
                     </div>
-                    <div className="col-span-2 relative pb-4 mb-0.5" ref={el => { packagingDropdownRefs.current[index] = el; }}>
+                    <div className={`col-span-2 relative pb-4 mb-0.5 ${activePackagingIndex === index ? "z-50" : "z-10"}`} ref={el => { packagingDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Packaging</Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
@@ -1963,7 +1969,7 @@ function NewBookingForm() {
                           autoComplete="off"
                         />
                         {activePackagingIndex === index && packagingSuggestions.length > 0 && (
-                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
+                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150 ring-1 ring-black/5">
                             {packagingSuggestions.map((s, si) => (
                               <div
                                 key={si}
@@ -1977,7 +1983,7 @@ function NewBookingForm() {
                         )}
                       </div>
                     </div>
-                    <div className="col-span-3 relative pb-4 mb-0.5" ref={el => { descriptionDropdownRefs.current[index] = el; }}>
+                    <div className={`col-span-3 relative pb-4 mb-0.5 ${activeDescriptionIndex === index ? "z-50" : "z-10"}`} ref={el => { descriptionDropdownRefs.current[index] = el; }}>
                       <Label className="text-xs font-bold text-slate-800 lg:hidden">Description <span className="text-red-500">*</span></Label>
                       <div className="relative">
                         {/* Backdrop autocomplete suggestion */}
@@ -1998,7 +2004,7 @@ function NewBookingForm() {
                           autoComplete="off"
                         />
                         {activeDescriptionIndex === index && descriptionSuggestions.length > 0 && (
-                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-md max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150">
+                          <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary p-1.5 shadow-2xl max-h-56 overflow-y-auto animate-in fade-in-50 zoom-in-95 duration-150 ring-1 ring-black/5">
                             {descriptionSuggestions.map((s, si) => (
                               <div
                                 key={si}
@@ -2083,7 +2089,7 @@ function NewBookingForm() {
         </div>
 
         {/* Sections 4 & 5: Side-by-Side Grid */}
-        <div>
+        <div className="relative z-10 focus-within:z-50 !overflow-visible">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 items-stretch">
             {/* Section 4: Additional Details */}
             <div className="pr-0 lg:pr-4 flex flex-col justify-between">
