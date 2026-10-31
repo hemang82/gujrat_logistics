@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ThemeSelect } from '@/components/ui/theme-select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Plus, Trash2, ArrowLeft, Printer, RefreshCw, ShieldCheck, ChevronDown, MapPin, AlertTriangle, CheckCircle2, Lock, RotateCcw, Building2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Printer, RefreshCw, ShieldCheck, ChevronDown, MapPin, AlertTriangle, CheckCircle2, Lock, RotateCcw, Building2, Loader2, X } from 'lucide-react';
 import { getWhatsAppShareLink } from '@/lib/whatsappShare';
 import { useUserStore } from '@/store/useUserStore';
 import { SearchSelect } from '@/components/ui/search-select';
@@ -356,14 +356,112 @@ function NewBookingForm() {
   const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const handleFetchEwayBill = async () => {
+  // Multi-EWB Tags state
+  const [ewbList, setEwbList] = useState<string[]>([]);
+  const [currentEwbInput, setCurrentEwbInput] = useState('');
+  const [showAddEwbInput, setShowAddEwbInput] = useState(false);
+  const [differentPartyModal, setDifferentPartyModal] = useState<{
+    isOpen: boolean;
+    consignorName: string;
+    consignorGst: string;
+    consigneeName: string;
+    consigneeGst: string;
+    incomingEwb: string;
+  }>({
+    isOpen: false,
+    consignorName: '',
+    consignorGst: '',
+    consigneeName: '',
+    consigneeGst: '',
+    incomingEwb: ''
+  });
+
+  // Modal Focus Trap & Keyboard Navigation (Tab, Escape, Enter)
+  const activeModalContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const isAnyModalOpen = showEwbExpiredModal || differentPartyModal.isOpen || showChangeEwbModal;
+    if (!isAnyModalOpen) return;
+
+    // Auto-focus first focusable element inside the open modal
+    const timer = setTimeout(() => {
+      if (activeModalContainerRef.current) {
+        const focusable = activeModalContainerRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length > 0) {
+          focusable[0].focus();
+        }
+      }
+    }, 50);
+
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      if (!activeModalContainerRef.current) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showEwbExpiredModal) {
+          setShowEwbExpiredModal(false);
+          setFormData(prev => ({ ...prev, ewayBillNo: '' }));
+        } else if (differentPartyModal.isOpen) {
+          setDifferentPartyModal({
+            isOpen: false,
+            consignorName: '',
+            consignorGst: '',
+            consigneeName: '',
+            consigneeGst: '',
+            incomingEwb: ''
+          });
+          setCurrentEwbInput('');
+          setShowAddEwbInput(false);
+        } else if (showChangeEwbModal) {
+          setShowChangeEwbModal(false);
+        }
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = activeModalContainerRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          // Shift + Tab -> if on first, cycle to last
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          // Tab -> if on last, cycle to first
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleModalKeyDown);
+    };
+  }, [showEwbExpiredModal, differentPartyModal.isOpen, showChangeEwbModal]);
+
+  const handleFetchEwayBill = async (overrideNumber?: string, forceRefresh = false) => {
+    const targetEwb = (overrideNumber || currentEwbInput || formData.ewayBillNo || '').trim();
+
     setErrors(prev => {
       const copy = { ...prev };
       delete copy.ewayBillNo;
       return copy;
     });
 
-    if (!formData.ewayBillNo || formData.ewayBillNo.length !== 12) {
+    if (!targetEwb || targetEwb.length !== 12) {
       setErrors(prev => ({
         ...prev,
         ewayBillNo: "Please enter a valid 12-digit E-Way Bill Number"
@@ -371,16 +469,24 @@ function NewBookingForm() {
       return;
     }
 
+    if (ewbList.includes(targetEwb)) {
+      toast.info(`E-Way Bill ${targetEwb} is already added!`);
+      setCurrentEwbInput('');
+      setShowAddEwbInput(false);
+      return;
+    }
+
     setIsFetchingEway(true);
     try {
-      const res = await fetch(`/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}`);
+      const url = `/api/admin/bookings/fetch-ewaybill?number=${targetEwb}${forceRefresh ? '&refresh=true' : ''}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       // Check if E-Way Bill is EXPIRED
       if (data.isExpired) {
         setExpiredEwbInfo({
-          ewbNo: data.ewayBillNo || formData.ewayBillNo,
+          ewbNo: data.ewayBillNo || targetEwb,
           validUpto: data.validUpto || 'Expired',
           hoursSinceExpiry: data.hoursSinceExpiry || 0,
           consignorName: data.consignor?.name || '',
@@ -397,9 +503,69 @@ function NewBookingForm() {
         return;
       }
 
-      // Auto-fill values in form
+      // STRICT VALIDATION: If we already have items / consignor loaded from a previous EWB, verify same party!
+      if (ewbList.length > 0 && formData.consignorName) {
+        const existingConsignorGst = (formData.consignorGst || '').trim().toUpperCase();
+        const incomingConsignorGst = (data.consignor?.gst || '').trim().toUpperCase();
+        const existingConsignorName = (formData.consignorName || '').trim().toLowerCase();
+        const incomingConsignorName = (data.consignor?.name || '').trim().toLowerCase();
+
+        const isGstMatch = existingConsignorGst && incomingConsignorGst && existingConsignorGst === incomingConsignorGst;
+        const isNameMatch = existingConsignorName === incomingConsignorName;
+
+        if (!isGstMatch && !isNameMatch) {
+          // Different Party Detected! Block merging!
+          setDifferentPartyModal({
+            isOpen: true,
+            consignorName: data.consignor?.name || 'Unknown',
+            consignorGst: data.consignor?.gst || '',
+            consigneeName: data.consignee?.name || 'Unknown',
+            consigneeGst: data.consignee?.gst || '',
+            incomingEwb: targetEwb
+          });
+          return;
+        }
+
+        // Same party verified! Merge EWB and items
+        const updatedEwbList = [...ewbList, targetEwb];
+        setEwbList(updatedEwbList);
+        setFormData(prev => {
+          const invList = (prev.invoiceNo ? prev.invoiceNo.split(',').map(s => s.trim()) : []);
+          if (data.invoiceNumber && !invList.includes(data.invoiceNumber)) {
+            invList.push(data.invoiceNumber);
+          }
+          return {
+            ...prev,
+            ewayBillNo: updatedEwbList.join(', '),
+            invoiceNo: invList.join(', ')
+          };
+        });
+
+        if (data.items && data.items.length > 0) {
+          const newFormattedItems = data.items.map((item: any) => ({
+            packages: item.packages.toString(),
+            packaging: item.packaging,
+            description: item.description,
+            weight: item.weight.toString(),
+            nw: item.nw || 'N',
+            rate: item.rate.toString(),
+            amount: item.amount.toString()
+          }));
+          setItems(prevItems => [...prevItems, ...newFormattedItems]);
+        }
+
+        setCurrentEwbInput('');
+        setShowAddEwbInput(false);
+        toast.success(`Additional E-Way Bill ${targetEwb} merged successfully!`);
+        return;
+      }
+
+      // Primary EWB - Auto-fill initial values in form
+      const initialEwbList = [targetEwb];
+      setEwbList(initialEwbList);
       setFormData(prev => ({
         ...prev,
+        ewayBillNo: targetEwb,
         consignorName: data.consignor.name,
         consignorGst: data.consignor.gst,
         consignorPhone: data.consignor.phone,
@@ -426,6 +592,8 @@ function NewBookingForm() {
       }
 
       setIsEwbLocked(true);
+      setCurrentEwbInput('');
+      setShowAddEwbInput(false);
       toast.success("E-Way Bill details fetched and verified!");
     } catch (err: any) {
       setErrors(prev => ({
@@ -437,6 +605,17 @@ function NewBookingForm() {
     }
   };
 
+  const handleRemoveEwb = (ewbToRemove: string) => {
+    const updated = ewbList.filter(e => e !== ewbToRemove);
+    setEwbList(updated);
+    if (updated.length === 0) {
+      handleConfirmChangeEwb();
+    } else {
+      setFormData(prev => ({ ...prev, ewayBillNo: updated.join(', ') }));
+      toast.info(`E-Way Bill ${ewbToRemove} removed.`);
+    }
+  };
+
   const handleOpenChangeModal = () => {
     setShowChangeEwbModal(true);
   };
@@ -444,6 +623,9 @@ function NewBookingForm() {
   const handleConfirmChangeEwb = () => {
     setShowChangeEwbModal(false);
     setIsEwbLocked(false);
+    setEwbList([]);
+    setCurrentEwbInput('');
+    setShowAddEwbInput(false);
     setFormData(prev => ({
       ...prev,
       ewayBillNo: '',
@@ -1007,8 +1189,13 @@ function NewBookingForm() {
     if (formData.consigneeGst && !gstRegex.test(formData.consigneeGst)) newErrors.consigneeGst = "Invalid GST format";
 
     // --- E-Way Bill: if entered must be 12 digits ---
-    const ewayRegex = /^\d{12}$/;
-    if (formData.ewayBillNo && !ewayRegex.test(formData.ewayBillNo)) newErrors.ewayBillNo = "E-Way Bill must be exactly 12 digits";
+    if (formData.ewayBillNo) {
+      const ewbs = formData.ewayBillNo.split(',').map(s => s.trim()).filter(Boolean);
+      const isAll12 = ewbs.length > 0 && ewbs.every(e => /^\d{12}$/.test(e));
+      if (!isAll12) {
+        newErrors.ewayBillNo = "Each E-Way Bill must be exactly 12 digits";
+      }
+    }
 
     // --- Item rows validation ---
     items.forEach((item, index) => {
@@ -1327,7 +1514,7 @@ function NewBookingForm() {
                         ) : (
                           <Button
                             type="button"
-                            onClick={handleFetchEwayBill}
+                            onClick={() => handleFetchEwayBill()}
                             disabled={isFetchingEway}
                             size="sm"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
@@ -1420,62 +1607,110 @@ function NewBookingForm() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-0.5">
                   <div className="space-y-1 sm:max-w-[95%]">
-                    <Label className="text-xs font-bold text-slate-800">E Way Bill No</Label>
-                    <div className="relative flex items-center">
-                      <Input 
-                        name="ewayBillNo" 
-                        value={formData.ewayBillNo} 
-                        onChange={handleChange} 
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleFetchEwayBill();
-                          }
-                        }}
-                        maxLength={12}
-                        readOnly={isEwbLocked}
-                        placeholder="e.g. 123456789012" 
-                        className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 ${isEwbLocked ? 'bg-emerald-50/70 border-emerald-400 font-bold text-emerald-950 pr-24 cursor-not-allowed select-none' : user?.ewbApiAccess ? 'pr-16 border-[#64748b59]' : 'border-[#64748b59]'} ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
-                      />
-                      {user?.ewbApiAccess && (
-                        isEwbLocked ? (
-                          <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                            <span className="hidden sm:inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded border border-emerald-300">
-                              <CheckCircle2 className="w-3 h-3 mr-0.5 text-emerald-600" /> Verified
-                            </span>
-                            <Button
-                              type="button"
-                              onClick={handleOpenChangeModal}
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2 rounded-md border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs shadow-none transition-colors"
-                              title="Change E-Way Bill"
-                            >
-                              <RotateCcw className="w-3 h-3 mr-0.5 text-amber-700" /> Change
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            id="fetch-ewb-btn"
-                            type="button"
-                            onClick={handleFetchEwayBill}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleFetchEwayBill();
-                              }
-                            }}
-                            disabled={isFetchingEway}
-                            size="sm"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
-                          >
-                            {isFetchingEway ? 'Fetching...' : 'Fetch'}
-                          </Button>
-                        )
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-slate-800">
+                        E-Way Bill No {ewbList.length > 0 && <span className="text-[11px] font-semibold text-emerald-600">({ewbList.length} Attached)</span>}
+                      </Label>
+                      {isEwbLocked && !showAddEwbInput && user?.ewbApiAccess && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAddEwbInput(true)}
+                          className="text-[11px] font-bold text-brand-primary hover:text-brand-primary-dark hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> Add More EWB
+                        </button>
                       )}
                     </div>
+
+                    {/* Multi-EWB Tags List */}
+                    {ewbList.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                        {ewbList.map((ewbNo) => (
+                          <span
+                            key={ewbNo}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold shadow-2xs animate-in fade-in-50 duration-150"
+                          >
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span>{ewbNo}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEwb(ewbNo)}
+                              className="w-3.5 h-3.5 rounded-full hover:bg-emerald-200/60 inline-flex items-center justify-center text-emerald-700 hover:text-red-600 cursor-pointer transition-colors ml-0.5"
+                              title="Remove this E-Way Bill"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                        <Button
+                          type="button"
+                          onClick={handleOpenChangeModal}
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1.5 text-[11px] font-semibold text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                          title="Reset and clear all E-Way Bills"
+                        >
+                          <RotateCcw className="w-2.5 h-2.5 mr-0.5" /> Clear All
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Input Field: When 0 EWBs or when adding an additional EWB */}
+                    {(ewbList.length === 0 || showAddEwbInput) && (
+                      <div className="relative flex items-center">
+                        <Input 
+                          name="ewayBillNo" 
+                          value={ewbList.length > 0 ? currentEwbInput : formData.ewayBillNo} 
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                            if (ewbList.length > 0) {
+                              setCurrentEwbInput(val);
+                            } else {
+                              setFormData(prev => ({ ...prev, ewayBillNo: val }));
+                            }
+                          }} 
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleFetchEwayBill(ewbList.length > 0 ? currentEwbInput : formData.ewayBillNo);
+                            }
+                          }}
+                          maxLength={12}
+                          placeholder={ewbList.length > 0 ? "Enter another 12-digit EWB..." : "e.g. 123456789012"} 
+                          className={`h-9 rounded-[8px] font-medium text-sm w-full text-slate-800 pr-20 border-[#64748b59] ${errors.ewayBillNo ? 'border-red-500 focus-visible:ring-red-500' : ''}`} 
+                          autoFocus={showAddEwbInput}
+                        />
+                        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                          {showAddEwbInput && (
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setShowAddEwbInput(false);
+                                setCurrentEwbInput('');
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-1.5 text-xs text-gray-500 hover:text-gray-700"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                          {user?.ewbApiAccess && (
+                            <Button
+                              id="fetch-ewb-btn"
+                              type="button"
+                              onClick={() => handleFetchEwayBill(ewbList.length > 0 ? currentEwbInput : formData.ewayBillNo)}
+                              disabled={isFetchingEway}
+                              size="sm"
+                              className="h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
+                            >
+                              {isFetchingEway ? 'Fetching...' : (ewbList.length > 0 ? '+ Merge' : 'Fetch')}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     {renderError('ewayBillNo')}
                   </div>
                   <div className="space-y-1 relative sm:max-w-[95%]">
@@ -1946,7 +2181,7 @@ function NewBookingForm() {
                         ) : (
                           <Button
                             type="button"
-                            onClick={handleFetchEwayBill}
+                            onClick={() => handleFetchEwayBill()}
                             disabled={isFetchingEway}
                             size="sm"
                             className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2.5 rounded-md bg-brand-primary hover:bg-brand-primary-dark text-white font-semibold text-xs shadow-none transition-colors"
@@ -2054,9 +2289,69 @@ function NewBookingForm() {
         </div>
 
       
+        {/* Different Party Validation Warning Modal */}
+        {differentPartyModal.isOpen && (
+          <div ref={activeModalContainerRef} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl border border-red-100 max-w-lg w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-12 h-12 rounded-full bg-red-100 border border-red-200 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Different Party Detected! (અલગ પાર્ટી છે)</h3>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    આ E-Way Bill (<strong className="text-red-700">{differentPartyModal.incomingEwb}</strong>) બીજા વેપારીનો છે. 
+                    ટ્રાન્સપોર્ટ અને GST નિયમો મુજબ એક જ LR (બિલ્ટી) માં બે અલગ-અલગ પાર્ટીનો માલ મિક્સ કરી શકાતો નથી.
+                  </p>
+                </div>
+              </div>
+
+              {/* Party Comparison Table */}
+              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-2">
+                <div className="grid grid-cols-2 gap-3 pb-2 border-b border-slate-200">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">Current LR Party</span>
+                    <p className="font-bold text-slate-800">{formData.consignorName}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">GST: {formData.consignorGst || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-red-500 block mb-0.5">Incoming EWB Party</span>
+                    <p className="font-bold text-red-700">{differentPartyModal.consignorName}</p>
+                    <p className="text-[11px] text-red-600 font-mono">GST: {differentPartyModal.consignorGst || 'N/A'}</p>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 italic">
+                  💡 સલાહ: આ પાર્ટી ({differentPartyModal.consignorName}) માટે કૃપા કરીને અલગથી નવી LR બનાવો.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setDifferentPartyModal({
+                      isOpen: false,
+                      consignorName: '',
+                      consignorGst: '',
+                      consigneeName: '',
+                      consigneeGst: '',
+                      incomingEwb: ''
+                    });
+                    setCurrentEwbInput('');
+                    setShowAddEwbInput(false);
+                  }}
+                  className="h-9 px-5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs"
+                >
+                  OK, સમજાઈ ગયું (Close)
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Custom Theme Warning Modal for Changing E-Way Bill */}
         {showChangeEwbModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div ref={activeModalContainerRef} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
               <div className="flex items-start gap-3.5">
                 <div className="w-11 h-11 rounded-full bg-amber-100/80 border border-amber-200 flex items-center justify-center shrink-0">
@@ -2098,7 +2393,7 @@ function NewBookingForm() {
 
         {/* E-Way Bill Expired Modal (Strict GST Rule & Optional WhatsApp Alert to Party) */}
         {showEwbExpiredModal && expiredEwbInfo && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div ref={activeModalContainerRef} className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl shadow-2xl border border-red-200 max-w-lg w-full p-6 space-y-4 animate-in zoom-in-95 duration-200">
               <div className="flex items-start gap-3.5">
                 <div className="w-12 h-12 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center shrink-0">
@@ -2167,6 +2462,20 @@ function NewBookingForm() {
                 )}
 
                 <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  {/* Retry with force-refresh to bypass stale cache */}
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const ewbToRetry = expiredEwbInfo.ewbNo;
+                      setShowEwbExpiredModal(false);
+                      setErrors(prev => { const c = { ...prev }; delete c.ewayBillNo; return c; });
+                      handleFetchEwayBill(ewbToRetry, true); // forceRefresh=true bypasses cache
+                    }}
+                    className="h-9 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Retry Fresh Fetch
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
@@ -2176,7 +2485,7 @@ function NewBookingForm() {
                     }}
                     className="h-9 px-4 rounded-lg border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold"
                   >
-                    Close & Clear
+                    Close &amp; Clear
                   </Button>
                 </div>
               </div>

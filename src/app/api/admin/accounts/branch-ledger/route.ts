@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     const transactions = await BranchCashTransaction.find(query)
       .populate('createdBy', 'name')
       .populate('referenceId')
-      .sort({ date: 1 })
+      .sort({ date: 1, _id: 1 })
       .lean();
 
     // Branch is already fetched above
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
         branch: resolvedBranchId,
         date: { $lt: startOfDay },
         isDeleted: false
-      }).sort({ date: -1 });
+      }).sort({ date: -1, _id: -1 });
 
       if (lastTxnBeforeToday) {
         openingBalance = lastTxnBeforeToday.balanceAfter;

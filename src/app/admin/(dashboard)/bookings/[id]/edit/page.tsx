@@ -49,7 +49,7 @@ export default function EditBookingPage() {
   const packagingDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
   const descriptionDropdownRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const handleFetchEwayBill = async () => {
+  const handleFetchEwayBill = async (forceRefresh = false) => {
     setErrors(prev => {
       const copy = { ...prev };
       delete copy.ewayBillNo;
@@ -66,7 +66,8 @@ export default function EditBookingPage() {
 
     setIsFetchingEway(true);
     try {
-      const res = await fetch(`/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}`);
+      const url = `/api/admin/bookings/fetch-ewaybill?number=${formData.ewayBillNo}${forceRefresh ? '&refresh=true' : ''}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 

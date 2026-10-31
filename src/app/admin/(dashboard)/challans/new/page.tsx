@@ -940,7 +940,7 @@ export default function AddChallanPage() {
         <div className="bg-white border border-slate-200/90 shadow-xs rounded-xl p-3.5 sm:p-5 relative z-10 !overflow-visible space-y-5">
           
           {/* Section 1: Fillup Information */}
-          <div className="relative z-20 !overflow-visible">
+          <div className="relative z-40 !overflow-visible">
             <div className="flex items-center gap-2 pb-2 mb-3.5 border-b border-slate-100">
               <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>
               <span className="text-[11px] font-bold text-slate-700 tracking-wider uppercase">
@@ -1055,7 +1055,7 @@ export default function AddChallanPage() {
           </div>
 
           {/* Section 2: LR Scanning / Manual Entry */}
-          <div className="relative z-30 !overflow-visible pt-1">
+          <div className="relative z-10 !overflow-visible pt-1">
             <div className="flex items-center justify-between pb-2 mb-3.5 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-3.5 bg-brand-primary rounded-full inline-block"></span>

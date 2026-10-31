@@ -185,7 +185,7 @@ export function ThemeSelect({
       </div>
 
       {showDropdown && filteredOptions.length > 0 && (
-        <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary shadow-md p-1.5 max-h-[300px] overflow-y-auto space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-150">
+        <div className="absolute z-[9999] mt-1 w-full bg-white rounded-xl border border-brand-primary/40 shadow-2xl ring-1 ring-black/5 p-1.5 max-h-[300px] overflow-y-auto space-y-0.5 animate-in fade-in-50 zoom-in-95 duration-150">
           {filteredOptions.map((opt, index) => {
             const isSelected = value === opt.value;
             const isHighlighted = index === highlightIndex;
