@@ -1,31 +1,73 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import DemoRequest from '@/models/DemoRequest';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { notifyDemoLead } from '@/lib/leadNotifications';
+import { z } from 'zod';
 
-export async function POST(request: Request) {
+const schema = z.object({
+  name: z.string().trim().min(2),
+  phone: z.string().trim().min(10),
+  companyName: z.string().trim().min(2),
+  city: z.string().trim().min(2),
+  fleetSize: z.string().trim().optional(),
+  email: z.string().trim().email().optional().or(z.literal('')),
+  painPoint: z.string().trim().min(2),
+  website: z.string().optional(),
+});
+
+export async function POST(request: NextRequest) {
   try {
-    await connectDB();
     const body = await request.json();
-    
-    // Basic validation
-    if (!body.name || !body.companyName || !body.phone || !body.painPoint || !body.email || !body.city) {
-      return NextResponse.json({ error: 'Please fill all required fields' }, { status: 400 });
+    const parsed = schema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Please fill all required fields accurately.' },
+        { status: 400 }
+      );
     }
 
-    const newRequest = new DemoRequest({
-      name: body.name,
-      email: body.email,
-      companyName: body.companyName,
-      phone: body.phone,
-      city: body.city,
-      fleetSize: body.fleetSize || '1-10',
-      painPoint: body.painPoint
+    if (parsed.data.website && parsed.data.website.trim().length > 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rate = checkRateLimit(`api-demo:${ip}`, 5, 10 * 60 * 1000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: 'Too many submissions. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    await connectDB();
+
+    await DemoRequest.create({
+      name: parsed.data.name,
+      email: parsed.data.email || undefined,
+      companyName: parsed.data.companyName,
+      phone: parsed.data.phone,
+      city: parsed.data.city,
+      fleetSize: parsed.data.fleetSize || '1-5',
+      painPoint: parsed.data.painPoint,
     });
 
-    await newRequest.save();
+    await notifyDemoLead({
+      name: parsed.data.name,
+      phone: parsed.data.phone,
+      companyName: parsed.data.companyName,
+      city: parsed.data.city,
+      fleetSize: parsed.data.fleetSize || '1-5',
+      email: parsed.data.email || undefined,
+      painPoint: parsed.data.painPoint,
+    });
 
-    return NextResponse.json({ success: true, message: 'Demo request submitted successfully' });
-  } catch (error: any) {
+    return NextResponse.json({
+      success: true,
+      message: 'Demo request submitted successfully',
+    });
+  } catch (error) {
     console.error('DemoRequest POST Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

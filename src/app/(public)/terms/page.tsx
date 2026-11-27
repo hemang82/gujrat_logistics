@@ -1,63 +1,96 @@
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { buildPageMetadata } from '@/lib/seo';
+import { COMPANY } from '@/lib/company';
+import { Breadcrumbs } from '@/components/public/Breadcrumbs';
 
-export const metadata: Metadata = {
-  title: 'Terms and Conditions - Trust Logistic',
-  description: 'Terms and Conditions for using Trust Logistic Transport Management System (TMS) in India.',
-  alternates: {
-    canonical: 'https://trustlogistic.in/terms',
-  }
-};
+export function generateMetadata(): Metadata {
+  return buildPageMetadata({
+    path: '/terms/',
+    title: 'Terms & Conditions | Trust Logistic',
+    description:
+      'The terms that apply when you use the Trust Logistic website and transport management software, including accounts, acceptable use and governing law.',
+    keywords: [
+      'Trust Logistic terms and conditions',
+      'transport software terms of service',
+    ],
+  });
+}
 
 export default function TermsPage() {
   return (
-    <main className="pt-36 md:pt-40 pb-20 bg-gray-50 min-h-screen">
-      <article className="container mx-auto px-4 max-w-7xl">
-        <Link href="/" className="inline-flex items-center text-sm font-semibold text-brand-primary hover:text-brand-primary-dark mb-8">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home
-        </Link>
-        <div className="bg-white rounded-3xl shadow-xl shadow-brand-primary/5 p-8 md:p-12">
-          <header className="mb-10 pb-10 border-b border-gray-100">
-            <h1 className="mb-4 text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight">Terms & Conditions</h1>
-            <p className="text-gray-500 font-medium">Last updated: August 2026</p>
+    <div className="bg-[#F3F7F7] pt-32 md:pt-36 pb-20">
+      <article className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <Breadcrumbs path="/terms/" />
+
+        <div className="rounded-[2.25rem] bg-white p-8 sm:p-12 border border-[#0F766E]/12 shadow-sm space-y-8">
+          <header className="pb-6 border-b border-gray-100 space-y-2">
+            <p className="text-sm font-bold uppercase tracking-wider text-[#0F766E]">
+              Legal &amp; Compliance
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#06262A] tracking-tight">
+              Terms &amp; Conditions
+            </h1>
+            <p className="text-sm text-[#52666B]">
+              Last updated: {COMPANY.legal.lastUpdated}
+            </p>
           </header>
 
-          <section className=" text-gray-700 space-y-6">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">1. Acceptance of Terms</h2>
-            <p className="text-base text-gray-600 leading-relaxed">By accessing or using the Trust Logistic Transport Management System (the "Service") provided via the trustlogistic.in website, you agree to be bound by these Terms. If you disagree with any part of the terms, then you do not have permission to access the Service.</p>
-            
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">2. Description of Service</h2>
-            <p className="text-base text-gray-600 leading-relaxed">Trust Logistic provides a cloud-based logistics and transport management software designed to facilitate bookings, accounting, fleet tracking, and e-way bill generation for transporters in India. We constantly update our offerings and features.</p>
+          <div className="space-y-6 text-base text-[#52666B] leading-relaxed">
+            <section className="space-y-2">
+              <h2 className="text-xl font-extrabold text-[#06262A]">1. Acceptance of Terms</h2>
+              <p>
+                These Terms &amp; Conditions (&ldquo;Terms&rdquo;) govern your use of the <code>{COMPANY.domain}</code> website and software services (the &ldquo;Services&rdquo;) provided by {COMPANY.legalName} (&ldquo;Trust Logistic&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). By accessing the website, creating an account or using the Services, you agree to these Terms. If you use the Services for a business, you confirm that you have authority to bind that business.
+              </p>
+            </section>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">3. Accounts & Security</h2>
-            <p className="text-base text-gray-600 leading-relaxed">When you create an account with us, you must provide us information that is accurate, complete, and current at all times. Failure to do so constitutes a breach of the Terms, which may result in immediate termination of your account on our Service.</p>
-            <p className="text-base text-gray-600 leading-relaxed">You are responsible for safeguarding the password that you use to access the Service and for any activities or actions under your password. You agree not to disclose your password to any third party.</p>
+            <section className="space-y-2">
+              <h2 className="text-xl font-extrabold text-[#06262A]">2. Platform Scope</h2>
+              <ul className="list-disc pl-6 space-y-1.5">
+                <li><strong>What we provide:</strong> Trust Logistic is web-based software for transport businesses covering LR / bilty, lorry challans, crossing memos, lorry hire, e-way bill generation through GSP integration, delivery management, fleet and driver records, freight billing, branch accounts and reports. The modules available depend on your plan.</li>
+                <li><strong>What we are not:</strong> Trust Logistic is a software provider. We are not a carrier, freight forwarder or broker, and we do not move, store, insure or take responsibility for goods. Contracts of carriage are between transporters and their customers.</li>
+                <li><strong>Tracking &amp; third-party systems:</strong> Public LR tracking shows status entered by the transporter. E-way bills are generated through a GSP and government systems whose availability and rules are outside our control.</li>
+              </ul>
+            </section>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">4. Acceptable Use Policy</h2>
-            <p className="text-base text-gray-600 leading-relaxed">You agree not to use the Service to:</p>
-            <ul className="text-base text-gray-600 leading-relaxed list-disc pl-6 space-y-2">
-              <li>Upload or transmit any data that is unlawful, harmful, threatening, or abusive.</li>
-              <li>Attempt to gain unauthorized access to our secure servers, databases, or API endpoints.</li>
-              <li>Use the platform to generate fraudulent invoices or e-way bills. The responsibility for tax compliance lies strictly with the user.</li>
-            </ul>
+            <section className="space-y-2">
+              <h2 className="text-xl font-extrabold text-[#06262A]">3. Accounts &amp; Acceptable Use</h2>
+              <ul className="list-disc pl-6 space-y-1.5">
+                <li><strong>Accounts &amp; your data:</strong> Subscribers are responsible for keeping login details confidential, setting accurate branch permissions, and ensuring the accuracy and legality of consignment, party, vehicle and billing data entered into their accounts.</li>
+                <li><strong>Compliance:</strong> You are responsible for meeting your own legal obligations, including e-way bill, transport and record-keeping rules. The software supports your work but does not replace professional advice.</li>
+                <li><strong>Acceptable use &amp; IP:</strong> You agree not to misuse the Services, access other customers&apos; data, interfere with security or resell the software without permission. Trust Logistic and its software, design and content belong to us.</li>
+                <li><strong>Fees, suspension &amp; disclaimer:</strong> Fees and billing cycles are set out in your plan or order form. We may suspend access if these Terms are breached or fees are unpaid. The Services are provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis to the extent permitted by law.</li>
+              </ul>
+            </section>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">5. Limitation of Liability</h2>
-            <p className="text-base text-gray-600 leading-relaxed">In no event shall Trust Logistic, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from (i) your access to or use of or inability to access or use the Service; (ii) any conduct or content of any third party on the Service.</p>
+            <section className="space-y-2">
+              <h2 className="text-xl font-extrabold text-[#06262A]">4. Governing Law</h2>
+              <p>
+                These Terms are governed by the laws of India within the jurisdiction of {COMPANY.legal.jurisdiction}.
+              </p>
+            </section>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">6. Governing Law</h2>
-            <p className="text-base text-gray-600 leading-relaxed">These Terms shall be governed and construed in accordance with the laws of India, specifically within the jurisdiction of Gujarat, without regard to its conflict of law provisions.</p>
+            <section className="space-y-2">
+              <h2 className="text-xl font-extrabold text-[#06262A]">5. Contact</h2>
+              <ul className="list-none space-y-1 text-sm text-[#06262A]">
+                <li><strong>Email:</strong> {COMPANY.contact.primaryEmail}</li>
+                <li><strong>Phone:</strong> {COMPANY.contact.phoneDisplay}</li>
+                <li><strong>Location:</strong> {COMPANY.contact.locationSummary}</li>
+              </ul>
+            </section>
+          </div>
 
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">7. Contact Us</h2>
-            <p className="text-base text-gray-600 leading-relaxed">If you have any questions about these Terms, please contact us at:</p>
-            <ul className="text-base text-gray-600 leading-relaxed list-none space-y-2 mt-4">
-              <li><strong>Email:</strong> <a href="mailto:trustlogistic.in@gmail.com" className="text-brand-primary hover:underline">trustlogistic.in@gmail.com</a></li>
-              <li><strong>Phone:</strong> +91 82384 03910</li>
-              <li><strong>Address:</strong> Trust Logistic, Ahmedabad, Gujarat 382405, India</li>
-            </ul>
-          </section>
+          <footer className="pt-6 border-t border-gray-100">
+            <Link
+              href="/company/contact/"
+              className="inline-flex items-center gap-2 text-sm font-bold text-[#0F766E] hover:underline"
+            >
+              Questions? Contact Us <ArrowRight className="w-4 h-4" />
+            </Link>
+          </footer>
         </div>
       </article>
-    </main>
+    </div>
   );
 }

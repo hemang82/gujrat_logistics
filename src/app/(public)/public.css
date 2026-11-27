@@ -1,0 +1,84 @@
+/* Scoped design tokens and utilities for the public Trust Logistic website.
+ * Strictly isolated from `/admin` panels so admin, logistic and superadmin UI remain untouched.
+ */
+
+:root {
+  --tl-primary: #0F766E;
+  --tl-deep: #0A4F4A;
+  --tl-ink: #06262A;
+  --tl-mint: #2DD4BF;
+  --tl-amber: #F59E0B;
+  --tl-amber-hover: #D97706;
+  --tl-bg: #F3F7F7;
+  --tl-muted: #52666B;
+  --tl-word-muted: #B3C1C3;
+  --tl-white: #FFFFFF;
+}
+
+/* Allow GSAP ScrollTrigger pinning to work without overflow-x clipping breaking sticky behavior */
+html:has(.public-shell),
+body:has(.public-shell) {
+  overflow-x: clip !important;
+  background-color: var(--tl-bg);
+  color: var(--tl-ink);
+}
+
+.public-shell {
+  --background: var(--tl-bg);
+  --foreground: var(--tl-ink);
+  font-family: var(--font-sans), 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color: var(--tl-ink);
+  background-color: var(--tl-bg);
+}
+
+/* Word-fill span smooth GPU color transitions */
+.word-fill-token {
+  display: inline;
+  will-change: color;
+  transition: none;
+}
+
+/* Accessible skip-to-content link */
+.skip-to-content {
+  position: fixed;
+  top: -120px;
+  left: 16px;
+  z-index: 100;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  background: var(--tl-amber);
+  color: var(--tl-ink);
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(6, 38, 42, 0.25);
+  transition: top 0.2s ease;
+}
+
+.skip-to-content:focus {
+  top: 16px;
+  outline: 3px solid var(--tl-ink);
+  outline-offset: 2px;
+}
+
+/* Ribbed container texture matching industrial freight container aesthetic */
+.container-ribbed-bg {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(6, 38, 42, 0.14) 0px,
+    rgba(6, 38, 42, 0.14) 18px,
+    rgba(45, 212, 191, 0.06) 18px,
+    rgba(45, 212, 191, 0.06) 24px,
+    transparent 24px,
+    transparent 56px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
